@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,7 +48,10 @@ export default function DeliveryDashboard() {
             <div className="flex items-center space-x-4">
               <Badge className="bg-green-100 text-green-800">Offline</Badge>
               <span className="text-sm text-gray-600">Welcome, {session.user.name}</span>
-              <Button variant="outline" onClick={() => router.push("/auth/signin")}>
+              <Button 
+                variant="outline" 
+                onClick={() => signOut({ callbackUrl: "/delivery/auth/signin" })}
+              >
                 Sign Out
               </Button>
             </div>

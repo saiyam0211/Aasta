@@ -13,18 +13,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, Phone, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { EnhancedLocationInput } from "@/components/location/enhanced-location-input";
 
 interface RestaurantData {
   name: string;
-  description: string;
+  ownerName: string;
   phone: string;
   address: string;
   latitude: number;
   longitude: number;
-  cuisineTypes: string[];
-  minimumOrderAmount: number;
-  deliveryRadius: number;
-  averagePreparationTime: number;
   operatingHours: {
     [key: string]: { open: string; close: string; isOpen: boolean };
   };
@@ -38,15 +35,11 @@ export default function RestaurantOnboarding() {
   
   const [restaurantData, setRestaurantData] = useState<RestaurantData>({
     name: "",
-    description: "",
+    ownerName: "",
     phone: "",
     address: "",
     latitude: 0,
     longitude: 0,
-    cuisineTypes: [],
-    minimumOrderAmount: 200,
-    deliveryRadius: 5,
-    averagePreparationTime: 30,
     operatingHours: {
       monday: { open: "21:00", close: "00:00", isOpen: true },
       tuesday: { open: "21:00", close: "00:00", isOpen: true },
@@ -109,13 +102,26 @@ export default function RestaurantOnboarding() {
     try {
       setIsLoading(true);
       
-      // Mock API call - in real app, create restaurant profile
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Create restaurant profile via API
+      const response = await fetch('/api/restaurants', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(restaurantData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create restaurant profile');
+      }
       
       toast.success("Restaurant profile created successfully!");
       router.push("/restaurant/dashboard");
     } catch (error) {
-      toast.error("Failed to create restaurant profile");
+      console.error('Error creating restaurant:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to create restaurant profile");
     } finally {
       setIsLoading(false);
     }
@@ -138,14 +144,13 @@ export default function RestaurantOnboarding() {
           </div>
           
           <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={restaurantData.description}
-              onChange={(e) => setRestaurantData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Describe your restaurant and specialties"
+            <Label htmlFor="ownerName">Owner/SPoC Name *</Label>
+            <Input
+              id="ownerName"
+              value={restaurantData.ownerName}
+              onChange={(e) => setRestaurantData(prev => ({ ...prev, ownerName: e.target.value }))}
+              placeholder="Enter owner or point of contact name"
               className="mt-1"
-              rows={3}
             />
           </div>
           
@@ -161,92 +166,45 @@ export default function RestaurantOnboarding() {
           </div>
         </div>
       </div>
-
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Cuisine Types</h3>
-        <div className="flex flex-wrap gap-2">
-          {cuisineOptions.map((cuisine) => (
-            <Badge
-              key={cuisine}
-              variant={restaurantData.cuisineTypes.includes(cuisine) ? "default" : "outline"}
-              className="cursor-pointer"
-              onClick={() => handleCuisineToggle(cuisine)}
-            >
-              {cuisine}
-            </Badge>
-          ))}
-        </div>
-      </div>
     </div>
   );
+
+  const handleLocationSelect = (location: { address: string; latitude: number; longitude: number }) => {
+    setRestaurantData(prev => ({
+      ...prev,
+      address: location.address,
+      latitude: location.latitude,
+      longitude: location.longitude
+    }));
+  };
 
   const renderStep2 = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Location & Delivery</h3>
+        <h3 className="text-lg font-semibold mb-4">Restaurant Location</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          🎯 <strong>Important:</strong> Your exact location is critical for showing your restaurant to nearby customers. 
+          Please ensure your location is accurate.
+        </p>
         <div className="space-y-4">
-          <div>
-            <Label htmlFor="address">Restaurant Address *</Label>
-            <div className="flex gap-2 mt-1">
-              <Input
-                id="address"
-                value={restaurantData.address}
-                onChange={(e) => setRestaurantData(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="Enter complete address"
-                className="flex-1"
-              />
-              <Button onClick={handleLocationVerification} variant="outline">
-                <MapPin className="w-4 h-4 mr-2" />
-                Verify
-              </Button>
-            </div>
-            {restaurantData.latitude !== 0 && (
-              <p className="text-sm text-green-600 mt-1">
-                ✓ Location verified
-              </p>
-            )}
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="deliveryRadius">Delivery Radius (km) *</Label>
-              <Input
-                id="deliveryRadius"
-                type="number"
-                value={restaurantData.deliveryRadius}
-                onChange={(e) => setRestaurantData(prev => ({ ...prev, deliveryRadius: Number(e.target.value) }))}
-                min="1"
-                max="10"
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="minimumOrder">Minimum Order Amount (₹) *</Label>
-              <Input
-                id="minimumOrder"
-                type="number"
-                value={restaurantData.minimumOrderAmount}
-                onChange={(e) => setRestaurantData(prev => ({ ...prev, minimumOrderAmount: Number(e.target.value) }))}
-                min="100"
-                className="mt-1"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="prepTime">Average Preparation Time (minutes) *</Label>
-            <Input
-              id="prepTime"
-              type="number"
-              value={restaurantData.averagePreparationTime}
-              onChange={(e) => setRestaurantData(prev => ({ ...prev, averagePreparationTime: Number(e.target.value) }))}
-              min="10"
-              max="60"
-              className="mt-1"
-            />
-          </div>
+          <EnhancedLocationInput
+            onLocationSelect={handleLocationSelect}
+            initialAddress={restaurantData.address}
+            placeholder="Enter your restaurant's complete address"
+            required={true}
+            label="Restaurant Address"
+          />
         </div>
+        
+        {restaurantData.latitude !== 0 && restaurantData.longitude !== 0 && (
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-800">
+              ✅ <strong>Location Confirmed:</strong><br/>
+              📍 Coordinates: {restaurantData.latitude.toFixed(6)}, {restaurantData.longitude.toFixed(6)}<br/>
+              📧 Address: {restaurantData.address}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -384,8 +342,8 @@ export default function RestaurantOnboarding() {
                 <Button
                   onClick={() => setCurrentStep(prev => Math.min(3, prev + 1))}
                   disabled={
-                    (currentStep === 1 && (!restaurantData.name || !restaurantData.phone)) ||
-                    (currentStep === 2 && (!restaurantData.address || restaurantData.latitude === 0))
+                    (currentStep === 1 && (!restaurantData.name || !restaurantData.ownerName || !restaurantData.phone)) ||
+                    (currentStep === 2 && (!restaurantData.address || restaurantData.latitude === 0 || restaurantData.longitude === 0))
                   }
                   style={{
                     backgroundColor: '#d1f86a',

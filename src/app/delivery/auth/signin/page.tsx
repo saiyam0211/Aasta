@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Bike } from "lucide-react";
+import { toast } from "sonner";
 
 export default function DeliverySignInPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,21 +17,100 @@ export default function DeliverySignInPage() {
     const checkAuth = async () => {
       const session = await getSession();
       if (session) {
-        router.push("/delivery/dashboard");
+        // Check if user already has delivery partner role
+        if (session.user.role === 'DELIVERY_PARTNER') {
+          router.push("/delivery/dashboard");
+        } else if (session.user.role === 'CUSTOMER') {
+          // User is authenticated but needs role update
+          setIsLoading(true);
+          await updateUserRole(session.user.id);
+        }
       }
     };
     checkAuth();
   }, [router]);
 
+  const updateUserRole = async (userId: string) => {
+    try {
+      const response = await fetch('/api/user/update-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          role: 'DELIVERY_PARTNER',
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to update user role:', await response.json());
+        toast.error('Failed to set delivery partner role. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Show success message and reload to refresh the session
+      toast.success('Delivery partner account created successfully!');
+      
+      // Use setTimeout to give the toast time to show, then reload
+      setTimeout(() => {
+        window.location.href = '/delivery/dashboard';
+      }, 1000);
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      toast.error('Failed to update role. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signIn("google", { 
-        callbackUrl: "/delivery/dashboard",
-        redirect: true 
+      
+      // Sign in with Google
+      const result = await signIn("google", { 
+        redirect: false // Don't redirect automatically
       });
+
+      if (result?.ok) {
+        // After successful sign-in, update the user's role to delivery partner
+        const session = await getSession();
+
+        if (session?.user?.email) {
+          const response = await fetch('/api/user/update-role', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: session.user.id,
+              role: 'DELIVERY_PARTNER',
+            }),
+          });
+
+          if (!response.ok) {
+            console.error('Failed to update user role:', await response.json());
+            toast.error('Failed to set delivery partner role. Please try again.');
+            return;
+          }
+
+          // Show success message and reload to refresh the session
+          toast.success('Delivery partner account created successfully!');
+          
+          // Use setTimeout to give the toast time to show, then reload
+          setTimeout(() => {
+            window.location.href = '/delivery/dashboard';
+          }, 1000);
+        }
+      } else if (result?.error) {
+        console.error("Sign in error:", result.error);
+        toast.error("Failed to sign in. Please try again.");
+      }
     } catch (error) {
       console.error("Sign in error:", error);
+      toast.error("Failed to sign in. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };

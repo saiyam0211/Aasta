@@ -53,6 +53,17 @@ export default function RestaurantsPage() {
     loadRestaurants();
   }, [session, status, router, selectedLocation, currentLocation]);
 
+  // Reload restaurants when search query or filters change
+  useEffect(() => {
+    if (session) {
+      const delayedSearch = setTimeout(() => {
+        loadRestaurants();
+      }, 500); // Debounce search by 500ms
+
+      return () => clearTimeout(delayedSearch);
+    }
+  }, [searchQuery, selectedCuisines]);
+
   const loadRestaurants = async () => {
     try {
       setIsLoading(true);
@@ -63,31 +74,51 @@ export default function RestaurantsPage() {
         longitude: 77.5946
       };
 
-      const filters = {
-        cuisineTypes: selectedCuisines.length > 0 ? selectedCuisines : undefined,
-        rating: 4.0 // Minimum rating filter
-      };
+      // Build search parameters
+      const searchParams = new URLSearchParams({
+        latitude: location.latitude.toString(),
+        longitude: location.longitude.toString(),
+        radius: '3', // 3km radius for closer restaurants
+      });
 
-      const nearbyRestaurants = await locationService.findNearbyRestaurants(
-        location,
-        5, // 5km radius
-        filters
-      );
-
-      // Filter by search query
-      let filteredRestaurants = nearbyRestaurants;
       if (searchQuery.trim()) {
-        filteredRestaurants = nearbyRestaurants.filter(restaurant =>
-          restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          restaurant.cuisineTypes.some(cuisine => 
-            cuisine.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        );
+        searchParams.append('query', searchQuery.trim());
       }
 
-      setRestaurants(filteredRestaurants);
+      // Make API call to search restaurants
+      const response = await fetch(`/api/restaurants/search?${searchParams}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch restaurants: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        let restaurantList = data.data.restaurants || [];
+        
+        // Apply cuisine filters if any are selected
+        if (selectedCuisines.length > 0) {
+          restaurantList = restaurantList.filter((restaurant: any) =>
+            restaurant.cuisineTypes.some((cuisine: string) =>
+              selectedCuisines.includes(cuisine)
+            )
+          );
+        }
+        
+        setRestaurants(restaurantList);
+      } else {
+        console.error('API returned error:', data.error);
+        setRestaurants([]);
+      }
     } catch (error) {
       console.error('Error loading restaurants:', error);
+      setRestaurants([]);
     } finally {
       setIsLoading(false);
     }

@@ -17,11 +17,52 @@ export default function RestaurantSignInPage() {
     const checkAuth = async () => {
       const session = await getSession();
       if (session) {
-        router.push("/restaurant/dashboard");
+        // Check if user already has restaurant role
+        if (session.user.role === 'RESTAURANT_OWNER') {
+          router.push("/restaurant/dashboard");
+        } else if (session.user.role === 'CUSTOMER') {
+          // User is authenticated but needs role update
+          setIsLoading(true);
+          await updateUserRole(session.user.id);
+        }
       }
     };
     checkAuth();
   }, [router]);
+
+  const updateUserRole = async (userId: string) => {
+    try {
+      const response = await fetch('/api/user/update-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          role: 'RESTAURANT_OWNER',
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to update user role:', await response.json());
+        toast.error('Failed to set restaurant role. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Show success message and reload to refresh the session
+      toast.success('Restaurant account created successfully!');
+      
+      // Use setTimeout to give the toast time to show, then reload
+      setTimeout(() => {
+        window.location.href = '/restaurant/dashboard';
+      }, 1000);
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      toast.error('Failed to update role. Please try again.');
+      setIsLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -35,10 +76,32 @@ export default function RestaurantSignInPage() {
       if (result?.ok) {
         // After successful sign-in, check if we need to update the user's role
         const session = await getSession();
+
         if (session?.user?.email) {
-          // Check if user has restaurant role, if not, we might need to update it
-          // For now, just redirect to restaurant dashboard
-          router.push("/restaurant/dashboard");
+          const response = await fetch('/api/user/update-role', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: session.user.id,
+              role: 'RESTAURANT_OWNER',
+            }),
+          });
+
+          if (!response.ok) {
+            console.error('Failed to update user role:', await response.json());
+            toast.error('Failed to set restaurant role. Please try again.');
+            return;
+          }
+
+          // Show success message and reload to refresh the session
+          toast.success('Restaurant account created successfully!');
+          
+          // Use setTimeout to give the toast time to show, then reload
+          setTimeout(() => {
+            window.location.href = '/restaurant/dashboard';
+          }, 1000);
         }
       } else if (result?.error) {
         console.error("Sign in error:", result.error);

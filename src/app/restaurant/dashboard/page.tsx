@@ -1,15 +1,30 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Store, Users, TrendingUp, Clock } from "lucide-react";
 
+interface Restaurant {
+  id: string;
+  name: string;
+  description?: string;
+  address: string;
+  phone: string;
+  status: string;
+  cuisineTypes: string[];
+  averagePreparationTime: number;
+  minimumOrderAmount: number;
+  deliveryRadius: number;
+}
+
 export default function RestaurantDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -18,7 +33,25 @@ export default function RestaurantDashboard() {
       router.push("/restaurant/auth/signin");
       return;
     }
+
+    // Fetch restaurant data
+    fetchRestaurantData();
   }, [session, status, router]);
+
+  const fetchRestaurantData = async () => {
+    try {
+      const response = await fetch('/api/restaurants');
+      const data = await response.json();
+      
+      if (response.ok && data.restaurant) {
+        setRestaurant(data.restaurant);
+      }
+    } catch (error) {
+      console.error('Error fetching restaurant data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (status === "loading") {
     return (
@@ -46,7 +79,10 @@ export default function RestaurantDashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">Welcome, {session.user.name}</span>
-              <Button variant="outline" onClick={() => router.push("/auth/signin")}>
+              <Button 
+                variant="outline" 
+                onClick={() => signOut({ callbackUrl: "/restaurant/auth/signin" })}
+              >
                 Sign Out
               </Button>
             </div>
@@ -136,16 +172,36 @@ export default function RestaurantDashboard() {
           <Card className="cursor-pointer hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="text-lg">Restaurant Profile</CardTitle>
-              <CardDescription>Complete your restaurant setup</CardDescription>
+              <CardDescription>
+                {loading ? "Loading..." : restaurant ? "Manage your restaurant information" : "Complete your restaurant setup"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
-                className="w-full" 
-                variant="outline"
-                onClick={() => router.push('/restaurant/onboarding')}
-              >
-                Setup Profile
-              </Button>
+              {loading ? (
+                <Button className="w-full" variant="outline" disabled>
+                  Loading...
+                </Button>
+              ) : restaurant ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">{restaurant.name}</p>
+                  <p className="text-xs text-gray-500">{restaurant.address}</p>
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    onClick={() => router.push('/restaurant/profile')}
+                  >
+                    Edit Profile
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => router.push('/restaurant/onboarding')}
+                >
+                  Setup Profile
+                </Button>
+              )}
             </CardContent>
           </Card>
 

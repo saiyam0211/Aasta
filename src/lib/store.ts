@@ -271,6 +271,51 @@ export const useLocationStore = create<LocationState>()(
   )
 );
 
+// Combined store hook for convenience
+export const useStore = () => {
+  const auth = useAuthStore();
+  const cart = useCartStore();
+  const location = useLocationStore();
+  const app = useAppStore();
+  
+  return {
+    // Auth
+    user: auth.user,
+    isAuthenticated: auth.isAuthenticated,
+    authLoading: auth.isLoading,
+    authError: auth.error,
+    setUser: auth.setUser,
+    logout: auth.logout,
+    
+    // Cart
+    cart: cart.cart,
+    cartLoading: cart.isLoading,
+    cartError: cart.error,
+    addToCart: cart.addItem,
+    removeFromCart: cart.removeItem,
+    updateCartQuantity: cart.updateQuantity,
+    clearCart: cart.clearCart,
+    
+    // Location
+    location: location.currentLocation,
+    locationPermission: location.permissionStatus,
+    locationLoading: location.isLoading,
+    locationError: location.error,
+    setLocation: location.setLocation,
+    requestLocation: location.requestLocation,
+    
+    // App
+    isOnline: app.isOnline,
+    theme: app.theme,
+    notifications: app.notifications,
+    setOnlineStatus: app.setOnlineStatus,
+    setTheme: app.setTheme,
+    addNotification: app.addNotification,
+    removeNotification: app.removeNotification,
+    clearNotifications: app.clearNotifications,
+  };
+};
+
 // App Store for global app state
 interface AppState {
   isOnline: boolean;

@@ -66,33 +66,50 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async jwt({ token, user, account }) {
-      if (user) {
-        // Get user data from database with role
-        const dbUser = await prisma.user.findUnique({
-          where: { email: user.email! },
-          include: {
-            customer: true,
-            deliveryPartner: true,
-            restaurant: true,
-          },
-        });
+      // Always fetch fresh user data from database to ensure role is up-to-date
+      if (token.email) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: token.email as string },
+            include: {
+              customer: true,
+              deliveryPartner: true,
+            },
+          });
 
-        if (dbUser) {
-          token.id = dbUser.id;
-          token.role = dbUser.role;
-          token.phone = dbUser.phone;
-          token.email = dbUser.email;
-          
-          // Add role-specific data
-          if (dbUser.role === 'CUSTOMER' && dbUser.customer) {
-            token.customerId = dbUser.customer.id;
-          } else if (dbUser.role === 'DELIVERY_PARTNER' && dbUser.deliveryPartner) {
-            token.deliveryPartnerId = dbUser.deliveryPartner.id;
-          } else if (dbUser.role === 'RESTAURANT_OWNER' && dbUser.restaurant) {
-            token.restaurantId = dbUser.restaurant.id;
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.role = dbUser.role;
+            token.phone = dbUser.phone;
+            token.email = dbUser.email;
+            
+            // Add role-specific data
+            if (dbUser.role === 'CUSTOMER' && dbUser.customer) {
+              token.customerId = dbUser.customer.id;
+            } else if (dbUser.role === 'DELIVERY_PARTNER' && dbUser.deliveryPartner) {
+              token.deliveryPartnerId = dbUser.deliveryPartner.id;
+            } else if (dbUser.role === 'RESTAURANT_OWNER') {
+              // For restaurant owners, we'll fetch the restaurant separately to avoid schema issues
+              const restaurant = await prisma.restaurant.findUnique({
+                where: { ownerId: dbUser.id },
+                select: { id: true },
+              });
+              if (restaurant) {
+                token.restaurantId = restaurant.id;
+              }
+            }
           }
+        } catch (error) {
+          console.error('JWT callback error:', error);
+          // Continue with existing token data if database query fails
         }
       }
+      
+      // Set initial data on first login
+      if (user) {
+        token.email = user.email;
+      }
+      
       return token;
     },
     async session({ session, token }) {
@@ -110,7 +127,22 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       console.log('Redirect URL:', url, 'Base URL:', baseUrl);
       
-      // Always redirect to home page
+      // If the URL is from our domain, allow it
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      
+      // Check if this is a restaurant sign-in by looking at the referrer or URL
+      if (url.includes('/restaurant/') || url.includes('restaurant')) {
+        return `${baseUrl}/restaurant/dashboard`;
+      }
+      
+      // Check if this is a delivery partner sign-in
+      if (url.includes('/delivery/') || url.includes('delivery')) {
+        return `${baseUrl}/delivery/dashboard`;
+      }
+      
+      // Default to home page for customers
       return baseUrl;
     },
   },
@@ -149,7 +181,7 @@ export function hasRole(userRole: string, requiredRoles: string[]): boolean {
 // Helper function to get user with complete profile
 export async function getUserProfile(userId: string) {
   try {
-    return await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         customer: {
@@ -158,15 +190,28 @@ export async function getUserProfile(userId: string) {
           },
         },
         deliveryPartner: true,
-        restaurant: {
-          include: {
-            menuItems: true,
-          },
-        },
       },
     });
+
+    if (!user) return null;
+
+    // If user is a restaurant owner, fetch restaurant separately
+    if (user.role === 'RESTAURANT_OWNER') {
+      const restaurant = await prisma.restaurant.findUnique({
+        where: { ownerId: userId },
+        include: {
+          menuItems: true,
+        },
+      });
+      return {
+        ...user,
+        restaurant,
+      };
+    }
+
+    return user;
   } catch (error) {
     console.error('Error getting user profile:', error);
     return null;
   }
-} 
+}

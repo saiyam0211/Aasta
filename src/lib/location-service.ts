@@ -64,8 +64,47 @@ class LocationService {
       const cached = this.getFromCache(cacheKey);
       if (cached) return cached;
 
-      // For now, return mock data - will be replaced with actual database query
-      const mockRestaurants: Restaurant[] = [
+      // Fetch restaurants from database
+      const { prisma } = await import('./db');
+      const dbRestaurants = await prisma.restaurant.findMany({
+        where: {
+          status: 'ACTIVE',
+        },
+        include: {
+          menuItems: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              available: true,
+            },
+            where: {
+              available: true,
+            },
+            take: 5,
+          },
+        },
+      });
+
+      // Transform to expected format and calculate distances
+      const restaurants: Restaurant[] = dbRestaurants.map(restaurant => ({
+        id: restaurant.id,
+        name: restaurant.name,
+        latitude: restaurant.latitude,
+        longitude: restaurant.longitude,
+        address: restaurant.address,
+        phone: restaurant.phone,
+        cuisineTypes: restaurant.cuisineTypes,
+        averagePreparationTime: restaurant.averagePreparationTime,
+        minimumOrderAmount: restaurant.minimumOrderAmount,
+        deliveryRadius: restaurant.deliveryRadius,
+        rating: restaurant.rating,
+        status: restaurant.status,
+        operatingHours: restaurant.operatingHours,
+      }));
+
+      // Fallback mock data if no restaurants in database
+      const mockRestaurants: Restaurant[] = restaurants.length > 0 ? restaurants : [
         {
           id: '1',
           name: 'Midnight Bites',
@@ -226,23 +265,36 @@ class LocationService {
   // Geocode address to coordinates
   async geocodeAddress(address: string): Promise<LocationWithAddress | null> {
     try {
-      // For now, return mock geocoded data for Bengaluru - will be replaced with Google API
-      console.log('Geocoding address:', address);
-      
-      // Mock Bengaluru coordinates
-      const mockLocation: LocationWithAddress = {
-        latitude: 12.9716 + (Math.random() - 0.5) * 0.1, // Bengaluru latitude with some variation
-        longitude: 77.5946 + (Math.random() - 0.5) * 0.1, // Bengaluru longitude with some variation
-        address: address,
-        city: 'Bengaluru',
-        state: 'Karnataka',
-        zipCode: '560001'
-      };
-
-      return mockLocation;
+      // Use Google Maps service for actual geocoding
+      const { googleMapsService } = await import('./google-maps');
+      return await googleMapsService.geocodeAddress(address);
     } catch (error) {
       console.error('Error geocoding address:', error);
       return null;
+    }
+  }
+
+  // Reverse geocode coordinates to address
+  async reverseGeocode(lat: number, lng: number): Promise<LocationWithAddress | null> {
+    try {
+      const { googleMapsService } = await import('./google-maps');
+      return await googleMapsService.reverseGeocode(lat, lng);
+    } catch (error) {
+      console.error('Error reverse geocoding:', error);
+      return null;
+    }
+  }
+
+  // Get place suggestions for autocomplete
+  async getPlaceSuggestions(input: string): Promise<LocationWithAddress[]> {
+    try {
+      if (input.length < 3) return [];
+      
+      const { googleMapsService } = await import('./google-maps');
+      return await googleMapsService.getPlacePredictions(input);
+    } catch (error) {
+      console.error('Error getting place suggestions:', error);
+      return [];
     }
   }
 

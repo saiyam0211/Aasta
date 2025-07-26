@@ -25,30 +25,63 @@ export default function LocationInput({
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<LocationWithAddress | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const { currentLocation, requestLocation, setLocation } = useLocationStore();
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Handle current location detection
   const handleCurrentLocation = async () => {
     try {
       setIsLoading(true);
+      setError(null);
+      
       await requestLocation();
       
-      if (currentLocation) {
+      // Need to get the updated location from the store after requestLocation
+      const { currentLocation: updatedLocation, error: locationError } = useLocationStore.getState();
+      
+      if (locationError) {
+        setError(locationError);
+        return;
+      }
+      
+      if (updatedLocation) {
         // Reverse geocode current location to get address
-        const locationWithAddress = await locationService.geocodeAddress(
-          `${currentLocation.latitude},${currentLocation.longitude}`
+        const locationWithAddress = await locationService.reverseGeocode(
+          updatedLocation.latitude,
+          updatedLocation.longitude
         );
         
         if (locationWithAddress) {
           setSelectedLocation(locationWithAddress);
           setQuery(locationWithAddress.address);
+          setLocation({ latitude: locationWithAddress.latitude, longitude: locationWithAddress.longitude });
           onLocationSelect?.(locationWithAddress);
+        } else {
+          setError('Unable to get address for your location. Please try typing your address.');
         }
+      } else {
+        setError('Unable to detect your location. Please ensure location permission is granted.');
       }
     } catch (error) {
       console.error('Error getting current location:', error);
+      setError('Failed to get your location. Please try again or enter your address manually.');
     } finally {
       setIsLoading(false);
     }
@@ -60,59 +93,31 @@ export default function LocationInput({
       if (query.length > 2) {
         try {
           setIsLoading(true);
-          // Mock address suggestions - in real app, use Google Places API
-          const mockSuggestions: LocationWithAddress[] = [
-            {
-              latitude: 12.9716,
-              longitude: 77.5946,
-              address: `${query}, Koramangala, Bengaluru, Karnataka 560034`,
-              city: 'Bengaluru',
-              state: 'Karnataka',
-              zipCode: '560034'
-            },
-            {
-              latitude: 12.9279,
-              longitude: 77.6271,
-              address: `${query}, Whitefield, Bengaluru, Karnataka 560066`,
-              city: 'Bengaluru',
-              state: 'Karnataka',
-              zipCode: '560066'
-            },
-            {
-              latitude: 12.9698,
-              longitude: 77.7499,
-              address: `${query}, Electronic City, Bengaluru, Karnataka 560100`,
-              city: 'Bengaluru',
-              state: 'Karnataka',
-              zipCode: '560100'
-            },
-            {
-              latitude: 13.0358,
-              longitude: 77.5970,
-              address: `${query}, Hebbal, Bengaluru, Karnataka 560024`,
-              city: 'Bengaluru',
-              state: 'Karnataka',
-              zipCode: '560024'
-            },
-            {
-              latitude: 12.9352,
-              longitude: 77.6245,
-              address: `${query}, Indiranagar, Bengaluru, Karnataka 560038`,
-              city: 'Bengaluru',
-              state: 'Karnataka',
-              zipCode: '560038'
+          setError(null);
+          
+          // Use Google Places API for real address suggestions
+          const suggestions = await locationService.getPlaceSuggestions(query);
+          setSuggestions(suggestions);
+          setShowSuggestions(suggestions.length > 0);
+          
+          if (suggestions.length === 0) {
+            // Only show error if user has typed enough characters and no API key is configured
+            if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+              setError('Location search requires Google Maps API configuration.');
             }
-          ];
-          setSuggestions(mockSuggestions);
-          setShowSuggestions(true);
+          }
         } catch (error) {
           console.error('Error fetching suggestions:', error);
+          setSuggestions([]);
+          setShowSuggestions(false);
+          setError('Unable to search for locations. Please try again.');
         } finally {
           setIsLoading(false);
         }
       } else {
         setSuggestions([]);
         setShowSuggestions(false);
+        setError(null);
       }
     }, 300);
 
@@ -132,6 +137,7 @@ export default function LocationInput({
     setQuery("");
     setSuggestions([]);
     setShowSuggestions(false);
+    setError(null);
     inputRef.current?.focus();
   };
 
@@ -139,7 +145,7 @@ export default function LocationInput({
     <div className={`relative ${className}`}>
       <div className="flex space-x-2">
         {/* Address Input */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative" ref={dropdownRef}>
           <div className="relative">
             <MapPin 
               className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" 
@@ -175,32 +181,41 @@ export default function LocationInput({
 
           {/* Suggestions Dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <Card className="absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto restaurant-card">
-              <CardContent className="p-0">
-                {suggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 touchable"
-                    style={{ borderColor: 'var(--primary-dark-green)' }}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <MapPin className="w-4 h-4 mt-1 flex-shrink-0" style={{ color: 'var(--primary-dark-green)' }} />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium selectable" style={{ color: 'var(--primary-dark-green)' }}>
-                          {suggestion.address}
+            <div 
+              className="absolute top-full left-0 right-0 mt-1 z-50 bg-white rounded-lg shadow-lg border-2"
+              style={{ 
+                borderColor: 'var(--primary-dark-green)',
+                maxHeight: '240px',
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch' // For smooth scrolling on mobile
+              }}
+            >
+              {suggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors duration-150"
+                  style={{ 
+                    borderColor: 'var(--primary-dark-green)',
+                    borderBottomWidth: index === suggestions.length - 1 ? '0' : '1px'
+                  }}
+                >
+                  <div className="flex items-start space-x-3">
+                    <MapPin className="w-4 h-4 mt-1 flex-shrink-0" style={{ color: 'var(--primary-dark-green)' }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: 'var(--primary-dark-green)' }}>
+                        {suggestion.address}
+                      </p>
+                      {suggestion.city && (
+                        <p className="text-xs text-gray-500 truncate">
+                          {suggestion.city}, {suggestion.state}
                         </p>
-                        {suggestion.city && (
-                          <p className="text-xs text-gray-500 selectable">
-                            {suggestion.city}, {suggestion.state}
-                          </p>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
@@ -222,6 +237,13 @@ export default function LocationInput({
           )}
         </Button>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mt-2 p-2 rounded-lg bg-red-50 border border-red-200">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
 
       {/* Selected Location Display */}
       {selectedLocation && (

@@ -108,7 +108,7 @@ model DeliveryPartner {
 model Restaurant {
   id                      String           @id @default(cuid())
   name                    String
-  description             String?
+  ownerName               String           // SPoC/Owner name
   ownerId                 String           @unique
   latitude                Float
   longitude               Float
@@ -116,10 +116,10 @@ model Restaurant {
   phone                   String
   email                   String?
   imageUrl                String?
-  cuisineTypes            String[]
-  averagePreparationTime  Int              @default(20) // in minutes
-  minimumOrderAmount      Float            @default(0)
-  deliveryRadius          Float            @default(5) // in km
+  cuisineTypes            String[]         @default([])
+  averagePreparationTime  Int              @default(20) // in minutes - admin controlled
+  minimumOrderAmount      Float            @default(200) // admin controlled
+  deliveryRadius          Float            @default(5) // admin controlled - in km
   commissionRate          Float            @default(0.15) // 15%
   rating                  Float            @default(0)
   totalOrders             Int              @default(0)

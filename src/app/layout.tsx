@@ -6,7 +6,7 @@ import { Providers } from "@/components/providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Night Delivery - Late Night Food Delivery",
+  title: "Aasta",
   description: "Premium food delivery service operating from 9 PM to 12 AM, offering restaurant-quality meals at discounted prices.",
   manifest: "/manifest.json",
   themeColor: "#000000",

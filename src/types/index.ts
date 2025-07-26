@@ -1,3 +1,5 @@
+import { UserRole, OrderStatus, RestaurantStatus, PartnerStatus, AddressType, BatchStatus, StopStatus } from "@prisma/client"
+
 // Custom types for API responses and forms
 export interface ApiResponse<T = any> {
   success: boolean;
