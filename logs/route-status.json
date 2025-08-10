@@ -1,98 +1,98 @@
 {
   "/": {
     "path": "/",
-    "lastWarmed": 1754844490530,
+    "lastWarmed": 1754845479674,
     "status": 307,
-    "responseTime": 116,
-    "successCount": 12,
+    "responseTime": 149,
+    "successCount": 15,
     "failureCount": 0
   },
   "/customer": {
     "path": "/customer",
-    "lastWarmed": 1754844490749,
+    "lastWarmed": 1754845479926,
     "status": 307,
-    "responseTime": 25,
-    "successCount": 12,
+    "responseTime": 90,
+    "successCount": 15,
     "failureCount": 0
   },
   "/customer/dashboard": {
     "path": "/customer/dashboard",
-    "lastWarmed": 1754844490875,
+    "lastWarmed": 1754845480124,
     "status": 307,
-    "responseTime": 24,
-    "successCount": 12,
+    "responseTime": 108,
+    "successCount": 15,
     "failureCount": 0
   },
   "/restaurant/dashboard": {
     "path": "/restaurant/dashboard",
-    "lastWarmed": 1754844491000,
+    "lastWarmed": 1754845480334,
     "status": 307,
-    "responseTime": 26,
-    "successCount": 12,
+    "responseTime": 97,
+    "successCount": 15,
     "failureCount": 0
   },
   "/search": {
     "path": "/search",
-    "lastWarmed": 1754844622270,
+    "lastWarmed": 1754845626621,
     "status": 307,
-    "responseTime": 573,
-    "successCount": 20,
+    "responseTime": 87,
+    "successCount": 25,
     "failureCount": 0
   },
   "/restaurants": {
     "path": "/restaurants",
-    "lastWarmed": 1754844622945,
+    "lastWarmed": 1754845626810,
     "status": 307,
-    "responseTime": 26,
-    "successCount": 20,
+    "responseTime": 19,
+    "successCount": 25,
     "failureCount": 0
   },
   "/customer/orders": {
     "path": "/customer/orders",
-    "lastWarmed": 1754844172514,
+    "lastWarmed": 1754845480743,
     "status": 307,
-    "responseTime": 38,
-    "successCount": 6,
+    "responseTime": 96,
+    "successCount": 8,
     "failureCount": 0
   },
   "/restaurant/orders": {
     "path": "/restaurant/orders",
-    "lastWarmed": 1754844172654,
+    "lastWarmed": 1754845480943,
     "status": 307,
-    "responseTime": 31,
-    "successCount": 6,
+    "responseTime": 93,
+    "successCount": 8,
     "failureCount": 0
   },
   "/cart": {
     "path": "/cart",
-    "lastWarmed": 1754844558111,
+    "lastWarmed": 1754845563065,
     "status": 307,
-    "responseTime": 1792,
-    "successCount": 8,
+    "responseTime": 1036,
+    "successCount": 10,
     "failureCount": 0
   },
   "/checkout": {
     "path": "/checkout",
-    "lastWarmed": 1754844560009,
+    "lastWarmed": 1754845564206,
     "status": 307,
-    "responseTime": 30,
-    "successCount": 8,
+    "responseTime": 176,
+    "successCount": 10,
     "failureCount": 0
   },
   "/orders": {
     "path": "/orders",
-    "lastWarmed": 1754844172992,
+    "lastWarmed": 1754845481339,
     "status": 307,
-    "responseTime": 31,
-    "successCount": 6,
+    "responseTime": 85,
+    "successCount": 8,
     "failureCount": 0
   },
   "/profile": {
     "path": "/profile",
-    "lastWarmed": 1754843855948,
+    "lastWarmed": 1754845690174,
     "status": 307,
-    "responseTime": 39,
-    "successCount": 4,
+    "responseTime": 46,
+    "successCount": 6,
     "failureCount": 0
   },
   "/customer/discover": {
@@ -161,10 +161,10 @@
   },
   "/payment": {
     "path": "/payment",
-    "lastWarmed": 1754843856896,
+    "lastWarmed": 1754845691131,
     "status": 307,
-    "responseTime": 35,
-    "successCount": 3,
+    "responseTime": 41,
+    "successCount": 5,
     "failureCount": 1
   },
   "/settings": {
@@ -193,26 +193,26 @@
   },
   "/api/auth/session": {
     "path": "/api/auth/session",
-    "lastWarmed": 1754844493177,
+    "lastWarmed": 1754845482841,
     "status": 500,
-    "responseTime": 2491,
-    "successCount": 8,
-    "failureCount": 4
+    "responseTime": 12661,
+    "successCount": 9,
+    "failureCount": 6
   },
   "/api/restaurants": {
     "path": "/api/restaurants",
-    "lastWarmed": 1754844495772,
+    "lastWarmed": 1754845495606,
     "status": 500,
-    "responseTime": 1213,
+    "responseTime": 4294,
     "successCount": 0,
-    "failureCount": 12
+    "failureCount": 15
   },
   "/api/orders": {
     "path": "/api/orders",
-    "lastWarmed": 1754844177205,
+    "lastWarmed": 1754845500002,
     "status": 500,
-    "responseTime": 2029,
+    "responseTime": 1938,
     "successCount": 0,
-    "failureCount": 6
+    "failureCount": 8
   }
 }
