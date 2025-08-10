@@ -131,7 +131,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <nav className="mt-8 px-4">
           <div className="space-y-2">
             {navigationItems.map((item, index) => {
-              const isActive = pathname === item.href || (pathname.startsWith('/admin/customers') && item.href === '/admin/customers');
+              const isActive = pathname === item.href || (pathname?.startsWith('/admin/customers') && item.href === '/admin/customers');
               return (
                 <Link
                   key={item.name}

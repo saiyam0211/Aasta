@@ -17,14 +17,6 @@ const nextConfig: NextConfig = {
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
   },
-  // Enable static generation for better performance
-  output: 'standalone',
-  experimental: {
-    // Enable server components optimization
-    serverComponentsExternalPackages: ['@prisma/client'],
-  },
-  // Optimize build performance
-  swcMinify: true,
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },

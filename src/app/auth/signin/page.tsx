@@ -1,26 +1,13 @@
 "use client";
 
-import { signIn, getSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
 export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    // Check if user is already authenticated
-    const checkAuth = async () => {
-      const session = await getSession();
-      if (session) {
-        router.push("/");
-      }
-    };
-    checkAuth();
-  }, [router]);
 
   const handleGoogleSignIn = async () => {
     try {

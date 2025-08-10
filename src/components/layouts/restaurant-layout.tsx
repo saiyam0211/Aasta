@@ -78,7 +78,7 @@ export default function RestaurantLayout({ children, title, showSidebar = true }
     );
   }
 
-  const currentItem = navigationItems.find(item => pathname.startsWith(item.href));
+  const currentItem = navigationItems.find(item => pathname?.startsWith(item.href));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
@@ -134,7 +134,7 @@ export default function RestaurantLayout({ children, title, showSidebar = true }
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             {navigationItems.map((item) => {
-              const isActive = pathname.startsWith(item.href);
+              const isActive = pathname?.startsWith(item.href) || false;
               const Icon = item.icon;
               
               return (
