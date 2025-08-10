@@ -65,7 +65,7 @@ class LocationService {
       if (cached) return cached;
 
       // Fetch restaurants from database
-      const { prisma } = await import('./db');
+      const { prisma } = await import('./prisma');
       const dbRestaurants = await prisma.restaurant.findMany({
         where: {
           status: 'ACTIVE',

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
 
     // Validate required fields for simplified onboarding
-    const requiredFields = ['name', 'ownerName', 'phone', 'address', 'latitude', 'longitude', 'operatingHours'];
+    const requiredFields = ['name', 'ownerName', 'phone', 'address', 'latitude', 'longitude', 'locationId', 'operatingHours'];
     
     for (const field of requiredFields) {
       if (!data[field]) {
@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
         address: data.address,
         phone: data.phone,
         email: user.email,
+        locationId: data.locationId,
         // Default values for admin-controlled fields
         cuisineTypes: data.cuisineTypes || [], // Empty array, admin will set later
         averagePreparationTime: 20, // Default 20 minutes (admin controlled)

@@ -15,7 +15,7 @@ const errorMessages = {
 
 export default function AuthErrorPage() {
   const searchParams = useSearchParams();
-  const error = searchParams.get("error") as keyof typeof errorMessages;
+  const error = searchParams?.get("error") as keyof typeof errorMessages;
   
   const errorMessage = errorMessages[error] || errorMessages.Default;
 

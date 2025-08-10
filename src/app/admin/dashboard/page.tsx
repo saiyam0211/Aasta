@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,13 +53,8 @@ interface DashboardStats {
     average: number;
     growth: string;
   };
-  topRestaurants: Array<{
-    id: string;
-    name: string;
-    orders: number;
-    revenue: number;
-    rating: number;
-  }>;
+  topRestaurants: Array<{ id: string; name: string; orders: number; revenue: number; rating: number; menuItems?: number; deliveryPartners?: number; lastWeekEarnings?: number; aastaEarnings?: number; gmv?: number; restaurantEarnings?: number; }>
+  topDeliveryPartners?: Array<{ id: string; name: string; todayEarnings: number; totalEarnings: number; rating: number; orders?: number; cancelledOrders?: number; assignedRestaurants?: number; lastWeekEarnings?: number }>
   recentOrders: Array<{
     id: string;
     restaurant: string;
@@ -68,6 +64,25 @@ interface DashboardStats {
     createdAt: string;
   }>;
   lastUpdated: string;
+  // Dynamic operational data
+  activeOrdersCount: number;
+  openRestaurantsCount: number;
+  platformHealth: {
+    uptime: string;
+    responseTime: string;
+    errorRate: string;
+  };
+  customerSatisfaction: {
+    star5: string;
+    star4: string;
+    below3Stars: string;
+  };
+  deliveryPerformance: {
+    averageTime: string;
+    onTimePercentage: string;
+    fastDeliveryPercentage: string;
+    averageDistance: string;
+  };
 }
 
 
@@ -119,13 +134,6 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               href="#" 
               className="flex items-center px-4 py-3 text-sm font-medium text-[#fcfefe]/80 hover:text-[#d1f86a] hover:bg-[#fcfefe]/5 rounded-lg transition-colors"
             >
-              <Store className="w-5 h-5 mr-3" />
-              Restaurants
-            </a>
-            <a 
-              href="#" 
-              className="flex items-center px-4 py-3 text-sm font-medium text-[#fcfefe]/80 hover:text-[#d1f86a] hover:bg-[#fcfefe]/5 rounded-lg transition-colors"
-            >
               <Users className="w-5 h-5 mr-3" />
               Customers
             </a>
@@ -133,15 +141,15 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               href="#" 
               className="flex items-center px-4 py-3 text-sm font-medium text-[#fcfefe]/80 hover:text-[#d1f86a] hover:bg-[#fcfefe]/5 rounded-lg transition-colors"
             >
-              <Truck className="w-5 h-5 mr-3" />
-              Delivery Partners
-            </a>
-            <a 
-              href="#" 
-              className="flex items-center px-4 py-3 text-sm font-medium text-[#fcfefe]/80 hover:text-[#d1f86a] hover:bg-[#fcfefe]/5 rounded-lg transition-colors"
-            >
               <ShoppingCart className="w-5 h-5 mr-3" />
               Orders
+            </a>
+            <a 
+              href="/admin/locations" 
+              className="flex items-center px-4 py-3 text-sm font-medium text-[#fcfefe]/80 hover:text-[#d1f86a] hover:bg-[#fcfefe]/5 rounded-lg transition-colors"
+            >
+              <MapPin className="w-5 h-5 mr-3" />
+              Locations
             </a>
             <a 
               href="#" 
@@ -472,8 +480,82 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Enhanced Bottom Section */}
+{/* Enhanced Bottom Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Top Restaurants */}
+          <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="text-xl font-bold text-[#002a01]">
+                    Top Performing Delivery Partners
+                  </CardTitle>
+                  <CardDescription className="text-[#002a01]/60">
+                    Based on total earnings
+                  </CardDescription>
+                </div>
+                <div className="w-10 h-10 bg-[#d1f86a] rounded-xl flex items-center justify-center">
+                  <Star className="w-5 h-5 text-[#002a01]" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {stats.topDeliveryPartners?.map((partner, index) => (
+                <div key={partner.id} className="group p-4 bg-gradient-to-r from-slate-50 to-white rounded-xl border border-slate-200 hover:border-[#d1f86a]/50 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-[#d1f86a] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <span className="text-sm font-bold text-[#002a01]">
+                          {index + 1}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-[#002a01] group-hover:text-[#002a01]/80 transition-colors">
+                          {partner.name}
+                        </p>
+                        <div className="flex items-center space-x-3 text-xs text-[#002a01]/60">
+                          <span className="font-medium">{partner.orders} orders</span>
+                          <div className="flex items-center">
+                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
+                            {partner.rating?.toFixed(1) || 'N/A'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right space-y-2">
+                      <p className="font-bold text-[#002a01]">
+                        ₹{partner.totalEarnings.toLocaleString()}
+                      </p>
+                      <Link href={`/admin/delivery-partners/${partner.id}`}>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-xs text-[#002a01]/60 hover:text-[#002a01] hover:bg-[#d1f86a]/20 transition-colors"
+                        >
+                          <Eye className="w-3 h-3 mr-1" />
+                          View
+                        </Button>
+                      </Link>
+                      <div className="text-xs text-[#002a01]/70 mt-2">
+                        <p>Weekly Earnings: ₹{partner.lastWeekEarnings?.toLocaleString() || 0}</p>
+                        <p>Assigned Restaurants: {partner.assignedRestaurants || 0}</p>
+                        <p>Cancelled Orders: {partner.cancelledOrders || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <Link href="/admin/delivery-partners">
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4 border-[#002a01]/20 text-[#002a01] hover:bg-[#d1f86a]/10 hover:border-[#d1f86a] transition-all duration-200"
+                >
+                  View All Delivery Partners
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+          
           {/* Top Restaurants */}
           <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
             <CardHeader className="pb-4">
@@ -492,7 +574,7 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {stats.topRestaurants?.map((restaurant, index) => (
+{stats.topRestaurants?.map((restaurant, index) => (
                 <div key={restaurant.id} className="group p-4 bg-gradient-to-r from-slate-50 to-white rounded-xl border border-slate-200 hover:border-[#d1f86a]/50 hover:shadow-md transition-all duration-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
@@ -518,80 +600,35 @@ export default function AdminDashboard() {
                       <p className="font-bold text-[#002a01]">
                         ₹{restaurant.revenue.toLocaleString()}
                       </p>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="text-xs text-[#002a01]/60 hover:text-[#002a01] hover:bg-[#d1f86a]/20 transition-colors"
-                      >
-                        <Eye className="w-3 h-3 mr-1" />
-                        View
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <Button 
-                variant="outline" 
-                className="w-full mt-4 border-[#002a01]/20 text-[#002a01] hover:bg-[#d1f86a]/10 hover:border-[#d1f86a] transition-all duration-200"
-              >
-                View All Restaurants
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Recent Orders */}
-          <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-xl font-bold text-[#002a01]">
-                    Recent Orders
-                  </CardTitle>
-                  <CardDescription className="text-[#002a01]/60">
-                    Latest orders from customers
-                  </CardDescription>
-                </div>
-                <div className="w-10 h-10 bg-[#ffd500] rounded-xl flex items-center justify-center">
-                  <Activity className="w-5 h-5 text-[#002a01]" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {stats.recentOrders?.map((order) => (
-                <div key={order.id} className="group p-4 bg-gradient-to-r from-slate-50 to-white rounded-xl border border-slate-200 hover:border-[#ffd500]/50 hover:shadow-md transition-all duration-200">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <p className="font-bold text-[#002a01]">#{order.id}</p>
-                        <span className="text-xs text-[#002a01]/50">•</span>
-                        <span className="text-xs text-[#002a01]/60">{order.createdAt}</span>
+                      <Link href={`/admin/restaurants/${restaurant.id}`}>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-xs text-[#002a01]/60 hover:text-[#002a01] hover:bg-[#d1f86a]/20 transition-colors"
+                        >
+                          <Eye className="w-3 h-3 mr-1" />
+                          View
+                        </Button>
+                      </Link>
+                      <div className="text-xs text-[#002a01]/70 mt-2">
+                        <p>GMV: ₹{restaurant.gmv?.toLocaleString() || 0}</p>
+                        <p>Weekly Payout (Fri): ₹{restaurant.lastWeekEarnings?.toLocaleString() || 0}</p>
+                        <p>Aasta Earnings: ₹{restaurant.aastaEarnings?.toLocaleString() || 0}</p>
+                        <p>Menu Items: {restaurant.menuItems || 0}</p>
+                        <p>Partners Assigned: {restaurant.deliveryPartners || 0}</p>
                       </div>
-                      <p className="text-sm font-medium text-[#002a01]/80">{order.restaurant}</p>
-                      <p className="text-xs text-[#002a01]/60">by {order.customer}</p>
-                    </div>
-                    <div className="text-right space-y-2">
-                      <p className="font-bold text-[#002a01]">₹{order.total}</p>
-                      <Badge 
-                        className={`text-xs font-medium px-2.5 py-1 ${
-                          order.status === 'delivered' 
-                            ? 'bg-green-100 text-green-800 border-green-200'
-                            : order.status === 'preparing'
-                            ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                            : 'bg-blue-100 text-blue-800 border-blue-200'
-                        }`}
-                      >
-                        {order.status}
-                      </Badge>
                     </div>
                   </div>
                 </div>
               ))}
-              <Button 
-                variant="outline" 
-                className="w-full mt-4 border-[#002a01]/20 text-[#002a01] hover:bg-[#ffd500]/10 hover:border-[#ffd500] transition-all duration-200"
-              >
-                View All Orders
-              </Button>
+<Link href="/admin/restaurants">
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4 border-[#002a01]/20 text-[#002a01] hover:bg-[#d1f86a]/10 hover:border-[#d1f86a] transition-all duration-200"
+                >
+                  View All Restaurants
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
@@ -713,11 +750,11 @@ export default function AdminDashboard() {
                       <div className="flex items-center justify-center space-x-4 text-sm">
                         <div className="flex items-center space-x-2">
                           <div className="w-2 h-2 bg-[#d1f86a] rounded-full animate-pulse"></div>
-                          <span className="text-[#fcfefe]/80">42 active orders</span>
+                          <span className="text-[#fcfefe]/80">{stats.activeOrdersCount} active orders</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <div className="w-2 h-2 bg-[#ffd500] rounded-full animate-pulse"></div>
-                          <span className="text-[#fcfefe]/80">18 restaurants open</span>
+                          <span className="text-[#fcfefe]/80">{stats.openRestaurantsCount} restaurants open</span>
                         </div>
                       </div>
                     </div>
@@ -747,15 +784,15 @@ export default function AdminDashboard() {
               <div className="space-y-2 text-sm text-[#002a01]/60">
                 <div className="flex justify-between">
                   <span>Uptime</span>
-                  <span className="font-semibold">99.9%</span>
+                  <span className="font-semibold">{stats.platformHealth?.uptime || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Response Time</span>
-                  <span className="font-semibold">120ms</span>
+                  <span className="font-semibold">{stats.platformHealth?.responseTime || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Error Rate</span>
-                  <span className="font-semibold">0.1%</span>
+                  <span className="font-semibold">{stats.platformHealth?.errorRate || 'N/A'}</span>
                 </div>
               </div>
             </CardContent>
@@ -778,15 +815,15 @@ export default function AdminDashboard() {
               <div className="space-y-2 text-sm text-[#002a01]/60">
                 <div className="flex justify-between">
                   <span>5 Star Reviews</span>
-                  <span className="font-semibold">78%</span>
+                  <span className="font-semibold">{stats.customerSatisfaction?.star5 || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>4 Star Reviews</span>
-                  <span className="font-semibold">18%</span>
+                  <span className="font-semibold">{stats.customerSatisfaction?.star4 || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Below 3 Stars</span>
-                  <span className="font-semibold">4%</span>
+                  <span className="font-semibold">{stats.customerSatisfaction?.below3Stars || 'N/A'}</span>
                 </div>
               </div>
             </CardContent>
@@ -799,7 +836,7 @@ export default function AdminDashboard() {
                   <p className="text-sm font-semibold text-[#002a01]/60 uppercase tracking-wide">Delivery Performance</p>
                   <div className="flex items-center space-x-2">
                     <Clock className="w-4 h-4 text-blue-600" />
-                    <p className="text-lg font-bold text-[#002a01]">28 mins</p>
+                    <p className="text-lg font-bold text-[#002a01]">{stats.deliveryPerformance?.averageTime || 'N/A'}</p>
                   </div>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -809,15 +846,15 @@ export default function AdminDashboard() {
               <div className="space-y-2 text-sm text-[#002a01]/60">
                 <div className="flex justify-between">
                   <span>On Time Delivery</span>
-                  <span className="font-semibold">94%</span>
+                  <span className="font-semibold">{stats.deliveryPerformance?.onTimePercentage || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Fast Delivery ({'<'}25min)</span>
-                  <span className="font-semibold">67%</span>
+                  <span>Fast Delivery (&lt;25min)</span>
+                  <span className="font-semibold">{stats.deliveryPerformance?.fastDeliveryPercentage || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Average Distance</span>
-                  <span className="font-semibold">3.2 km</span>
+                  <span className="font-semibold">{stats.deliveryPerformance?.averageDistance || 'N/A'}</span>
                 </div>
               </div>
             </CardContent>

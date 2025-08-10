@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 interface SearchRequest {
   query?: string; // Restaurant name or keyword
@@ -72,17 +72,55 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build search conditions
+    // Enhanced search conditions - search by restaurant name OR menu items
     const searchConditions: any = {
       status: 'ACTIVE',
     };
 
-    // If query is provided, search by restaurant name
+    // If query is provided, search by restaurant name OR menu items
     if (query && query.trim().length > 0) {
-      searchConditions.name = {
-        contains: query.trim(),
-        mode: 'insensitive',
-      };
+      const searchTerm = query.trim();
+      searchConditions.OR = [
+        // Search by restaurant name
+        {
+          name: {
+            contains: searchTerm,
+            mode: 'insensitive',
+          },
+        },
+        // Search by menu items (dishes)
+        {
+          menuItems: {
+            some: {
+              AND: [
+                { available: true },
+                {
+                  OR: [
+                    {
+                      name: {
+                        contains: searchTerm,
+                        mode: 'insensitive',
+                      },
+                    },
+                    {
+                      description: {
+                        contains: searchTerm,
+                        mode: 'insensitive',
+                      },
+                    },
+                    {
+                      category: {
+                        contains: searchTerm,
+                        mode: 'insensitive',
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      ];
     }
 
     // Get restaurants from database
@@ -91,10 +129,10 @@ export async function GET(request: NextRequest) {
       include: {
         menuItems: {
           where: { available: true },
-          take: 5, // Limit to first 5 menu items for performance
           select: {
             id: true,
             name: true,
+            description: true,
             price: true,
             originalPrice: true,
             category: true,
@@ -102,6 +140,7 @@ export async function GET(request: NextRequest) {
             dietaryTags: true,
             spiceLevel: true,
             featured: true,
+            preparationTime: true,
           },
         },
       },

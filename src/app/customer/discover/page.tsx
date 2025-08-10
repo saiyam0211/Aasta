@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Clock, MapPin, Star, Search, Filter, ChefHat, Loader2 } from 'lucide-react'
+import { Clock, MapPin, Star, Search, Filter, ChefHat, Loader2, DollarSign } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { toast } from 'sonner'
 interface Restaurant {

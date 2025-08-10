@@ -61,6 +61,42 @@ async function main() {
     },
   })
 
+  // Create admin user
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@test.com' },
+    update: {},
+    create: {
+      email: 'admin@test.com',
+      name: 'Admin User',
+      role: 'ADMIN',
+    },
+  })
+
+  // Create sample locations
+  const koramangala = await prisma.location.upsert({
+    where: { name: 'Koramangala' },
+    update: {},
+    create: {
+      name: 'Koramangala',
+      city: 'Bangalore',
+      state: 'Karnataka',
+      country: 'India',
+      isActive: true,
+    },
+  })
+
+  const whitefield = await prisma.location.upsert({
+    where: { name: 'Whitefield' },
+    update: {},
+    create: {
+      name: 'Whitefield',
+      city: 'Bangalore',
+      state: 'Karnataka',
+      country: 'India',
+      isActive: true,
+    },
+  })
+
   // Create sample restaurants
   const restaurant1 = await prisma.restaurant.upsert({
     where: { ownerId: restaurantOwner1.id },
@@ -74,6 +110,7 @@ async function main() {
       address: '123 Food Street, Koramangala, Bengaluru - 560034',
       phone: '+91-9876543210',
       email: 'orders@midnightbites.com',
+      locationId: koramangala.id,
       imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400',
       cuisineTypes: ['North Indian', 'Mughlai', 'Biryani'],
       averagePreparationTime: 25,
@@ -92,7 +129,7 @@ async function main() {
         saturday: { open: '21:00', close: '01:00', isOpen: true },
         sunday: { open: '21:00', close: '00:00', isOpen: true },
       },
-      assignedDeliveryPartners: deliveryPartner1.deliveryPartner ? [deliveryPartner1.deliveryPartner.id] : [],
+      assignedDeliveryPartners: [],
     },
   })
 
@@ -108,6 +145,7 @@ async function main() {
       address: '456 Pizza Lane, Whitefield, Bengaluru - 560066',
       phone: '+91-9876543211',
       email: 'orders@nightowlpizza.com',
+      locationId: whitefield.id,
       imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400',
       cuisineTypes: ['Italian', 'Fast Food', 'Pizza'],
       averagePreparationTime: 30,
@@ -126,7 +164,7 @@ async function main() {
         saturday: { open: '21:00', close: '01:00', isOpen: true },
         sunday: { open: '21:00', close: '00:00', isOpen: true },
       },
-      assignedDeliveryPartners: deliveryPartner1.deliveryPartner ? [deliveryPartner1.deliveryPartner.id] : [],
+      assignedDeliveryPartners: [],
     },
   })
 
@@ -277,28 +315,32 @@ async function main() {
     })
   }
 
-  // Create sample customer address
-  if (customer1.customer) {
+  // Find the customer record to create address
+  const customerRecord = await prisma.customer.findUnique({
+    where: { userId: customer1.id }
+  })
+
+  if (customerRecord) {
     await prisma.address.create({
       data: {
-        customerId: customer1.customer.id,
-      type: 'HOME',
-      street: '789 Customer Street, Apartment 5B',
-      city: 'Bengaluru',
-      state: 'Karnataka',
-      zipCode: '560001',
-      latitude: 28.6129,
-      longitude: 77.2295,
-      landmark: 'Near City Mall',
-      instructions: 'Ring the bell twice',
-      isDefault: true,
+        customerId: customerRecord.id,
+        type: 'HOME',
+        street: '789 Customer Street, Apartment 5B',
+        city: 'Bengaluru',
+        state: 'Karnataka',
+        zipCode: '560001',
+        latitude: 28.6129,
+        longitude: 77.2295,
+        landmark: 'Near City Mall',
+        instructions: 'Ring the bell twice',
+        isDefault: true,
       },
     })
   }
 
   console.log('✅ Database seeding completed successfully!')
   console.log('📊 Created:')
-  console.log('- 4 Users (1 Customer, 2 Restaurant Owners, 1 Delivery Partner)')
+  console.log('- 5 Users (1 Customer, 2 Restaurant Owners, 1 Delivery Partner, 1 Admin)')
   console.log('- 2 Restaurants with complete profiles')
   console.log('- 10 Menu Items across different categories')
   console.log('- 1 Customer Address')

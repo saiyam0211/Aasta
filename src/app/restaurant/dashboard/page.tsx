@@ -1,11 +1,14 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Store, Users, TrendingUp, Clock } from "lucide-react";
+import { Badge } 
+from "@/components/ui/badge";
+import { Store, Users, TrendingUp, Clock, Eye, Truck, Calendar, RefreshCw, ArrowUpRight, Package, DollarSign } from "lucide-react";
+import RestaurantLayout from "@/components/layouts/restaurant-layout";
 
 interface Restaurant {
   id: string;
@@ -18,12 +21,46 @@ interface Restaurant {
   averagePreparationTime: number;
   minimumOrderAmount: number;
   deliveryRadius: number;
+  assignedDeliveryPartners: string[];
+}
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  status: string;
+  totalAmount: number;
+  createdAt: string;
+  customerName: string;
+  itemCount: number;
+}
+
+interface DeliveryPartner {
+  id: string;
+  name: string;
+  status: string;
+  rating: number;
+  completedDeliveries: number;
+}
+
+interface EarningsStats {
+  today: number;
+  thisWeek: number;
+  thisMonth: number;
+  totalOrders: number;
 }
 
 export default function RestaurantDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [activeOrders, setActiveOrders] = useState<Order[]>([]);
+  const [deliveryPartners, setDeliveryPartners] = useState<DeliveryPartner[]>([]);
+  const [earnings, setEarnings] = useState<EarningsStats>({
+    today: 0,
+    thisWeek: 0,
+    thisMonth: 0,
+    totalOrders: 0
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,22 +71,71 @@ export default function RestaurantDashboard() {
       return;
     }
 
-    // Fetch restaurant data
-    fetchRestaurantData();
+    // Fetch all dashboard data
+    fetchDashboardData();
   }, [session, status, router]);
 
-  const fetchRestaurantData = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const response = await fetch('/api/restaurants');
-      const data = await response.json();
+      setLoading(true);
       
-      if (response.ok && data.restaurant) {
-        setRestaurant(data.restaurant);
+      // Fetch restaurant data
+      const restaurantResponse = await fetch('/api/restaurants');
+      const restaurantData = await restaurantResponse.json();
+      
+      if (restaurantResponse.ok && restaurantData.restaurant) {
+        setRestaurant(restaurantData.restaurant);
+        
+        // Fetch active orders
+        const ordersResponse = await fetch('/api/restaurant/orders?limit=3');
+        const ordersData = await ordersResponse.json();
+        
+        if (ordersData.success) {
+          setActiveOrders(ordersData.orders || []);
+        }
+        
+        // Fetch delivery partners
+        if (restaurantData.restaurant.assignedDeliveryPartners?.length > 0) {
+          const partnersResponse = await fetch('/api/restaurant/delivery-partners');
+          const partnersData = await partnersResponse.json();
+          
+          if (partnersData.success) {
+            setDeliveryPartners(partnersData.partners || []);
+          }
+        }
+        
+        // Fetch earnings data
+        const earningsResponse = await fetch('/api/restaurant/earnings');
+        const earningsData = await earningsResponse.json();
+        
+        if (earningsData.success) {
+          setEarnings(earningsData.earnings);
+        }
       }
     } catch (error) {
-      console.error('Error fetching restaurant data:', error);
+      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PLACED': return 'bg-blue-100 text-blue-800';
+      case 'CONFIRMED': return 'bg-green-100 text-green-800';
+      case 'PREPARING': return 'bg-yellow-100 text-yellow-800';
+      case 'READY_FOR_PICKUP': return 'bg-purple-100 text-purple-800';
+      case 'OUT_FOR_DELIVERY': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPartnerStatusColor = (status: string) => {
+    switch (status) {
+      case 'AVAILABLE': return 'bg-green-100 text-green-800';
+      case 'BUSY': return 'bg-yellow-100 text-yellow-800';
+      case 'OFFLINE': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -66,32 +152,8 @@ export default function RestaurantDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-gradient-to-r from-orange-600 to-red-600 rounded-lg flex items-center justify-center mr-3">
-                <Store className="w-5 h-5 text-white" />
-              </div>
-              <h1 className="text-xl font-bold text-gray-900">Restaurant Dashboard</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">Welcome, {session.user.name}</span>
-              <Button 
-                variant="outline" 
-                onClick={() => signOut({ callbackUrl: "/restaurant/auth/signin" })}
-              >
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <RestaurantLayout> 
+      <div className="space-y-8 animate-fade-in">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Restaurant Dashboard</h2>
           <p className="text-gray-600">Manage your night-time delivery orders and menu</p>
@@ -107,34 +169,34 @@ export default function RestaurantDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-gray-500">No orders yet today</p>
+              <div className="text-2xl font-bold">{earnings.totalOrders}</div>
+              <p className="text-xs text-gray-500">{earnings.totalOrders === 0 ? 'No orders yet today' : 'Orders received today'}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-600">Revenue</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600">Today's Earnings</CardTitle>
                 <TrendingUp className="w-4 h-4 text-gray-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹0</div>
-              <p className="text-xs text-gray-500">Total earnings today</p>
+              <div className="text-2xl font-bold">₹{earnings.today.toFixed(0)}</div>
+              <p className="text-xs text-gray-500">Restaurant earnings today</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-600">Avg Prep Time</CardTitle>
-                <Clock className="w-4 h-4 text-gray-400" />
+                <CardTitle className="text-sm font-medium text-gray-600">Delivery Partners</CardTitle>
+                <Truck className="w-4 h-4 text-gray-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">20m</div>
-              <p className="text-xs text-gray-500">Average preparation time</p>
+              <div className="text-2xl font-bold">{deliveryPartners.length}</div>
+              <p className="text-xs text-gray-500">Assigned partners</p>
             </CardContent>
           </Card>
 
@@ -150,6 +212,98 @@ export default function RestaurantDashboard() {
               <p className="text-xs text-gray-500">Ready for orders</p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Active Orders Section */}
+        {activeOrders.length > 0 && (
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Active Orders</h3>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push('/restaurant/orders')}
+                className="flex items-center gap-2"
+              >
+                <Eye className="w-4 h-4" />
+                View More
+              </Button>
+            </div>
+            <div className="grid gap-4">
+              {activeOrders.slice(0, 3).map((order) => (
+                <Card key={order.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="font-medium">Order #{order.orderNumber}</h4>
+                        <p className="text-sm text-gray-600">{order.customerName}</p>
+                      </div>
+                      <Badge className={getStatusColor(order.status)}>
+                        {order.status.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center text-sm text-gray-500">
+                      <span>{order.itemCount} item{order.itemCount > 1 ? 's' : ''}</span>
+                      <span>₹{order.totalAmount}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Delivery Partners Section */}
+        {deliveryPartners.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Delivery Partners</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {deliveryPartners.map((partner) => (
+                <Card key={partner.id}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="font-medium">{partner.name}</h4>
+                        <p className="text-sm text-gray-600">{partner.completedDeliveries} deliveries</p>
+                      </div>
+                      <Badge className={getPartnerStatusColor(partner.status)}>
+                        {partner.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-1 text-sm text-yellow-600">
+                      <span>★</span>
+                      <span>{partner.rating.toFixed(1)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Earnings Overview */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Earnings Overview</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-green-600">₹{earnings.today.toFixed(0)}</div>
+                <p className="text-sm text-gray-600">Today</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-blue-600">₹{earnings.thisWeek.toFixed(0)}</div>
+                <p className="text-sm text-gray-600">This Week</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-purple-600">₹{earnings.thisMonth.toFixed(0)}</div>
+                <p className="text-sm text-gray-600">This Month</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Quick Actions */}
@@ -232,7 +386,7 @@ export default function RestaurantDashboard() {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+      </div>
+    </RestaurantLayout>
   );
 } 

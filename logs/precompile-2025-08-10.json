@@ -1,0 +1,147 @@
+[
+  {
+    "path": "/",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/customer",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/customer/dashboard",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/customer/orders",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/customer/discover",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/customer/location",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/restaurant/dashboard",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/restaurant/orders",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/restaurant/menu",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/restaurant/financials",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/restaurant/operations",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/restaurant/onboarding",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/restaurant/auth",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/delivery-partner",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/delivery",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/orders",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/cart",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/checkout",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/payment",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/search",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/restaurants",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/auth",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/admin",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/profile",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/settings",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/operations",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/api/auth/session",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/api/restaurants",
+    "status": 0,
+    "time": 0
+  },
+  {
+    "path": "/api/orders",
+    "status": 0,
+    "time": 0
+  }
+]

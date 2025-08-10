@@ -20,17 +20,22 @@ model User {
   name      String?
   image     String?
   phone     String?
+  password  String?  // For email/password authentication
   role      UserRole @default(CUSTOMER)
   googleId  String?  @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relationships
-  customer        Customer?
-  deliveryPartner DeliveryPartner?
-  restaurant      Restaurant?
-  sessions        Session[]
-  accounts        Account[]
+  customer               Customer?
+  deliveryPartner        DeliveryPartner?
+  restaurant             Restaurant?
+  sessions               Session[]
+  accounts               Account[]
+  notificationPreference NotificationPreference?
+  notificationHistory    NotificationHistory[]
+  pushSubscriptions      PushSubscription[]
+  userActivities         UserActivity[]
 
   @@map("users")
 }
@@ -67,14 +72,14 @@ model Session {
 
 // Customer specific data
 model Customer {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
-  favoriteRestaurants  String[] // Array of restaurant IDs
-  defaultAddressId     String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  favoriteRestaurants String[] // Array of restaurant IDs
+  defaultAddressId    String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   addresses Address[]
   orders    Order[]
   reviews   Review[]
@@ -86,7 +91,7 @@ model Customer {
 model DeliveryPartner {
   id                  String        @id @default(cuid())
   userId              String        @unique
-  assignedRestaurants String[]      // Array of restaurant IDs
+  assignedRestaurants String[] // Array of restaurant IDs
   currentLatitude     Float?
   currentLongitude    Float?
   status              PartnerStatus @default(OFFLINE)
@@ -94,45 +99,69 @@ model DeliveryPartner {
   totalEarnings       Float         @default(0)
   rating              Float         @default(0)
   completedDeliveries Int           @default(0)
+  telegramPhone       String? // Telegram phone number for notifications
+  telegramChatId      String? // Telegram chat ID for bot messaging
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders          Order[]
-  deliveryBatches DeliveryBatch[]
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders             Order[]
+  deliveryBatches    DeliveryBatch[]
+  performanceMetrics PerformanceMetrics[]
 
   @@map("delivery_partners")
 }
 
+// Location management
+model Location {
+  id        String   @id @default(cuid())
+  name      String   @unique // e.g., "Koramangala", "Indiranagar", "Whitefield"
+  city      String   @default("Bengaluru")
+  state     String   @default("Karnataka")
+  country   String   @default("India")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurants Restaurant[]
+
+  @@map("locations")
+}
+
 // Restaurant data
 model Restaurant {
-  id                      String           @id @default(cuid())
-  name                    String
-  ownerName               String           // SPoC/Owner name
-  ownerId                 String           @unique
-  latitude                Float
-  longitude               Float
-  address                 String
-  phone                   String
-  email                   String?
-  imageUrl                String?
-  cuisineTypes            String[]         @default([])
-  averagePreparationTime  Int              @default(20) // in minutes - admin controlled
-  minimumOrderAmount      Float            @default(200) // admin controlled
-  deliveryRadius          Float            @default(5) // admin controlled - in km
-  commissionRate          Float            @default(0.15) // 15%
-  rating                  Float            @default(0)
-  totalOrders             Int              @default(0)
-  status                  RestaurantStatus @default(ACTIVE)
-  operatingHours          Json // Store as JSON: { "monday": { "open": "21:00", "close": "00:00" }, ... }
-  assignedDeliveryPartners String[]        // Array of delivery partner IDs
-  createdAt               DateTime         @default(now())
-  updatedAt               DateTime         @updatedAt
+  id                        String           @id @default(cuid())
+  name                      String
+  ownerName                 String // SPoC/Owner name
+  ownerId                   String           @unique
+  locationId                String // Reference to Location
+  latitude                  Float
+  longitude                 Float
+  address                   String
+  phone                     String
+  email                     String?
+  imageUrl                  String?
+  cuisineTypes              String[]         @default([])
+  averagePreparationTime    Int              @default(20) // in minutes - admin controlled
+  minimumOrderAmount        Float            @default(200) // admin controlled
+  deliveryRadius            Float            @default(5) // admin controlled - in km
+  commissionRate            Float            @default(0.15) // 15%
+  restaurantPricePercentage Float            @default(0.40) // 40% - Percentage for restaurant earnings
+  aastaPricePercentage      Float            @default(0.10) // 10% - Percentage for Aasta earnings
+  rating                    Float            @default(0)
+  totalOrders               Int              @default(0)
+  status                    RestaurantStatus @default(ACTIVE)
+  operatingHours            Json // Store as JSON: { "monday": { "open": "21:00", "close": "00:00" }, ... }
+  assignedDeliveryPartners  String[] // Array of delivery partner IDs
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
 
-  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  menuItems MenuItem[]
-  orders    Order[]
-  reviews   Review[]
+  owner              User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  location           Location             @relation(fields: [locationId], references: [id])
+  menuItems          MenuItem[]
+  orders             Order[]
+  reviews            Review[]
+  performanceMetrics PerformanceMetrics[]
 
   @@map("restaurants")
 }
@@ -152,6 +181,7 @@ model MenuItem {
   spiceLevel      String? // "mild", "medium", "hot"
   available       Boolean  @default(true)
   featured        Boolean  @default(false)
+  stockLeft       Int? // Number of items left in stock
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -186,52 +216,97 @@ model Address {
 
 // Orders
 model Order {
-  id                     String      @id @default(cuid())
-  orderNumber            String      @unique
-  customerId             String
-  restaurantId           String
-  deliveryPartnerId      String?
-  deliveryAddressId      String
-  status                 OrderStatus @default(PLACED)
-  subtotal               Float
-  deliveryFee            Float       @default(0)
-  taxes                  Float       @default(0)
-  discountAmount         Float       @default(0)
-  totalAmount            Float
-  estimatedPreparationTime Int       // in minutes
-  estimatedDeliveryTime  DateTime?
-  actualDeliveryTime     DateTime?
-  verificationCode       String
-  paymentId              String?
-  paymentStatus          String      @default("pending")
-  specialInstructions    String?
-  cancelReason           String?
-  createdAt              DateTime    @default(now())
-  updatedAt              DateTime    @updatedAt
+  id                        String      @id @default(cuid())
+  orderNumber               String      @unique
+  customerId                String
+  restaurantId              String
+  deliveryPartnerId         String?
+  deliveryAddressId         String
+  status                    OrderStatus @default(PLACED)
+  subtotal                  Float
+  deliveryFee               Float       @default(0)
+  taxes                     Float       @default(0)
+  discountAmount            Float       @default(0)
+  totalAmount               Float
+  estimatedPreparationTime  Int // in minutes
+  estimatedDeliveryTime     DateTime?
+  actualDeliveryTime        DateTime?
+  deliveryDistance          Float? // Distance in kilometers from restaurant to customer
+  estimatedDeliveryDuration Int? // ETA in minutes from Google Maps API
+  verificationCode          String
+  razorpayOrderId           String?
+  paymentStatus             String      @default("pending")
+  specialInstructions       String?
+  cancelReason              String?
+  createdAt                 DateTime    @default(now())
+  updatedAt                 DateTime    @updatedAt
 
-  customer         Customer         @relation(fields: [customerId], references: [id])
-  restaurant       Restaurant       @relation(fields: [restaurantId], references: [id])
-  deliveryPartner  DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id])
-  deliveryAddress  Address          @relation(fields: [deliveryAddressId], references: [id])
-  orderItems       OrderItem[]
-  deliveryBatch    DeliveryBatch?   @relation(fields: [deliveryBatchId], references: [id])
-  deliveryBatchId  String?
-  review           Review?
-  orderAnalytics   OrderAnalytics?
+  customer        Customer         @relation(fields: [customerId], references: [id])
+  restaurant      Restaurant       @relation(fields: [restaurantId], references: [id])
+  deliveryPartner DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id])
+  deliveryAddress Address          @relation(fields: [deliveryAddressId], references: [id])
+  orderItems      OrderItem[]
+  deliveryBatch   DeliveryBatch?   @relation(fields: [deliveryBatchId], references: [id])
+  deliveryBatchId String?
+  review          Review?
+  orderAnalytics  OrderAnalytics?
+  payments        Payment[]
 
   @@map("orders")
 }
 
+model Payment {
+  id                String    @id @default(cuid())
+  orderId           String
+  razorpayOrderId   String
+  razorpayPaymentId String?   @unique
+  amount            Float
+  currency          String
+  status            String    @default("CREATED")
+  paymentMethod     String
+  failureReason     String?
+  capturedAt        DateTime?
+  createdAt         DateTime  @default(now())
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  refunds Refund[]
+
+  @@unique([orderId, razorpayOrderId])
+  @@map("payments")
+}
+
+model Refund {
+  id               String    @id @default(cuid())
+  paymentId        String
+  razorpayRefundId String    @unique
+  amount           Float
+  currency         String
+  status           String    @default("CREATED")
+  reason           String?
+  processedAt      DateTime?
+  createdAt        DateTime  @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [razorpayPaymentId])
+
+  @@map("refunds")
+}
+
 // Order items
 model OrderItem {
-  id             String   @id @default(cuid())
-  orderId        String
-  menuItemId     String
-  quantity       Int
-  unitPrice      Float
-  totalPrice     Float
-  customizations Json? // Store customizations as JSON
-  createdAt      DateTime @default(now())
+  id                        String   @id @default(cuid())
+  orderId                   String
+  menuItemId                String
+  quantity                  Int
+  unitPrice                 Float // Selling price per item (what customer pays)
+  totalPrice                Float // unitPrice * quantity (total selling price)
+  originalUnitPrice         Float? // Original price per item (for calculations)
+  totalOriginalPrice        Float? // originalUnitPrice * quantity (for restaurant/aasta earnings calculation)
+  restaurantEarningsPerItem Float? // Restaurant earnings per item based on percentage
+  restaurantTotalEarnings   Float? // Restaurant earnings for this item (restaurantEarningsPerItem * quantity)
+  aastaEarningsPerItem      Float? // Aasta earnings per item based on percentage
+  aastaTotalEarnings        Float? // Aasta earnings for this item (aastaEarningsPerItem * quantity)
+  customizations            Json? // Store customizations as JSON
+  createdAt                 DateTime @default(now())
 
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItem MenuItem @relation(fields: [menuItemId], references: [id])
@@ -241,17 +316,17 @@ model OrderItem {
 
 // Delivery batching
 model DeliveryBatch {
-  id                        String      @id @default(cuid())
-  deliveryPartnerId         String
-  status                    BatchStatus @default(CREATED)
-  pickupLatitude            Float
-  pickupLongitude           Float
-  estimatedCompletionTime   DateTime?
-  actualCompletionTime      DateTime?
-  totalDistance             Float?      @default(0)
-  optimizedRoute            Json? // Store route as JSON
-  createdAt                 DateTime    @default(now())
-  updatedAt                 DateTime    @updatedAt
+  id                      String      @id @default(cuid())
+  deliveryPartnerId       String
+  status                  BatchStatus @default(CREATED)
+  pickupLatitude          Float
+  pickupLongitude         Float
+  estimatedCompletionTime DateTime?
+  actualCompletionTime    DateTime?
+  totalDistance           Float?      @default(0)
+  optimizedRoute          Json? // Store route as JSON
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
 
   deliveryPartner DeliveryPartner @relation(fields: [deliveryPartnerId], references: [id])
   orders          Order[]
@@ -281,17 +356,17 @@ model DeliveryStop {
 
 // Reviews and ratings
 model Review {
-  id           String   @id @default(cuid())
-  customerId   String
-  restaurantId String
-  orderId      String   @unique
-  rating       Int // 1-5 stars
-  comment      String?
-  foodRating   Int? // 1-5 stars
-  serviceRating Int? // 1-5 stars
+  id             String   @id @default(cuid())
+  customerId     String
+  restaurantId   String
+  orderId        String   @unique
+  rating         Int // 1-5 stars
+  comment        String?
+  foodRating     Int? // 1-5 stars
+  serviceRating  Int? // 1-5 stars
   deliveryRating Int? // 1-5 stars
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   customer   Customer   @relation(fields: [customerId], references: [id])
   restaurant Restaurant @relation(fields: [restaurantId], references: [id])
@@ -320,19 +395,121 @@ model OrderAnalytics {
 
 // Platform analytics
 model PlatformMetrics {
-  id                   String   @id @default(cuid())
-  date                 DateTime @unique @db.Date
-  totalOrders          Int      @default(0)
-  totalRevenue         Float    @default(0)
-  averageOrderValue    Float    @default(0)
-  averageDeliveryTime  Int      @default(0)
-  customerAcquisition  Int      @default(0)
-  restaurantSignups    Int      @default(0)
-  deliveryPartnerSignups Int    @default(0)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                     String   @id @default(cuid())
+  date                   DateTime @unique @db.Date
+  totalOrders            Int      @default(0)
+  totalRevenue           Float    @default(0)
+  averageOrderValue      Float    @default(0)
+  averageDeliveryTime    Int      @default(0)
+  customerAcquisition    Int      @default(0)
+  restaurantSignups      Int      @default(0)
+  deliveryPartnerSignups Int      @default(0)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   @@map("platform_metrics")
+}
+
+// Notification Management
+model NotificationPreference {
+  id                  String                @id @default(cuid())
+  userId              String                @unique
+  emailEnabled        Boolean               @default(true)
+  pushEnabled         Boolean               @default(true)
+  smsEnabled          Boolean               @default(false)
+  telegramEnabled     Boolean               @default(true)
+  orderUpdates        Boolean               @default(true)
+  promotions          Boolean               @default(true)
+  deliveryAlerts      Boolean               @default(true)
+  systemAnnouncements Boolean               @default(true)
+  frequency           NotificationFrequency @default(REAL_TIME)
+  quietHoursStart     String? // "22:00"
+  quietHoursEnd       String? // "08:00"
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+model NotificationHistory {
+  id        String              @id @default(cuid())
+  userId    String
+  type      NotificationType
+  channel   NotificationChannel
+  title     String
+  message   String
+  data      Json?
+  status    NotificationStatus  @default(PENDING)
+  sentAt    DateTime?
+  readAt    DateTime?
+  clickedAt DateTime?
+  errorMsg  String?
+  createdAt DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_history")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String
+  p256dh    String
+  auth      String
+  active    Boolean  @default(true)
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@map("push_subscriptions")
+}
+
+// Analytics Models
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String
+  action    String // "page_view", "order_placed", "search", etc.
+  page      String?
+  data      Json?
+  ipAddress String?
+  userAgent String?
+  duration  Int? // milliseconds
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@map("user_activities")
+}
+
+model PerformanceMetrics {
+  id                     String   @id @default(cuid())
+  date                   DateTime @db.Date
+  restaurantId           String?
+  deliveryPartnerId      String?
+  totalOrders            Int      @default(0)
+  completedOrders        Int      @default(0)
+  cancelledOrders        Int      @default(0)
+  averagePreparationTime Float    @default(0)
+  averageDeliveryTime    Float    @default(0)
+  customerSatisfaction   Float    @default(0)
+  revenue                Float    @default(0)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  restaurant      Restaurant?      @relation(fields: [restaurantId], references: [id])
+  deliveryPartner DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id])
+
+  @@unique([date, restaurantId, deliveryPartnerId])
+  @@map("performance_metrics")
 }
 
 // Enums
@@ -341,6 +518,37 @@ enum UserRole {
   DELIVERY_PARTNER
   RESTAURANT_OWNER
   ADMIN
+}
+
+enum NotificationFrequency {
+  REAL_TIME
+  HOURLY
+  DAILY
+  WEEKLY
+}
+
+enum NotificationType {
+  ORDER_UPDATE
+  DELIVERY_ALERT
+  PROMOTION
+  SYSTEM_ANNOUNCEMENT
+  RESTAURANT_NOTIFICATION
+}
+
+enum NotificationChannel {
+  EMAIL
+  PUSH
+  SMS
+  TELEGRAM
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
 }
 
 enum OrderStatus {

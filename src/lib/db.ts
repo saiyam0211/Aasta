@@ -39,10 +39,10 @@ export async function disconnectDatabase() {
 
 // Database utilities
 export async function executeTransaction<T>(
-  operations: (prisma: PrismaClient) => Promise<T>
+  operations: (prisma: any) => Promise<T>
 ): Promise<T> {
   try {
-    return await prisma.$transaction(async (tx: PrismaClient) => {
+    return await prisma.$transaction(async (tx) => {
       return await operations(tx);
     });
   } catch (error) {

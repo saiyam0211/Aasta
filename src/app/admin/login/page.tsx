@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { signIn, useSession } from "next-auth/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Shield, Loader2 } from "lucide-react";
-import { validateAdminCredentials, adminSession } from "@/lib/admin-auth";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -17,14 +17,14 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     // Check if admin is already logged in
-    const existingSession = adminSession.get();
-    if (existingSession) {
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
       router.push("/admin/dashboard");
     }
-  }, [router]);
+  }, [session, status, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,13 +32,16 @@ export default function AdminLoginPage() {
     setIsLoading(true);
 
     try {
-      const adminUser = validateAdminCredentials(email, password);
+      const result = await signIn('admin-credentials', {
+        email,
+        password,
+        redirect: false,
+      });
       
-      if (adminUser) {
-        adminSession.set(adminUser);
-        router.push("/admin/dashboard");
-      } else {
+      if (result?.error) {
         setError("Invalid email or password");
+      } else if (result?.ok) {
+        router.push("/admin/dashboard");
       }
     } catch (error) {
       setError("Login failed. Please try again.");

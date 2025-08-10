@@ -5,9 +5,25 @@ export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
+    
+    // Log API requests for debugging
+    if (pathname.startsWith("/api/")) {
+      console.log('🌐 API REQUEST:', {
+        method: req.method,
+        url: req.url,
+        pathname: req.nextUrl.pathname,
+        timestamp: new Date().toISOString(),
+        userAgent: req.headers.get('user-agent')?.substring(0, 100)
+      });
+    }
 
-    // Allow access to auth pages
-    if (pathname.startsWith("/auth") || pathname.startsWith("/restaurant/auth") || pathname.startsWith("/delivery/auth")) {
+    // Allow access to auth pages, admin routes, and operations routes (they have separate auth)
+    if (pathname.startsWith("/auth") || pathname.startsWith("/restaurant/auth") || pathname.startsWith("/delivery/auth") || pathname.startsWith("/admin") || pathname.startsWith("/operations")) {
+      return NextResponse.next();
+    }
+
+    // Allow API routes - they handle their own authentication
+    if (pathname.startsWith("/api/")) {
       return NextResponse.next();
     }
 
@@ -33,8 +49,14 @@ export default withAuth(
         // Allow access to public routes
         const { pathname } = req.nextUrl;
         
-        // Always allow auth pages and home page
-        if (pathname === "/" || pathname.startsWith("/auth") || pathname.startsWith("/restaurant/auth") || pathname.startsWith("/delivery/auth")) {
+        // Always allow auth pages, home page, admin routes, operations routes, and API routes
+        if (pathname === "/" || 
+            pathname.startsWith("/auth") || 
+            pathname.startsWith("/restaurant/auth") || 
+            pathname.startsWith("/delivery/auth") || 
+            pathname.startsWith("/admin") || 
+            pathname.startsWith("/operations") ||
+            pathname.startsWith("/api/")) {
           return true;
         }
 
@@ -48,13 +70,8 @@ export default withAuth(
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public folder)
+     * Match all request paths including API routes for logging
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|public).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|offline.html|icons|public).*)",
   ],
-}; 
+};

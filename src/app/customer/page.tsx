@@ -79,7 +79,65 @@ export default function CustomerHome() {
     if (location) {
       fetchNearbyRestaurants()
     }
+    
+    // Register PWA client for notifications
+    registerPWAClient()
   }, [session, location, router])
+  
+  const registerPWAClient = async () => {
+    if (!session?.user?.id) return
+    
+    try {
+      // Generate session ID
+      const sessionId = `customer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      
+      // PWA Detection
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      const isiOSStandalone = isIOS && (window.navigator as any).standalone === true
+      const isAndroidWebView = /wv/.test(navigator.userAgent)
+      const hasManifest = document.querySelector('link[rel="manifest"]') !== null
+      
+      const isPWAMode = isStandalone || isiOSStandalone || (isAndroidWebView && hasManifest)
+      
+      const pwaDetails = {
+        isStandalone,
+        isiOSStandalone,
+        isAndroidWebView,
+        hasManifest,
+        displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser',
+        userAgent: navigator.userAgent
+      }
+      
+      console.log('📱 Customer PWA Registration:', {
+        sessionId,
+        isPWAMode,
+        pwaDetails
+      })
+      
+      const response = await fetch('/api/client-register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          isPWA: isPWAMode,
+          userAgent: navigator.userAgent,
+          pwaDetails
+        })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('✅ PWA Client registered:', result)
+      } else {
+        console.error('❌ PWA Client registration failed:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ PWA Client registration error:', error)
+    }
+  }
 
   const fetchNearbyRestaurants = async () => {
     if (!location) return

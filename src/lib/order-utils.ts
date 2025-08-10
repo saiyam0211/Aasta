@@ -85,11 +85,12 @@ export const NEXT_VALID_STATUSES = {
 
 export function canUpdateOrderStatus(currentStatus: OrderStatus, newStatus: OrderStatus): boolean {
   const validStatuses = NEXT_VALID_STATUSES[currentStatus] || [];
-  return validStatuses.includes(newStatus);
+  return (validStatuses as OrderStatus[]).includes(newStatus);
 }
 
 export function getOrderProgress(status: OrderStatus): number {
-  const statusOrder = [
+  // Progress statuses only (excludes CANCELLED and REFUNDED)
+  const statusOrder: (typeof ORDER_STATUSES[keyof Pick<typeof ORDER_STATUSES, 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'PICKED_UP' | 'OUT_FOR_DELIVERY' | 'DELIVERED'>])[] = [
     ORDER_STATUSES.PENDING,
     ORDER_STATUSES.CONFIRMED,
     ORDER_STATUSES.PREPARING,
@@ -99,18 +100,24 @@ export function getOrderProgress(status: OrderStatus): number {
     ORDER_STATUSES.DELIVERED
   ];
 
-  const currentIndex = statusOrder.indexOf(status);
-  if (currentIndex === -1) return 0;
+  const currentIndex = statusOrder.indexOf(status as any);
+  if (currentIndex === -1) {
+    // For cancelled or refunded orders, return 0 progress
+    if (status === ORDER_STATUSES.CANCELLED || status === ORDER_STATUSES.REFUNDED) {
+      return 0;
+    }
+    return 0;
+  }
   
   return ((currentIndex + 1) / statusOrder.length) * 100;
 }
 
 export function isOrderActive(status: OrderStatus): boolean {
-  return ![ORDER_STATUSES.DELIVERED, ORDER_STATUSES.CANCELLED, ORDER_STATUSES.REFUNDED].includes(status);
+  return ![ORDER_STATUSES.DELIVERED, ORDER_STATUSES.CANCELLED, ORDER_STATUSES.REFUNDED].includes(status as any);
 }
 
 export function isOrderCancellable(status: OrderStatus): boolean {
-  return [ORDER_STATUSES.PENDING, ORDER_STATUSES.CONFIRMED].includes(status);
+  return [ORDER_STATUSES.PENDING, ORDER_STATUSES.CONFIRMED].includes(status as any);
 }
 
 export function getEstimatedDeliveryTime(

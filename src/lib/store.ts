@@ -48,6 +48,7 @@ interface CartState {
   addItem: (item: CartItem, restaurant: any) => void;
   removeItem: (menuItemId: string) => void;
   updateQuantity: (menuItemId: string, quantity: number) => void;
+  getItemQuantityInCart: (menuItemId: string) => number;
   clearCart: () => void;
   calculateTotals: () => void;
 }
@@ -154,6 +155,14 @@ export const useCartStore = create<CartState>()(
         });
         
         get().calculateTotals();
+      },
+      getItemQuantityInCart: (menuItemId) => {
+        const currentCart = get().cart;
+        if (!currentCart) return 0;
+        const item = currentCart.items.find(
+          (cartItem) => cartItem.menuItemId === menuItemId
+        );
+        return item ? item.quantity : 0;
       },
       clearCart: () => set({ cart: null }),
       calculateTotals: () => {
@@ -353,4 +362,4 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({ theme: state.theme }),
     }
   )
-); 
+);

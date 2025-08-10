@@ -21,13 +21,13 @@ import {
   Utensils
 } from "lucide-react";
 import { locationService } from "@/lib/location-service";
-import { useLocationStore } from "@/lib/store";
+import { useLocationStore } from "@/hooks/useLocation";
 import type { Restaurant, LocationWithAddress } from "@/lib/location-service";
 
 export default function RestaurantsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { currentLocation } = useLocationStore();
+  const { latitude, longitude } = useLocationStore();
   
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +51,63 @@ export default function RestaurantsPage() {
     }
 
     loadRestaurants();
-  }, [session, status, router, selectedLocation, currentLocation]);
+    registerPWAClient();
+  }, [session, status, router, selectedLocation, latitude, longitude]);
+  
+  const registerPWAClient = async () => {
+    if (!session?.user?.id) return;
+    
+    try {
+      // Generate session ID
+      const sessionId = `restaurants_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // PWA Detection
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isiOSStandalone = isIOS && (window.navigator as any).standalone === true;
+      const isAndroidWebView = /wv/.test(navigator.userAgent);
+      const hasManifest = document.querySelector('link[rel="manifest"]') !== null;
+      
+      const isPWAMode = isStandalone || isiOSStandalone || (isAndroidWebView && hasManifest);
+      
+      const pwaDetails = {
+        isStandalone,
+        isiOSStandalone,
+        isAndroidWebView,
+        hasManifest,
+        displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser',
+        userAgent: navigator.userAgent
+      };
+      
+      console.log('📱 Restaurants PWA Registration:', {
+        sessionId,
+        isPWAMode,
+        pwaDetails
+      });
+      
+      const response = await fetch('/api/client-register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          isPWA: isPWAMode,
+          userAgent: navigator.userAgent,
+          pwaDetails
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Restaurants PWA Client registered:', result);
+      } else {
+        console.error('❌ Restaurants PWA Client registration failed:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Restaurants PWA Client registration error:', error);
+    }
+  }
 
   // Reload restaurants when search query or filters change
   useEffect(() => {
@@ -69,10 +125,12 @@ export default function RestaurantsPage() {
       setIsLoading(true);
       
       // Use selected location or current location
-      const location = selectedLocation || currentLocation || {
+      const location = selectedLocation || (latitude && longitude ? { latitude, longitude } : null) || {
         latitude: 12.9716, // Default to Bengaluru
         longitude: 77.5946
       };
+      
+      console.log('🔍 Fetching restaurants with location:', location);
 
       // Build search parameters
       const searchParams = new URLSearchParams({
@@ -86,11 +144,19 @@ export default function RestaurantsPage() {
       }
 
       // Make API call to search restaurants
-      const response = await fetch(`/api/restaurants/search?${searchParams}`, {
-        method: 'GET',
+      const response = await fetch(`/api/restaurants/discover`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          radius: 5,
+          filters: {
+            cuisineTypes: selectedCuisines,
+          }
+        })
       });
 
       if (!response.ok) {
@@ -326,7 +392,11 @@ export default function RestaurantsPage() {
                         {restaurant.averagePreparationTime + 15}-{restaurant.averagePreparationTime + 25} min
                       </span>
                     </div>
-                    <Button size="sm" className="btn-primary">
+                    <Button 
+                      size="sm" 
+                      className="btn-primary"
+                      onClick={() => router.push(`/restaurants/${restaurant.id}`)}
+                    >
                       View Menu
                     </Button>
                   </div>

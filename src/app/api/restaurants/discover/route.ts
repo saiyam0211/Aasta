@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { locationService } from '@/lib/location-service';
 import type { RestaurantFilters } from '@/types';
 
@@ -34,11 +34,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Get restaurants from database
+    console.log('🔍 Discover API - Searching for restaurants near:', { latitude, longitude, radius });
+    
     const allRestaurants = await prisma.restaurant.findMany({
       where: {
         status: 'ACTIVE',
-        // Check if restaurant is currently within operating hours
-        // This is a simplified check - in production, you'd want more sophisticated time handling
+        // Remove strict lat/lng filtering - we'll filter by distance calculation instead
       },
       include: {
         menuItems: {
@@ -65,6 +66,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log(`📊 Found ${allRestaurants.length} total restaurants in database`);
+    
     // Calculate distances and filter by radius
     const nearbyRestaurants = allRestaurants
       .map((restaurant) => {
@@ -73,13 +76,25 @@ export async function POST(request: NextRequest) {
           { latitude: restaurant.latitude, longitude: restaurant.longitude }
         );
 
+        console.log(`📍 Restaurant "${restaurant.name}" - Distance: ${distance.toFixed(2)}km`);
+
         return {
           ...restaurant,
           distance,
           estimatedDeliveryTime: null as number | null,
         };
       })
-      .filter((restaurant) => restaurant.distance <= radius);
+      .filter((restaurant) => {
+        const isWithinRadius = restaurant.distance <= radius;
+        if (!isWithinRadius) {
+          console.log(`❌ "${restaurant.name}" is ${restaurant.distance.toFixed(2)}km away (outside ${radius}km radius)`);
+        } else {
+          console.log(`✅ "${restaurant.name}" is ${restaurant.distance.toFixed(2)}km away (within ${radius}km radius)`);
+        }
+        return isWithinRadius;
+      });
+      
+    console.log(`🎯 ${nearbyRestaurants.length} restaurants found within ${radius}km radius`);
 
     // Apply additional filters
     let filteredRestaurants = nearbyRestaurants;

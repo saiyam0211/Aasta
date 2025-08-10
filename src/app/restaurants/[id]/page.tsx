@@ -17,7 +17,8 @@ import {
   Plus,
   Minus,
   ShoppingCart,
-  Info
+  Info,
+  ChefHat
 } from "lucide-react";
 import { useCartStore } from "@/lib/store";
 import { toast } from "sonner";
@@ -58,111 +59,69 @@ export default function RestaurantDetailPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const params = useParams();
-  const { addItem, cart } = useCartStore();
+  const { addItem, updateQuantity, cart } = useCartStore();
   
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Mock restaurant data - in real app, fetch from API
-    const mockRestaurant: Restaurant = {
-      id: params.id as string,
-      name: "Midnight Bites",
-      description: "Authentic North Indian cuisine served fresh and hot during late night hours. Perfect for your midnight cravings with traditional recipes and modern presentation.",
-      address: "123 Food Street, Connaught Place, New Delhi - 110001",
-      phone: "+91-9876543210",
-      cuisineTypes: ["North Indian", "Mughlai", "Tandoor"],
-      rating: 4.5,
-      reviewCount: 328,
-      averagePreparationTime: 25,
-      minimumOrderAmount: 200,
-      deliveryRadius: 5,
-      deliveryFee: 30,
-      status: "ACTIVE",
-      menu: {
-        "Starters": [
-          {
-            id: "1",
-            name: "Paneer Tikka",
-            description: "Grilled cottage cheese marinated in aromatic spices and yogurt, served with mint chutney",
-            price: 280,
-            originalPrice: 320,
-            category: "Starters",
-            preparationTime: 20,
-            imageUrl: "",
-            dietaryTags: ["Vegetarian"],
-            spiceLevel: "medium",
-            available: true,
-            featured: true
-          },
-          {
-            id: "2",
-            name: "Chicken Seekh Kebab",
-            description: "Minced chicken seasoned with herbs and spices, grilled to perfection",
-            price: 320,
-            category: "Starters",
-            preparationTime: 25,
-            imageUrl: "",
-            dietaryTags: ["High-Protein"],
-            spiceLevel: "spicy",
-            available: true,
-            featured: false
+    const fetchRestaurantData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch restaurant details
+        const restaurantResponse = await fetch(`/api/restaurants/${params?.id}`);
+        const restaurantData = await restaurantResponse.json();
+        
+        if (!restaurantResponse.ok || !restaurantData.success) {
+          throw new Error(restaurantData.error || 'Failed to fetch restaurant');
+        }
+        
+        // Fetch menu items
+        const menuResponse = await fetch(`/api/menu-items?restaurantId=${params?.id}`);
+        const menuData = await menuResponse.json();
+        
+        if (!menuResponse.ok || !menuData.success) {
+          throw new Error(menuData.error || 'Failed to fetch menu');
+        }
+        
+        // Group menu items by category
+        const menuByCategory: { [category: string]: MenuItem[] } = {};
+        const menuItems = menuData.data || [];
+        
+        menuItems.forEach((item: MenuItem) => {
+          if (!menuByCategory[item.category]) {
+            menuByCategory[item.category] = [];
           }
-        ],
-        "Main Course": [
-          {
-            id: "3",
-            name: "Butter Chicken",
-            description: "Tender chicken pieces in a rich, creamy tomato-based curry with aromatic spices",
-            price: 380,
-            category: "Main Course",
-            preparationTime: 30,
-            imageUrl: "",
-            dietaryTags: ["High-Protein"],
-            spiceLevel: "mild",
-            available: true,
-            featured: true
-          },
-          {
-            id: "4",
-            name: "Dal Makhani",
-            description: "Slow-cooked black lentils in a rich, creamy sauce with butter and cream",
-            price: 250,
-            category: "Main Course",
-            preparationTime: 20,
-            imageUrl: "",
-            dietaryTags: ["Vegetarian"],
-            spiceLevel: "mild",
-            available: true,
-            featured: false
-          }
-        ],
-        "Breads": [
-          {
-            id: "5",
-            name: "Garlic Naan",
-            description: "Soft, fluffy bread topped with fresh garlic and herbs, baked in tandoor",
-            price: 80,
-            category: "Breads",
-            preparationTime: 10,
-            imageUrl: "",
-            dietaryTags: ["Vegetarian"],
-            spiceLevel: "mild",
-            available: true,
-            featured: false
-          }
-        ]
+          menuByCategory[item.category].push(item);
+        });
+        
+        const restaurantWithMenu: Restaurant = {
+          ...restaurantData.data,
+          menu: menuByCategory
+        };
+        
+        setRestaurant(restaurantWithMenu);
+        
+        // Set first category as selected
+        const categories = Object.keys(menuByCategory);
+        if (categories.length > 0) {
+          setSelectedCategory(categories[0]);
+        }
+        
+      } catch (error) {
+        console.error('Error fetching restaurant data:', error);
+        toast.error('Failed to load restaurant data');
+      } finally {
+        setIsLoading(false);
       }
     };
-
-    setRestaurant(mockRestaurant);
-    const categories = Object.keys(mockRestaurant.menu);
-    if (categories.length > 0) {
-      setSelectedCategory(categories[0]);
+    
+    if (params?.id) {
+      fetchRestaurantData();
     }
-    setIsLoading(false);
-  }, [params.id]);
+  }, [params?.id]);
 
   const handleAddToCart = (item: MenuItem) => {
     if (!restaurant) return;
@@ -217,9 +176,9 @@ export default function RestaurantDetailPage() {
 
   return (
     <CustomerLayout>
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Restaurant Header */}
-        <Card className="mb-6">
+        <Card className="mb-6 shadow-sm">
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="flex-1">
@@ -227,12 +186,12 @@ export default function RestaurantDetailPage() {
                   <h1 className="text-3xl font-bold" style={{ color: '#002a01' }}>
                     {restaurant.name}
                   </h1>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" className="hover:bg-red-50">
                     <Heart className="w-4 h-4" />
                   </Button>
                 </div>
                 
-                <p className="text-gray-600 mb-4">{restaurant.description}</p>
+                <p className="text-gray-600 mb-4 leading-relaxed">{restaurant.description}</p>
                 
                 <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-4">
                   <div className="flex items-center gap-1">
@@ -256,7 +215,7 @@ export default function RestaurantDetailPage() {
                 
                 <div className="flex flex-wrap gap-2">
                   {restaurant.cuisineTypes.map(cuisine => (
-                    <Badge key={cuisine} variant="outline">
+                    <Badge key={cuisine} variant="outline" className="bg-gray-50">
                       {cuisine}
                     </Badge>
                   ))}
@@ -266,11 +225,11 @@ export default function RestaurantDetailPage() {
             
             {/* Minimum Order Notice */}
             <div 
-              className="mt-4 p-3 rounded-lg flex items-center gap-2"
-              style={{ backgroundColor: 'rgba(209, 248, 106, 0.2)' }}
+              className="mt-4 p-3 rounded-lg flex items-center gap-2 border"
+              style={{ backgroundColor: 'rgba(209, 248, 106, 0.2)', borderColor: 'rgba(0, 42, 1, 0.2)' }}
             >
               <Info className="w-4 h-4" style={{ color: '#002a01' }} />
-              <span className="text-sm" style={{ color: '#002a01' }}>
+              <span className="text-sm font-medium" style={{ color: '#002a01' }}>
                 Minimum order: ₹{restaurant.minimumOrderAmount}
               </span>
             </div>
@@ -278,132 +237,234 @@ export default function RestaurantDetailPage() {
         </Card>
 
         {/* Menu */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Categories Sidebar */}
+        <div className="flex flex-col lg:grid lg:grid-cols-5 gap-6">
+          {/* Categories - Mobile Horizontal Scroll, Desktop Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-4">
-              <CardHeader>
-                <CardTitle>Menu Categories</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
+            {/* Mobile Categories */}
+            <div className="lg:hidden mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <ChefHat className="w-5 h-5" style={{ color: '#002a01' }} />
+                <h3 className="font-semibold" style={{ color: '#002a01' }}>Categories</h3>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 {Object.keys(restaurant.menu).map(category => (
-                  <div
+                  <button
                     key={category}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                       selectedCategory === category 
-                        ? 'text-white' 
-                        : 'hover:bg-gray-100'
+                        ? 'text-white shadow-md' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                     onClick={() => setSelectedCategory(category)}
                     style={{
                       backgroundColor: selectedCategory === category ? '#002a01' : undefined
                     }}
                   >
-                    <div className="font-medium">{category}</div>
-                    <div className="text-sm opacity-70">
-                      {restaurant.menu[category].length} items
-                    </div>
-                  </div>
+                    {category}
+                    <span className={`ml-2 text-xs ${
+                      selectedCategory === category ? 'text-gray-200' : 'text-gray-500'
+                    }`}>
+                      ({restaurant.menu[category].length})
+                    </span>
+                  </button>
                 ))}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+            
+            {/* Desktop Categories */}
+            <div className="hidden lg:block sticky top-6">
+              <Card className="shadow-sm border-2" style={{ borderColor: 'rgba(0, 42, 1, 0.1)' }}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2" style={{ color: '#002a01' }}>
+                    <ChefHat className="w-5 h-5" />
+                    Menu Categories
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-1">
+                    {Object.keys(restaurant.menu).map(category => (
+                      <div
+                        key={category}
+                        className={`group p-3 rounded-lg cursor-pointer transition-all duration-200 border ${
+                          selectedCategory === category 
+                            ? 'text-white shadow-md transform scale-[1.02]' 
+                            : 'hover:bg-gray-50 hover:border-gray-200 border-transparent'
+                        }`}
+                        onClick={() => setSelectedCategory(category)}
+                        style={{
+                          backgroundColor: selectedCategory === category ? '#002a01' : undefined
+                        }}
+                      >
+                        <div className="font-medium text-sm">{category}</div>
+                        <div className={`text-xs mt-1 ${
+                          selectedCategory === category 
+                            ? 'text-gray-200' 
+                            : 'text-gray-500'
+                        }`}>
+                          {restaurant.menu[category].length} {restaurant.menu[category].length === 1 ? 'item' : 'items'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           {/* Menu Items */}
-          <div className="lg:col-span-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>{selectedCategory}</CardTitle>
-                <CardDescription>
-                  {restaurant.menu[selectedCategory]?.length} items available
-                </CardDescription>
+          <div className="lg:col-span-4">
+            <Card className="shadow-sm">
+              <CardHeader className="border-b bg-gray-50/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl" style={{ color: '#002a01' }}>
+                      {selectedCategory}
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      {restaurant.menu[selectedCategory]?.length} {restaurant.menu[selectedCategory]?.length === 1 ? 'item' : 'items'} available
+                    </CardDescription>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">
+                      Category {Object.keys(restaurant.menu).indexOf(selectedCategory) + 1} of {Object.keys(restaurant.menu).length}
+                    </div>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 sm:p-6">
                 <div className="space-y-4">
                   {restaurant.menu[selectedCategory]?.map(item => (
-                    <div key={item.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-lg">{item.name}</h3>
-                            {item.featured && (
-                              <Badge style={{ backgroundColor: '#ffd500', color: '#002a01' }}>
-                                Popular
-                              </Badge>
-                            )}
-                            <Badge 
-                              className={getSpiceLevelColor(item.spiceLevel)}
-                              variant="outline"
-                            >
-                              {item.spiceLevel}
-                            </Badge>
-                          </div>
-                          
-                          <p className="text-gray-600 mb-3">{item.description}</p>
-                          
-                          <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium text-lg" style={{ color: '#002a01' }}>
-                                ₹{item.price}
-                              </span>
-                              {item.originalPrice && (
-                                <span className="line-through ml-1">₹{item.originalPrice}</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              <span>{item.preparationTime} mins</span>
-                            </div>
-                          </div>
-                          
-                          {item.dietaryTags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-3">
-                              {item.dietaryTags.map(tag => (
-                                <Badge key={tag} variant="outline" className="text-xs">
-                                  {tag}
-                                </Badge>
-                              ))}
+                    <div key={item.id} className="bg-white rounded-xl border border-gray-200 hover:shadow-lg hover:border-gray-300 transition-all duration-300 overflow-hidden">
+                      <div className="flex gap-4 p-4">
+                        {/* Item Image */}
+                        <div className="flex-shrink-0">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.name}
+                              className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-cover rounded-lg shadow-sm"
+                            />
+                          ) : (
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 bg-gray-100 rounded-lg flex items-center justify-center">
+                              <ChefHat className="w-8 h-8 text-gray-400" />
                             </div>
                           )}
                         </div>
                         
-                        <div className="ml-4">
-                          {getItemQuantityInCart(item.id) > 0 ? (
-                            <div className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  // Remove item logic would go here
-                                }}
-                              >
-                                <Minus className="w-4 h-4" />
-                              </Button>
-                              <span className="font-medium px-3">
-                                {getItemQuantityInCart(item.id)}
-                              </span>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleAddToCart(item)}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </Button>
+                        {/* Item Details */}
+                        <div className="flex-1 min-w-0">
+                          {/* Header with name and badges */}
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-bold text-lg leading-tight text-gray-900 mb-1">
+                                {item.name}
+                              </h3>
+                              <div className="flex flex-wrap gap-2">
+                                {item.featured && (
+                                  <Badge className="text-xs font-medium bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 border-0">
+                                    ⭐ Popular
+                                  </Badge>
+                                )}
+                                <Badge 
+                                  className={`${getSpiceLevelColor(item.spiceLevel)} text-xs border-0`}
+                                >
+                                  🌶️ {item.spiceLevel}
+                                </Badge>
+                              </div>
                             </div>
-                          ) : (
-                            <Button
-                              onClick={() => handleAddToCart(item)}
-                              disabled={!item.available}
-                              style={{
-                                backgroundColor: item.available ? '#d1f86a' : '#gray',
-                                color: '#002a01',
-                                border: '2px solid #002a01'
-                              }}
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add
-                            </Button>
+                          </div>
+                          
+                          {/* Description */}
+                          <p className="text-gray-600 text-sm leading-relaxed mb-3 line-clamp-2">
+                            {item.description}
+                          </p>
+                          
+                          {/* Dietary Tags */}
+                          {item.dietaryTags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {item.dietaryTags.slice(0, 3).map(tag => (
+                                <Badge key={tag} className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-1">
+                                  {tag}
+                                </Badge>
+                              ))}
+                              {item.dietaryTags.length > 3 && (
+                                <Badge className="text-xs bg-gray-50 text-gray-600 border border-gray-200 px-2 py-1">
+                                  +{item.dietaryTags.length - 3} more
+                                </Badge>
+                              )}
+                            </div>
                           )}
+                          
+                          {/* Price and Time */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-baseline gap-2">
+                                <span className="font-bold text-xl" style={{ color: '#002a01' }}>
+                                  ₹{item.price}
+                                </span>
+                                {item.originalPrice && (
+                                  <span className="line-through text-gray-400 text-sm">
+                                    ₹{item.originalPrice}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 text-gray-500">
+                                <Clock className="w-3 h-3" />
+                                <span className="text-xs">{item.preparationTime}m</span>
+                              </div>
+                            </div>
+                            
+                            {/* Add to Cart Button */}
+                            <div className="flex-shrink-0">
+                              {getItemQuantityInCart(item.id) > 0 ? (
+                                <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1 border">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0 hover:bg-white"
+                                    onClick={() => {
+                                      const currentQuantity = getItemQuantityInCart(item.id);
+                                      if (currentQuantity > 1) {
+                                        updateQuantity(item.id, currentQuantity - 1);
+                                        toast.success(`${item.name} quantity decreased`);
+                                      } else {
+                                        updateQuantity(item.id, 0);
+                                        toast.success(`${item.name} removed from cart`);
+                                      }
+                                    }}
+                                  >
+                                    <Minus className="w-4 h-4" />
+                                  </Button>
+                                  <span className="font-bold text-lg min-w-[24px] text-center" style={{ color: '#002a01' }}>
+                                    {getItemQuantityInCart(item.id)}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0 hover:bg-white"
+                                    onClick={() => handleAddToCart(item)}
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  onClick={() => handleAddToCart(item)}
+                                  disabled={!item.available}
+                                  size="sm"
+                                  className="font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                                  style={{
+                                    backgroundColor: item.available ? '#d1f86a' : '#e5e5e5',
+                                    color: item.available ? '#002a01' : '#9ca3af',
+                                    border: `1px solid ${item.available ? '#002a01' : '#d1d5db'}`
+                                  }}
+                                >
+                                  <Plus className="w-4 h-4 mr-1" />
+                                  <span className="hidden sm:inline">Add</span>
+                                </Button>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -416,4 +477,4 @@ export default function RestaurantDetailPage() {
       </div>
     </CustomerLayout>
   );
-} 
+}

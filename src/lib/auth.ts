@@ -1,7 +1,16 @@
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import { prisma } from '@/lib/db';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import bcrypt from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
 // import { UserRole } from '@prisma/client'; // Will uncomment after Prisma client generation
+
+// Hardcoded admin credentials
+const ADMIN_CREDENTIALS = {
+  email: 'hi@aasta.food',
+  password: '@asta.food',
+  name: 'Aasta Admin'
+};
 
 export const authOptions: NextAuthOptions = {
   // Remove adapter to avoid OAuthAccountNotLinked errors
@@ -18,6 +27,75 @@ export const authOptions: NextAuthOptions = {
         }
       }
     }),
+    CredentialsProvider({
+      id: 'admin-credentials',
+      name: 'Admin Login',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' }
+      },
+      async authorize(credentials) {
+        if (
+          credentials?.email === ADMIN_CREDENTIALS.email && 
+          credentials?.password === ADMIN_CREDENTIALS.password
+        ) {
+          return {
+            id: 'admin',
+            email: ADMIN_CREDENTIALS.email,
+            name: ADMIN_CREDENTIALS.name,
+            role: 'ADMIN'
+          };
+        }
+        return null;
+      }
+    }),
+    CredentialsProvider({
+      id: 'restaurant-credentials',
+      name: 'Restaurant Login',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        try {
+          // Find user in database
+          const user = await prisma.user.findUnique({
+            where: { 
+              email: credentials.email,
+              role: 'RESTAURANT_OWNER'
+            }
+          });
+
+          if (!user || !user.password) {
+            return null;
+          }
+
+          // Verify password
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password, 
+            user.password
+          );
+
+          if (!isPasswordValid) {
+            return null;
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role
+          };
+        } catch (error) {
+          console.error('Restaurant auth error:', error);
+          return null;
+        }
+      }
+    }),
   ],
   session: {
     strategy: 'jwt',
@@ -31,6 +109,11 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile }) {
       try {
         if (!user.email) return false;
+
+        // Handle admin user - don't create database entry
+        if (user.role === 'ADMIN') {
+          return true;
+        }
 
         // Check if user exists in our database
         const existingUser = await prisma.user.findUnique({
@@ -66,7 +149,25 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async jwt({ token, user, account }) {
-      // Always fetch fresh user data from database to ensure role is up-to-date
+      // Set initial data on first login
+      if (user) {
+        token.email = user.email;
+        token.name = user.name;
+        
+        // Handle admin user - don't query database
+        if (user.role === 'ADMIN') {
+          token.id = 'admin';
+          token.role = 'ADMIN';
+          return token;
+        }
+      }
+      
+      // Handle admin token on subsequent requests
+      if (token.email === ADMIN_CREDENTIALS.email && token.role === 'ADMIN') {
+        return token;
+      }
+      
+      // Always fetch fresh user data from database to ensure role is up-to-date (for non-admin users)
       if (token.email) {
         try {
           const dbUser = await prisma.user.findUnique({
@@ -105,11 +206,6 @@ export const authOptions: NextAuthOptions = {
         }
       }
       
-      // Set initial data on first login
-      if (user) {
-        token.email = user.email;
-      }
-      
       return token;
     },
     async session({ session, token }) {
@@ -130,6 +226,11 @@ export const authOptions: NextAuthOptions = {
       // If the URL is from our domain, allow it
       if (url.startsWith(baseUrl)) {
         return url;
+      }
+      
+      // Check if this is admin sign-in
+      if (url.includes('/admin/') || url.includes('admin')) {
+        return `${baseUrl}/admin/dashboard`;
       }
       
       // Check if this is a restaurant sign-in by looking at the referrer or URL

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user role and create role-specific profile
-    const result = await prisma.$transaction(async (tx: PrismaClient) => {
+    const result = await prisma.$transaction(async (tx) => {
       // Update user role
       const updatedUser = await tx.user.update({
         where: { id: userId },

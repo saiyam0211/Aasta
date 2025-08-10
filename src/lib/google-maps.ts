@@ -1,6 +1,31 @@
 import { Loader } from '@googlemaps/js-api-loader';
 import type { LocationWithAddress } from './location-service';
 
+interface DistanceMatrixResponse {
+  destination_addresses: string[];
+  origin_addresses: string[];
+  rows: {
+    elements: {
+      distance: {
+        text: string;
+        value: number; // in meters
+      };
+      duration: {
+        text: string;
+        value: number; // in seconds
+      };
+      status: string;
+    }[];
+  }[];
+  status: string;
+}
+
+export interface DeliveryCalculation {
+  distance: number; // in kilometers
+  duration: number; // in minutes
+  estimatedDeliveryTime?: Date;
+}
+
 class GoogleMapsService {
   private loader: Loader;
   private placesService: google.maps.places.PlacesService | null = null;
@@ -283,6 +308,133 @@ class GoogleMapsService {
         });
       });
     });
+  }
+
+  /**
+   * Calculate distance and duration between restaurant and customer address using Google Maps Distance Matrix API
+   */
+  async calculateDeliveryMetrics(
+    restaurantLat: number,
+    restaurantLng: number,
+    customerLat: number,
+    customerLng: number,
+    preparationTime: number = 20 // in minutes
+  ): Promise<DeliveryCalculation> {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      console.warn('Google Maps API key not found, using fallback calculation');
+      return this.calculateFallbackMetrics(restaurantLat, restaurantLng, customerLat, customerLng, preparationTime);
+    }
+
+    try {
+      const origins = `${restaurantLat},${restaurantLng}`;
+      const destinations = `${customerLat},${customerLng}`;
+      
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?` +
+        `origins=${encodeURIComponent(origins)}&` +
+        `destinations=${encodeURIComponent(destinations)}&` +
+        `mode=driving&` +
+        `units=metric&` +
+        `departure_time=now&` +
+        `traffic_model=best_guess&` +
+        `key=${apiKey}`;
+
+      const response = await fetch(url);
+      const data: DistanceMatrixResponse = await response.json();
+
+      if (data.status !== 'OK') {
+        console.warn(`Google Maps Distance Matrix API error: ${data.status}`);
+        return this.calculateFallbackMetrics(restaurantLat, restaurantLng, customerLat, customerLng, preparationTime);
+      }
+
+      const element = data.rows[0]?.elements[0];
+      if (!element || element.status !== 'OK') {
+        console.warn(`No route found: ${element?.status || 'Unknown error'}`);
+        return this.calculateFallbackMetrics(restaurantLat, restaurantLng, customerLat, customerLng, preparationTime);
+      }
+
+      const distanceKm = element.distance.value / 1000; // Convert meters to kilometers
+      const durationMinutes = Math.ceil(element.duration.value / 60); // Convert seconds to minutes
+
+      // Calculate estimated delivery time (preparation time + travel time)
+      const totalDeliveryMinutes = preparationTime + durationMinutes;
+      const estimatedDeliveryTime = new Date(Date.now() + totalDeliveryMinutes * 60 * 1000);
+
+      return {
+        distance: Math.round(distanceKm * 100) / 100, // Round to 2 decimal places
+        duration: durationMinutes,
+        estimatedDeliveryTime
+      };
+    } catch (error) {
+      console.error('Error calculating delivery metrics:', error);
+      return this.calculateFallbackMetrics(restaurantLat, restaurantLng, customerLat, customerLng, preparationTime);
+    }
+  }
+
+  /**
+   * Fallback calculation based on straight-line distance
+   */
+  private calculateFallbackMetrics(
+    restaurantLat: number,
+    restaurantLng: number,
+    customerLat: number,
+    customerLng: number,
+    preparationTime: number
+  ): DeliveryCalculation {
+    const fallbackDistance = this.calculateStraightLineDistance(
+      restaurantLat,
+      restaurantLng,
+      customerLat,
+      customerLng
+    );
+    
+    // Estimate duration based on average speed (assuming 25 km/h in city traffic)
+    // Add 20% buffer for actual road distance vs straight line
+    const adjustedDistance = fallbackDistance * 1.2;
+    const fallbackDuration = Math.ceil((adjustedDistance / 25) * 60);
+    const totalDeliveryMinutes = preparationTime + fallbackDuration;
+    const estimatedDeliveryTime = new Date(Date.now() + totalDeliveryMinutes * 60 * 1000);
+
+    return {
+      distance: Math.round(adjustedDistance * 100) / 100,
+      duration: fallbackDuration,
+      estimatedDeliveryTime
+    };
+  }
+
+  /**
+   * Calculate straight-line distance between two points using Haversine formula
+   */
+  private calculateStraightLineDistance(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number
+  ): number {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = this.toRadians(lat2 - lat1);
+    const dLng = this.toRadians(lng2 - lng1);
+    
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    
+    return Math.round(distance * 100) / 100; // Round to 2 decimal places
+  }
+
+  private toRadians(degrees: number): number {
+    return degrees * (Math.PI / 180);
+  }
+
+  /**
+   * Validate coordinates
+   */
+  static isValidCoordinate(lat: number, lng: number): boolean {
+    return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
   }
 }
 

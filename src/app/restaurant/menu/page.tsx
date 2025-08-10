@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, ChefHat, Clock, DollarSign } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Eye, EyeOff, ChefHat, Clock, DollarSign, Package } from "lucide-react";
 import { toast } from "sonner";
+import RestaurantLayout from "@/components/layouts/restaurant-layout";
 
 interface MenuItem {
   id: string;
@@ -22,6 +24,7 @@ interface MenuItem {
   spiceLevel: string;
   available: boolean;
   featured: boolean;
+  stockLeft?: number | null;
 }
 
 export default function MenuStockManagement() {
@@ -32,6 +35,7 @@ export default function MenuStockManagement() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [restaurant, setRestaurant] = useState<any>(null);
+  const [stockInputs, setStockInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!session) {
@@ -65,11 +69,11 @@ export default function MenuStockManagement() {
       const response = await fetch(`/api/menu-items?restaurantId=${restaurantId}`);
       const data = await response.json();
       
-      if (response.ok) {
-        setMenuItems(data.menuItems);
+      if (response.ok && data.success) {
+        setMenuItems(data.data || []);
         
         // Set first category as selected
-        const categories = getCategories(data.menuItems);
+        const categories = getCategories(data.data || []);
         if (categories.length > 0) {
           setSelectedCategory(categories[0]);
         }
@@ -104,7 +108,7 @@ export default function MenuStockManagement() {
             : i
         ));
         
-        toast.success(`${item.name} marked as ${!item.available ? 'available' : 'unavailable'}`);
+        toast.success(`${item.name} marked as ${!item.available ? 'available' : 'out of stock'}`);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to update item availability');
@@ -112,6 +116,54 @@ export default function MenuStockManagement() {
     } catch (error) {
       console.error('Error toggling item availability:', error);
       toast.error('Failed to update item availability');
+    }
+  };
+
+  const updateStock = async (itemId: string, newStock: number) => {
+    try {
+      const item = menuItems.find(i => i.id === itemId);
+      if (!item) return;
+
+      // Create FormData to match the API expectation
+      const formData = new FormData();
+      formData.append('stockLeft', newStock.toString());
+      
+      // If stock is 0, mark as unavailable
+      if (newStock === 0) {
+        formData.append('available', 'false');
+      } else if (!item.available && newStock > 0) {
+        formData.append('available', 'true');
+      }
+
+      const response = await fetch(`/api/menu-items/${itemId}`, {
+        method: 'PUT',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setMenuItems(prev => prev.map(i => 
+          i.id === itemId 
+            ? { 
+                ...i, 
+                stockLeft: newStock,
+                available: newStock > 0 ? (item.available || newStock > 0) : false
+              }
+            : i
+        ));
+        
+        if (newStock === 0) {
+          toast.success(`${item.name} is now out of stock`);
+        } else {
+          toast.success(`Stock updated for ${item.name}: ${newStock} left`);
+        }
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to update stock');
+      }
+    } catch (error) {
+      console.error('Error updating stock:', error);
+      toast.error('Failed to update stock');
     }
   };
 
@@ -129,29 +181,33 @@ export default function MenuStockManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-600"></div>
-      </div>
+      <RestaurantLayout title="Menu">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-600"></div>
+        </div>
+      </RestaurantLayout>
     );
   }
 
   if (!restaurant) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Restaurant Setup Required</h2>
-          <p className="text-gray-600 mb-4">Please complete your restaurant setup first</p>
-          <Button onClick={() => router.push("/restaurant/onboarding")}>
-            Complete Setup
-          </Button>
+      <RestaurantLayout title="Menu">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Restaurant Setup Required</h2>
+            <p className="text-gray-600 mb-4">Please complete your restaurant setup first</p>
+            <Button onClick={() => router.push("/restaurant/onboarding")}>
+              Complete Setup
+            </Button>
+          </div>
         </div>
-      </div>
+      </RestaurantLayout>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#fcfefe' }}>
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <RestaurantLayout title="Menu">
+      <div className="space-y-8 animate-fade-in">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold" style={{ color: '#002a01' }}>
@@ -227,8 +283,23 @@ export default function MenuStockManagement() {
                                     color: item.available ? '#002a01' : undefined
                                   }}
                                 >
-                                  {item.available ? 'Available' : 'Unavailable'}
+                                  {item.available ? 'Available' : 'Out of Stock'}
                                 </Badge>
+                                {item.stockLeft !== null && item.stockLeft !== undefined && (
+                                  <Badge 
+                                    variant="outline"
+                                    className={`text-xs ${
+                                      item.stockLeft === 0 
+                                        ? 'border-red-300 text-red-700 bg-red-50' 
+                                        : item.stockLeft <= 5 
+                                        ? 'border-orange-300 text-orange-700 bg-orange-50'
+                                        : 'border-green-300 text-green-700 bg-green-50'
+                                    }`}
+                                  >
+                                    <Package className="w-3 h-3 mr-1" />
+                                    {item.stockLeft} left
+                                  </Badge>
+                                )}
                               </div>
                               
                               <p className="text-gray-600 mb-3">{item.description}</p>
@@ -256,9 +327,33 @@ export default function MenuStockManagement() {
                                   ))}
                                 </div>
                               )}
+
+                              {/* Stock Management */}
+                              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-700">Stock Left</span>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      value={stockInputs[item.id] ?? item.stockLeft ?? ''}
+                                      onChange={(e) => setStockInputs(prev => ({...prev, [item.id]: e.target.value}))}
+                                      onBlur={(e) => {
+                                        const newStock = parseInt(e.target.value);
+                                        if (!isNaN(newStock) && newStock !== (item.stockLeft ?? 0)) {
+                                          updateStock(item.id, newStock);
+                                        } else if (e.target.value === '' || isNaN(newStock)) {
+                                           setStockInputs(prev => ({...prev, [item.id]: (item.stockLeft ?? 0).toString()}));
+                                        }
+                                      }}
+                                      className="h-8 w-20 text-center"
+                                      min="0"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                             
-                            <div className="flex items-center gap-2 ml-4">
+                            <div className="flex flex-col gap-2 ml-4">
                               <Button
                                 size="sm"
                                 variant={item.available ? "default" : "outline"}
@@ -270,12 +365,12 @@ export default function MenuStockManagement() {
                               >
                                 {item.available ? (
                                   <>
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    Mark Unavailable
+                                    <EyeOff className="w-4 h-4 mr-2" />
+                                    Out of Stock
                                   </>
                                 ) : (
                                   <>
-                                    <EyeOff className="w-4 h-4 mr-2" />
+                                    <Eye className="w-4 h-4 mr-2" />
                                     Mark Available
                                   </>
                                 )}
@@ -299,6 +394,6 @@ export default function MenuStockManagement() {
           </div>
         </div>
       </div>
-    </div>
+    </RestaurantLayout>
   );
 } 

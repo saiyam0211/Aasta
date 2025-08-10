@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Clock, Phone, Upload, X } from "lucide-react";
+import { MapPin, Clock, Phone, Upload, X, CheckCircle, ChefHat, Store, ArrowRight, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { EnhancedLocationInput } from "@/components/location/enhanced-location-input";
+import RestaurantLayout from "@/components/layouts/restaurant-layout";
 
 interface RestaurantData {
   name: string;
@@ -22,9 +23,19 @@ interface RestaurantData {
   address: string;
   latitude: number;
   longitude: number;
+  locationId: string | null;
+  cuisineTypes: string[];
   operatingHours: {
     [key: string]: { open: string; close: string; isOpen: boolean };
   };
+}
+
+interface Location {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+  country: string;
 }
 
 export default function RestaurantOnboarding() {
@@ -32,6 +43,8 @@ export default function RestaurantOnboarding() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(true);
   
   const [restaurantData, setRestaurantData] = useState<RestaurantData>({
     name: "",
@@ -40,6 +53,8 @@ export default function RestaurantOnboarding() {
     address: "",
     latitude: 0,
     longitude: 0,
+    locationId: null,
+    cuisineTypes: [],
     operatingHours: {
       monday: { open: "21:00", close: "00:00", isOpen: true },
       tuesday: { open: "21:00", close: "00:00", isOpen: true },
@@ -50,6 +65,28 @@ export default function RestaurantOnboarding() {
       sunday: { open: "21:00", close: "00:00", isOpen: true },
     }
   });
+
+  // Fetch locations on component mount
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch('/api/locations');
+        const result = await response.json();
+        if (result.success) {
+          setLocations(result.locations);
+        } else {
+          toast.error('Failed to load locations');
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+        toast.error('Failed to load locations');
+      } finally {
+        setLoadingLocations(false);
+      }
+    };
+    
+    fetchLocations();
+  }, []);
 
   const cuisineOptions = [
     "North Indian", "South Indian", "Italian", "Chinese", "Fast Food",
@@ -187,6 +224,47 @@ export default function RestaurantOnboarding() {
           Please ensure your location is accurate.
         </p>
         <div className="space-y-4">
+          {/* Location Selection */}
+          <div>
+            <Label htmlFor="location">Service Area *</Label>
+            <Select
+              value={restaurantData.locationId || ""}
+              onValueChange={(value) => 
+                setRestaurantData(prev => ({ ...prev, locationId: value }))
+              }
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select your service area">
+                  {restaurantData.locationId && locations.find(loc => loc.id === restaurantData.locationId)
+                    ? `${locations.find(loc => loc.id === restaurantData.locationId)?.name}, ${locations.find(loc => loc.id === restaurantData.locationId)?.city}`
+                    : "Select your service area"
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {loadingLocations ? (
+                  <SelectItem value="loading" disabled>
+                    Loading locations...
+                  </SelectItem>
+                ) : locations.length > 0 ? (
+                  locations.map((location) => (
+                    <SelectItem key={location.id} value={location.id.toString()}>
+                      {location.name}, {location.city}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>
+                    No locations available
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 mt-1">
+              This determines which area your restaurant will serve customers in.
+            </p>
+          </div>
+
+          {/* Address Input */}
           <EnhancedLocationInput
             onLocationSelect={handleLocationSelect}
             initialAddress={restaurantData.address}
@@ -266,7 +344,7 @@ export default function RestaurantOnboarding() {
   );
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#fcfefe' }}>
+    <RestaurantLayout title="Onboarding" showSidebar={false}>
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -343,7 +421,7 @@ export default function RestaurantOnboarding() {
                   onClick={() => setCurrentStep(prev => Math.min(3, prev + 1))}
                   disabled={
                     (currentStep === 1 && (!restaurantData.name || !restaurantData.ownerName || !restaurantData.phone)) ||
-                    (currentStep === 2 && (!restaurantData.address || restaurantData.latitude === 0 || restaurantData.longitude === 0))
+                    (currentStep === 2 && (!restaurantData.address || restaurantData.latitude === 0 || restaurantData.longitude === 0 || !restaurantData.locationId))
                   }
                   style={{
                     backgroundColor: '#d1f86a',
@@ -370,6 +448,6 @@ export default function RestaurantOnboarding() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </RestaurantLayout>
   );
 } 

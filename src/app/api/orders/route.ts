@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { generateOrderNumber, generateVerificationCode } from '@/lib/order-utils';
 
 interface CreateOrderRequest {
@@ -143,11 +143,25 @@ export async function POST(request: NextRequest) {
     // Handle delivery address
     let finalDeliveryAddressId = deliveryAddressId;
     if (!deliveryAddressId && deliveryAddress) {
+      // First find or create the customer record
+      let customer = await prisma.customer.findUnique({
+        where: { userId: session.user.id }
+      });
+      
+      if (!customer) {
+        customer = await prisma.customer.create({
+          data: {
+            userId: session.user.id,
+            favoriteRestaurants: []
+          }
+        });
+      }
+      
       const newAddress = await prisma.address.create({
         data: {
           ...deliveryAddress,
-          userId: session.user.id,
-          type: 'DELIVERY'
+          customerId: customer.id,
+          type: 'OTHER'
         }
       });
       finalDeliveryAddressId = newAddress.id;
@@ -157,23 +171,37 @@ export async function POST(request: NextRequest) {
     const orderNumber = generateOrderNumber();
     const verificationCode = generateVerificationCode();
 
+    // Find or create customer for order
+    let customer = await prisma.customer.findUnique({
+      where: { userId: session.user.id }
+    });
+    
+    if (!customer) {
+      customer = await prisma.customer.create({
+        data: {
+          userId: session.user.id,
+          favoriteRestaurants: []
+        }
+      });
+    }
+    
     // Create order with transaction
     const order = await prisma.$transaction(async (tx) => {
       // Create the order
       const newOrder = await tx.order.create({
         data: {
           orderNumber,
-          customerId: session.user.id,
+          customerId: customer.id,
           restaurantId,
           deliveryAddressId: finalDeliveryAddressId!,
-          status: 'PENDING',
+          status: 'PLACED',
           subtotal,
           deliveryFee,
-          platformFee,
           taxes: gst,
           totalAmount,
+          paymentStatus: 'pending',
+          estimatedPreparationTime: restaurant.averagePreparationTime,
           specialInstructions,
-          scheduledDeliveryTime: scheduledDeliveryTime ? new Date(scheduledDeliveryTime) : null,
           verificationCode,
           estimatedDeliveryTime: new Date(Date.now() + (restaurant.averagePreparationTime + 30) * 60000), // Add 30 min buffer
         }
@@ -187,8 +215,7 @@ export async function POST(request: NextRequest) {
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           totalPrice: item.totalPrice,
-          customizations: item.customizations,
-          specialInstructions: item.specialInstructions
+          customizations: item.customizations
         }))
       });
 
@@ -271,8 +298,30 @@ export async function GET(request: NextRequest) {
     let where: any = {};
     
     if (session.user.role === 'CUSTOMER') {
-      where.customerId = session.user.id;
-    } else if (session.user.role === 'RESTAURANT') {
+      // For customers, find their customer record first
+      const customer = await prisma.customer.findUnique({
+        where: { userId: session.user.id }
+      });
+      
+      if (!customer) {
+        return NextResponse.json({
+          success: true,
+          data: {
+            orders: [],
+            pagination: {
+              page: 1,
+              limit: 10,
+              total: 0,
+              totalPages: 0,
+              hasNext: false,
+              hasPrev: false
+            }
+          }
+        });
+      }
+      
+      where.customerId = customer.id;
+    } else if (session.user.role === 'RESTAURANT_OWNER') {
       // Find restaurant for this user
       const restaurant = await prisma.restaurant.findFirst({
         where: { ownerId: session.user.id }
@@ -286,6 +335,21 @@ export async function GET(request: NextRequest) {
       }
       
       where.restaurantId = restaurant.id;
+    } else if (session.user.role === 'DELIVERY_PARTNER') {
+      // Find delivery partner for this user
+      const deliveryPartner = await prisma.deliveryPartner.findUnique({
+        where: { userId: session.user.id }
+      });
+      
+      if (!deliveryPartner) {
+        return NextResponse.json(
+          { error: 'Delivery partner not found' },
+          { status: 404 }
+        );
+      }
+      
+      // Delivery partners can see orders assigned to them
+      where.deliveryPartnerId = deliveryPartner.id;
     } else if (session.user.role === 'ADMIN') {
       // Admin can see all orders
       if (restaurantId) {
@@ -307,11 +371,15 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           customer: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  phone: true
+                }
+              }
             }
           },
           restaurant: {

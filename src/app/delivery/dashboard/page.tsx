@@ -1,17 +1,124 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Truck, MapPin, Clock, TrendingUp, DollarSign } from "lucide-react";
+import { Truck, MapPin, Clock, TrendingUp, DollarSign, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+
+interface DeliveryPartnerData {
+  id: string;
+  status: 'AVAILABLE' | 'BUSY' | 'OFFLINE';
+  rating: number;
+  completedDeliveries: number;
+  todayEarnings: number;
+  totalEarnings: number;
+  assignedRestaurants: string[];
+  user: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+}
+
+interface ActiveOrder {
+  id: string;
+  restaurant: {
+    name: string;
+    address: string;
+  };
+  customer: {
+    name: string;
+    address: string;
+    phone: string;
+  };
+  items: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
+  totalAmount: number;
+  status: string;
+  estimatedDeliveryTime?: string;
+}
 
 export default function DeliveryDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [partnerData, setPartnerData] = useState<DeliveryPartnerData | null>(null);
+  const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
+  // Load partner data
+  const loadPartnerData = async () => {
+    try {
+      const response = await fetch('/api/delivery-partners/me');
+      const data = await response.json();
+      
+      if (data.success) {
+        setPartnerData(data.data);
+      } else {
+        console.error('Failed to load partner data:', data.error);
+        toast.error('Failed to load your profile data');
+      }
+    } catch (error) {
+      console.error('Error loading partner data:', error);
+      toast.error('Failed to load profile data');
+    }
+  };
+
+  // Load active orders
+  const loadActiveOrders = async () => {
+    try {
+      const response = await fetch('/api/delivery-partners/me/orders');
+      const data = await response.json();
+      
+      if (data.success) {
+        setActiveOrders(data.data || []);
+      } else {
+        console.error('Failed to load active orders:' , data.error);
+      }
+    } catch (error) {
+      console.error('Error loading active orders:', error);
+    }
+  };
+
+  // Toggle status between AVAILABLE and OFFLINE
+  const toggleStatus = async () => {
+    if (!partnerData) return;
+    
+    try {
+      setIsUpdatingStatus(true);
+      const newStatus = partnerData.status === 'AVAILABLE' ? 'OFFLINE' : 'AVAILABLE';
+      
+      const response = await fetch(`/api/delivery-partners/${partnerData.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        setPartnerData(prev => prev ? { ...prev, status: newStatus } : null);
+        toast.success(`Status updated to ${newStatus.toLowerCase()}`);
+      } else {
+        console.error('Failed to update status');
+        toast.error('Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update status');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  // Load data on mount and set up polling
   useEffect(() => {
     if (status === "loading") return;
     
@@ -19,6 +126,22 @@ export default function DeliveryDashboard() {
       router.push("/delivery/auth/signin");
       return;
     }
+
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([loadPartnerData(), loadActiveOrders()]);
+      setIsLoading(false);
+    };
+
+    loadData();
+
+    // Set up polling every 30 seconds for real-time updates
+    const interval = setInterval(() => {
+      loadPartnerData();
+      loadActiveOrders();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [session, status, router]);
 
   if (status === "loading") {
@@ -33,6 +156,42 @@ export default function DeliveryDashboard() {
     return null;
   }
 
+  // Loading state
+  if (isLoading || !partnerData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
+      </div>
+    );
+  }
+
+  // Helper functions
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'AVAILABLE':
+        return 'bg-green-100 text-green-800';
+      case 'BUSY':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'OFFLINE':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusDotColor = (status: string) => {
+    switch (status) {
+      case 'AVAILABLE':
+        return 'bg-green-500';
+      case 'BUSY':
+        return 'bg-yellow-500';
+      case 'OFFLINE':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -46,8 +205,10 @@ export default function DeliveryDashboard() {
               <h1 className="text-xl font-bold text-gray-900">Delivery Dashboard</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Badge className="bg-green-100 text-green-800">Offline</Badge>
-              <span className="text-sm text-gray-600">Welcome, {session.user.name}</span>
+              <Badge className={getStatusColor(partnerData.status)}>
+                {partnerData.status.charAt(0) + partnerData.status.slice(1).toLowerCase()}
+              </Badge>
+              <span className="text-sm text-gray-600">Welcome, {partnerData.user.name}</span>
               <Button 
                 variant="outline" 
                 onClick={() => signOut({ callbackUrl: "/delivery/auth/signin" })}
@@ -68,19 +229,54 @@ export default function DeliveryDashboard() {
 
         {/* Status Card */}
         <div className="mb-6">
-          <Card className="bg-green-50 border-green-200">
+          <Card className={`border-2 ${
+            partnerData.status === 'AVAILABLE' ? 'bg-green-50 border-green-200' :
+            partnerData.status === 'BUSY' ? 'bg-yellow-50 border-yellow-200' :
+            'bg-red-50 border-red-200'
+          }`}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div className={`w-3 h-3 rounded-full ${getStatusDotColor(partnerData.status)}`}></div>
                   <div>
-                    <h3 className="font-semibold text-green-800">You're currently offline</h3>
-                    <p className="text-green-700">Go online to start receiving delivery requests</p>
+                    <h3 className="font-semibold text-gray-800">
+                      You're currently {partnerData.status.toLowerCase()}
+                    </h3>
+                    <p className="text-gray-700">
+                      {partnerData.status === 'AVAILABLE' 
+                        ? 'You can receive delivery requests'
+                        : partnerData.status === 'BUSY'
+                        ? 'You have active deliveries'
+                        : 'Go online to start receiving delivery requests'
+                      }
+                    </p>
                   </div>
                 </div>
-                <Button className="bg-green-600 hover:bg-green-700">
-                  Go Online
-                </Button>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    onClick={() => {
+                      loadPartnerData();
+                      loadActiveOrders();
+                    }}
+                    variant="outline"
+                    size="sm"
+                    disabled={isUpdatingStatus}
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isUpdatingStatus ? 'animate-spin' : ''}`} />
+                  </Button>
+                  <Button 
+                    onClick={toggleStatus}
+                    disabled={isUpdatingStatus || partnerData.status === 'BUSY'}
+                    className={`${
+                      partnerData.status === 'AVAILABLE' 
+                        ? 'bg-red-600 hover:bg-red-700' 
+                        : 'bg-green-600 hover:bg-green-700'
+                    }`}
+                  >
+                    {isUpdatingStatus ? 'Updating...' : 
+                     partnerData.status === 'AVAILABLE' ? 'Go Offline' : 'Go Online'}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -96,8 +292,13 @@ export default function DeliveryDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹0</div>
-              <p className="text-xs text-gray-500">No deliveries yet today</p>
+              <div className="text-2xl font-bold">₹{partnerData.todayEarnings}</div>
+              <p className="text-xs text-gray-500">
+                {partnerData.todayEarnings > 0 
+                  ? `From ${activeOrders.length} deliveries` 
+                  : 'No deliveries yet today'
+                }
+              </p>
             </CardContent>
           </Card>
 
@@ -109,21 +310,21 @@ export default function DeliveryDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-gray-500">Completed today</p>
+              <div className="text-2xl font-bold">{partnerData.completedDeliveries}</div>
+              <p className="text-xs text-gray-500">Total completed</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-600">Avg Time</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600">Active Orders</CardTitle>
                 <Clock className="w-4 h-4 text-gray-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">--</div>
-              <p className="text-xs text-gray-500">Per delivery</p>
+              <div className="text-2xl font-bold">{activeOrders.length}</div>
+              <p className="text-xs text-gray-500">Current batches</p>
             </CardContent>
           </Card>
 
@@ -135,7 +336,7 @@ export default function DeliveryDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">5.0</div>
+              <div className="text-2xl font-bold">{partnerData.rating.toFixed(1)}</div>
               <p className="text-xs text-gray-500">Customer rating</p>
             </CardContent>
           </Card>

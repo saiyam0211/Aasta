@@ -1,7 +1,9 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { 
@@ -13,12 +15,12 @@ import {
   BarChart3, 
   Settings, 
   LogOut,
+  Activity,
   Menu,
   X,
   Bell,
   Search
 } from "lucide-react";
-import { adminSession, AdminUser } from "@/lib/admin-auth";
 import { Card } from "@/components/ui/card";
 
 interface AdminLayoutProps {
@@ -48,7 +50,7 @@ const navigationItems = [
   },
   { 
     name: "Delivery Partners", 
-    href: "/admin/delivery", 
+    href: "/admin/delivery-partners", 
     icon: Truck 
   },
   { 
@@ -56,36 +58,29 @@ const navigationItems = [
     href: "/admin/analytics", 
     icon: BarChart3 
   },
-  { 
-    name: "Settings", 
-    href: "/admin/settings", 
-    icon: Settings 
-  },
 ];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
-    const session = adminSession.get();
-    if (!session) {
+    if (status === 'loading') return; // Still loading
+    
+    if (!session && pathname !== "/admin/login") {
       router.push("/admin/login");
-    } else {
-      setAdminUser(session);
+    } else if (session && session.user?.role !== 'ADMIN' && pathname !== "/admin/login") {
+      router.push("/admin/login");
     }
-    setIsLoading(false);
-  }, [router]);
+  }, [session, status, router, pathname]);
 
   const handleLogout = () => {
-    adminSession.clear();
-    router.push("/admin/login");
+    signOut({ callbackUrl: '/admin/login' });
   };
 
-  if (isLoading) {
+  if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-primary-dark-green">
         <div className="text-center">
@@ -98,74 +93,79 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  if (!adminUser) {
+  if (!session || session.user?.role !== 'ADMIN') {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-off-white">
       {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
+      {isSidebarOpen && (
         <div 
           className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden" 
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-primary-dark-green to-primary-dark-green/95 backdrop-blur-sm transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 shadow-2xl`}>
-        <div className="flex items-center justify-center h-20 px-4 border-b border-accent-leaf-green/30 bg-gradient-to-r from-primary-dark-green to-primary-dark-green/80">
-          <div className="flex items-center space-x-3 group">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-accent-leaf-green to-bright-yellow shadow-lg group-hover:scale-105 transition-transform duration-300">
-              <span className="text-brand font-bold text-xl text-primary-dark-green">A</span>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#002a01] transform ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } transition-transform duration-200 ease-in-out lg:translate-x-0`}>
+        {/* Sidebar Header */}
+        <div className="flex items-center justify-between h-16 px-6 border-b border-[#002a01]/20">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-[#d1f86a] rounded-lg flex items-center justify-center">
+              <Store className="w-5 h-5 text-[#002a01]" />
             </div>
-            <div>
-              <span className="text-brand text-xl font-bold text-off-white block">Aasta Admin</span>
-              <span className="text-xs text-accent-leaf-green/80">Control Panel</span>
-            </div>
+            <h2 className="text-xl font-bold text-[#d1f86a]">Aasta</h2>
           </div>
+          <button 
+                onClick={() => setIsSidebarOpen(false)}
+            className="lg:hidden p-2 rounded-md text-[#d1f86a] hover:bg-[#002a01]/50"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <nav className="mt-8">
-          <div className="px-4 space-y-3">
+        {/* Navigation */}
+        <nav className="mt-8 px-4">
+          <div className="space-y-2">
             {navigationItems.map((item, index) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              
+              const isActive = pathname === item.href || (pathname.startsWith('/admin/customers') && item.href === '/admin/customers');
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center px-4 py-4 text-sm font-medium rounded-2xl transition-all duration-300 touchable group relative overflow-hidden ${
+                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-gradient-to-r from-accent-leaf-green to-bright-yellow text-primary-dark-green shadow-lg transform scale-105'
-                      : 'text-off-white hover:bg-gradient-to-r hover:from-accent-leaf-green/20 hover:to-bright-yellow/20 hover:text-accent-leaf-green hover:scale-105'
+                      ? 'text-[#d1f86a] bg-[#d1f86a]/10 border border-[#d1f86a]/20'
+                      : 'text-[#fcfefe]/80 hover:text-[#d1f86a] hover:bg-[#fcfefe]/5'
                   }`}
-                  onClick={() => setSidebarOpen(false)}
-                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className={`absolute inset-0 bg-gradient-to-r from-accent-leaf-green/10 to-bright-yellow/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isActive ? 'opacity-100' : ''}`}></div>
-                  <Icon className={`mr-4 h-5 w-5 relative z-10 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
-                  <span className="relative z-10">{item.name}</span>
-                  {isActive && (
-                    <div className="absolute right-2 w-2 h-2 bg-primary-dark-green rounded-full animate-pulse"></div>
-                  )}
+                  <item.icon className="w-5 h-5 mr-3" />
+                  {item.name}
                 </Link>
               );
             })}
           </div>
         </nav>
 
-        <div className="absolute bottom-0 w-full p-4">
-          <Button
+        {/* Bottom Section */}
+        <div className="absolute bottom-4 left-4 right-4 space-y-2">
+          <button className="flex items-center w-full px-4 py-3 text-sm font-medium text-[#fcfefe]/80 hover:text-[#d1f86a] hover:bg-[#fcfefe]/5 rounded-lg transition-colors">
+            <Settings className="w-5 h-5 mr-3" />
+            Settings
+          </button>
+          <button 
             onClick={handleLogout}
-            className="w-full flex items-center justify-center px-4 py-4 text-sm font-medium text-off-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-2xl transition-all duration-300 touchable shadow-lg hover:shadow-xl transform hover:scale-105 group"
+            className="flex items-center w-full px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
           >
-            <LogOut className="mr-3 h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
-            <span>Sign Out</span>
-          </Button>
+            <LogOut className="w-5 h-5 mr-3" />
+            Sign Out
+          </button>
         </div>
       </div>
+
 
       {/* Main content */}
       <div className="lg:pl-64">
@@ -178,7 +178,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 variant="ghost"
                 size="sm"
                 className="lg:hidden mr-3 touchable hover:bg-accent-leaf-green/20 p-2 rounded-xl"
-                onClick={() => setSidebarOpen(true)}
+                onClick={() => setIsSidebarOpen(true)}
               >
                 <Menu className="h-6 w-6 text-primary-dark-green" />
               </Button>
@@ -198,12 +198,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <div className="flex items-center space-x-3 bg-white/70 backdrop-blur-sm rounded-2xl p-2 shadow-sm">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-leaf-green to-bright-yellow flex items-center justify-center shadow-lg">
                   <span className="text-sm font-bold text-primary-dark-green">
-                    {adminUser.name.charAt(0)}
+                    {session.user?.name?.charAt(0) || 'A'}
                   </span>
                 </div>
                 <div>
                   <span className="text-sm font-semibold text-primary-dark-green block">
-                    {adminUser.name}
+                    {session.user?.name || 'Admin'}
                   </span>
                   <span className="text-xs text-primary-dark-green/60">Administrator</span>
                 </div>
