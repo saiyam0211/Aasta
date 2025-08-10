@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "vercel-build": "prisma generate && next build",
     "build:with-precompile": "npm run precompile-routes && next build",
     "start": "next start",
     "start:with-warmer": "npm run start-route-warmer & next start",
