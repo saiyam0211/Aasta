@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { uploadBufferToS3 } from '@/lib/s3';
 
 // GET request to fetch menu items
 export async function GET(request: NextRequest) {
@@ -63,11 +62,22 @@ export async function POST(request: NextRequest) {
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      // Save the image to the public/uploads/menu-items directory
-      const imageName = `${Date.now()}_${image.name.replace(/\s/g, '_')}`;
-      const imagePath = join(process.cwd(), 'public', 'uploads', 'menu-items', imageName);
-      await writeFile(imagePath, buffer);
-      imageUrl = `/uploads/menu-items/${imageName}`;
+      // Upload image to S3
+      const uploadResult = await uploadBufferToS3(
+        buffer,
+        image.name,
+        image.type,
+        'menu-items'
+      );
+
+      if (uploadResult.success) {
+        imageUrl = uploadResult.imageUrl;
+      } else {
+        return NextResponse.json({ 
+          success: false,
+          error: uploadResult.error
+        }, { status: 400 });
+      }
     }
 
     // Create the menu item

@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
       'maps.googleapis.com',
       'localhost',
       's3.amazonaws.com',
+      'aasta.s3.ap-south-1.amazonaws.com'
     ],
   },
   env: {

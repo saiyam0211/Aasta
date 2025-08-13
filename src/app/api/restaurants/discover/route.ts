@@ -175,6 +175,7 @@ export async function POST(request: NextRequest) {
     const clientRestaurants = filteredRestaurants.map((restaurant) => ({
       id: restaurant.id,
       name: restaurant.name,
+      imageUrl: restaurant.imageUrl,
       address: restaurant.address,
       phone: restaurant.phone,
       email: restaurant.email,

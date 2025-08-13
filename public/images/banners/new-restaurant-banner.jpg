@@ -1,0 +1,24 @@
+<svg width="600" height="300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 300">
+  <defs>
+    <linearGradient id="newGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#991b1b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#newGrad)"/>
+  <g transform="translate(300,150)">
+    <text x="-200" y="-20" fill="white" font-family="Arial, sans-serif" font-size="28" font-weight="bold">
+      New Restaurants
+    </text>
+    <text x="-200" y="20" fill="#fecaca" font-family="Arial, sans-serif" font-size="16">
+      50+ new restaurants added this week
+    </text>
+    <rect x="100" y="-40" width="80" height="80" fill="#ef4444" rx="8" opacity="0.9"/>
+    <text x="140" y="-5" fill="white" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" font-weight="bold">
+      NEW
+    </text>
+    <text x="140" y="15" fill="white" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">
+      RESTAURANTS
+    </text>
+  </g>
+</svg>

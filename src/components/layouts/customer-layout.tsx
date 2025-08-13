@@ -25,6 +25,7 @@ import { useCartStore } from "@/lib/store";
 import { usePWA } from "@/hooks/usePWA";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { useNotificationListener } from "@/hooks/useNotificationListener";
+import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
 
 interface CustomerLayoutProps {
   children: React.ReactNode;
@@ -360,9 +361,15 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 pb-20 md:pb-0">
         {children}
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav 
+        cartItemCount={cartItemCount}
+        activeOrdersCount={0} // TODO: Get from active orders API
+      />
 
       {/* Footer */}
       <footer className="bg-primary-dark-green text-off-white py-8 mt-16">

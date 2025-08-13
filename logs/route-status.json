@@ -1,218 +1,218 @@
 {
   "/": {
     "path": "/",
-    "lastWarmed": 1754845479674,
+    "lastWarmed": 1755076202223,
     "status": 307,
-    "responseTime": 149,
-    "successCount": 15,
+    "responseTime": 89,
+    "successCount": 75,
     "failureCount": 0
   },
   "/customer": {
     "path": "/customer",
-    "lastWarmed": 1754845479926,
+    "lastWarmed": 1755076202423,
     "status": 307,
-    "responseTime": 90,
-    "successCount": 15,
+    "responseTime": 63,
+    "successCount": 75,
     "failureCount": 0
   },
   "/customer/dashboard": {
     "path": "/customer/dashboard",
-    "lastWarmed": 1754845480124,
+    "lastWarmed": 1755076202589,
     "status": 307,
-    "responseTime": 108,
-    "successCount": 15,
+    "responseTime": 27,
+    "successCount": 75,
     "failureCount": 0
   },
   "/restaurant/dashboard": {
     "path": "/restaurant/dashboard",
-    "lastWarmed": 1754845480334,
+    "lastWarmed": 1755076202718,
     "status": 307,
-    "responseTime": 97,
-    "successCount": 15,
+    "responseTime": 28,
+    "successCount": 75,
     "failureCount": 0
   },
   "/search": {
     "path": "/search",
-    "lastWarmed": 1754845626621,
+    "lastWarmed": 1755076265726,
     "status": 307,
-    "responseTime": 87,
-    "successCount": 25,
+    "responseTime": 151,
+    "successCount": 121,
     "failureCount": 0
   },
   "/restaurants": {
     "path": "/restaurants",
-    "lastWarmed": 1754845626810,
+    "lastWarmed": 1755076266057,
     "status": 307,
-    "responseTime": 19,
-    "successCount": 25,
+    "responseTime": 89,
+    "successCount": 121,
     "failureCount": 0
   },
   "/customer/orders": {
     "path": "/customer/orders",
-    "lastWarmed": 1754845480743,
+    "lastWarmed": 1755075704134,
     "status": 307,
-    "responseTime": 96,
-    "successCount": 8,
+    "responseTime": 762,
+    "successCount": 41,
     "failureCount": 0
   },
   "/restaurant/orders": {
     "path": "/restaurant/orders",
-    "lastWarmed": 1754845480943,
+    "lastWarmed": 1755075705002,
     "status": 307,
-    "responseTime": 93,
-    "successCount": 8,
+    "responseTime": 426,
+    "successCount": 41,
     "failureCount": 0
   },
   "/cart": {
     "path": "/cart",
-    "lastWarmed": 1754845563065,
+    "lastWarmed": 1755075996621,
     "status": 307,
-    "responseTime": 1036,
-    "successCount": 10,
+    "responseTime": 330,
+    "successCount": 50,
     "failureCount": 0
   },
   "/checkout": {
     "path": "/checkout",
-    "lastWarmed": 1754845564206,
+    "lastWarmed": 1755075997063,
     "status": 307,
-    "responseTime": 176,
-    "successCount": 10,
+    "responseTime": 33,
+    "successCount": 50,
     "failureCount": 0
   },
   "/orders": {
     "path": "/orders",
-    "lastWarmed": 1754845481339,
+    "lastWarmed": 1755075705737,
     "status": 307,
-    "responseTime": 85,
-    "successCount": 8,
+    "responseTime": 83,
+    "successCount": 41,
     "failureCount": 0
   },
   "/profile": {
     "path": "/profile",
-    "lastWarmed": 1754845690174,
+    "lastWarmed": 1755075919077,
     "status": 307,
-    "responseTime": 46,
-    "successCount": 6,
+    "responseTime": 14386,
+    "successCount": 31,
     "failureCount": 0
   },
   "/customer/discover": {
     "path": "/customer/discover",
-    "lastWarmed": 1754844694131,
+    "lastWarmed": 1755076203656,
     "status": 307,
-    "responseTime": 50,
-    "successCount": 4,
+    "responseTime": 32,
+    "successCount": 25,
     "failureCount": 0
   },
   "/customer/location": {
     "path": "/customer/location",
-    "lastWarmed": 1754844694283,
+    "lastWarmed": 1755076203790,
     "status": 307,
-    "responseTime": 29,
-    "successCount": 4,
+    "responseTime": 33,
+    "successCount": 25,
     "failureCount": 0
   },
   "/restaurant/menu": {
     "path": "/restaurant/menu",
-    "lastWarmed": 1754844694414,
+    "lastWarmed": 1755076203925,
     "status": 307,
-    "responseTime": 18,
-    "successCount": 4,
+    "responseTime": 69,
+    "successCount": 25,
     "failureCount": 0
   },
   "/restaurant/financials": {
     "path": "/restaurant/financials",
-    "lastWarmed": 1754844694533,
+    "lastWarmed": 1755074995256,
     "status": 307,
-    "responseTime": 25,
-    "successCount": 3,
+    "responseTime": 32,
+    "successCount": 18,
     "failureCount": 0
   },
   "/restaurant/operations": {
     "path": "/restaurant/operations",
-    "lastWarmed": 1754844694659,
+    "lastWarmed": 1755074995491,
     "status": 307,
-    "responseTime": 33,
-    "successCount": 3,
+    "responseTime": 30,
+    "successCount": 18,
     "failureCount": 0
   },
   "/restaurant/onboarding": {
     "path": "/restaurant/onboarding",
-    "lastWarmed": 1754844624183,
+    "lastWarmed": 1755074995722,
     "status": 307,
     "responseTime": 27,
-    "successCount": 2,
+    "successCount": 13,
     "failureCount": 0
   },
   "/delivery-partner": {
     "path": "/delivery-partner",
-    "lastWarmed": 1754844694896,
+    "lastWarmed": 1755074995949,
     "status": 307,
-    "responseTime": 31,
-    "successCount": 3,
+    "responseTime": 34,
+    "successCount": 18,
     "failureCount": 0
   },
   "/delivery": {
     "path": "/delivery",
-    "lastWarmed": 1754844695028,
+    "lastWarmed": 1755074996184,
     "status": 307,
-    "responseTime": 34,
-    "successCount": 3,
+    "responseTime": 27,
+    "successCount": 18,
     "failureCount": 0
   },
   "/payment": {
     "path": "/payment",
-    "lastWarmed": 1754845691131,
+    "lastWarmed": 1755075934418,
     "status": 307,
-    "responseTime": 41,
-    "successCount": 5,
+    "responseTime": 664,
+    "successCount": 30,
     "failureCount": 1
   },
   "/settings": {
     "path": "/settings",
-    "lastWarmed": 1754843731038,
+    "lastWarmed": 1755074996644,
     "status": 307,
-    "responseTime": 75,
-    "successCount": 2,
+    "responseTime": 33,
+    "successCount": 16,
     "failureCount": 0
   },
   "/operations": {
     "path": "/operations",
-    "lastWarmed": 1754844624716,
+    "lastWarmed": 1755074996878,
     "status": 404,
-    "responseTime": 4645,
+    "responseTime": 110,
     "successCount": 0,
-    "failureCount": 2
+    "failureCount": 13
   },
   "/admin": {
     "path": "/admin",
-    "lastWarmed": 1754844629463,
+    "lastWarmed": 1755074997190,
     "status": 200,
-    "responseTime": 3044,
-    "successCount": 2,
+    "responseTime": 40879,
+    "successCount": 12,
     "failureCount": 0
   },
   "/api/auth/session": {
     "path": "/api/auth/session",
-    "lastWarmed": 1754845482841,
-    "status": 500,
-    "responseTime": 12661,
-    "successCount": 9,
-    "failureCount": 6
+    "lastWarmed": 1755076088104,
+    "status": 0,
+    "responseTime": 0,
+    "successCount": 64,
+    "failureCount": 11
   },
   "/api/restaurants": {
     "path": "/api/restaurants",
-    "lastWarmed": 1754845495606,
-    "status": 500,
-    "responseTime": 4294,
+    "lastWarmed": 1755076097349,
+    "status": 0,
+    "responseTime": 0,
     "successCount": 0,
-    "failureCount": 15
+    "failureCount": 75
   },
   "/api/orders": {
     "path": "/api/orders",
-    "lastWarmed": 1754845500002,
-    "status": 500,
-    "responseTime": 1938,
+    "lastWarmed": 1755075749591,
+    "status": 401,
+    "responseTime": 45157,
     "successCount": 0,
-    "failureCount": 8
+    "failureCount": 41
   }
 }

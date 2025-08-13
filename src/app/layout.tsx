@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { TelegramBotInitializer } from "@/components/telegram-bot-initializer";
@@ -8,7 +8,11 @@ import Script from "next/script";
 // Import bot initialization (server-side only)
 import '@/lib/telegram-bot-init';
 
-const inter = Inter({ subsets: ["latin"] });
+const brandFont = localFont({
+  src: [{ path: "../../public/fonts/Tanjambore_bysaiyam-Regular.ttf", weight: "400", style: "normal" }],
+  variable: "--font-brand",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Aasta - Night Delivery",
@@ -49,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${brandFont.variable}`}>
       <head>
         <Script id="pwa-install-prompt" strategy="afterInteractive">
           {`
@@ -76,7 +80,7 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className={inter.className}>
+      <body className="font-sans antialiased">
         <Providers>
           <TelegramBotInitializer />
           {children}

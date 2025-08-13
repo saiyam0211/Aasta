@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { uploadBufferToS3, deleteFromS3 } from '@/lib/s3';
 
 export async function PATCH(
   request: NextRequest,
@@ -75,11 +74,30 @@ export async function PUT(
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      // Save the image to the public/uploads/menu-items directory
-      const imageName = `${Date.now()}_${image.name.replace(/\s/g, '_')}`;
-      const imagePath = join(process.cwd(), 'public', 'uploads', 'menu-items', imageName);
-      await writeFile(imagePath, buffer);
-      imageUrl = `/uploads/menu-items/${imageName}`;
+      // Upload image to S3
+      const uploadResult = await uploadBufferToS3(
+        buffer,
+        image.name,
+        image.type,
+        'menu-items'
+      );
+
+      if (uploadResult.success) {
+        // Delete old image from S3 if it exists and was stored in S3
+        if (existingItem.imageUrl && existingItem.imageUrl.includes('amazonaws.com')) {
+          try {
+            await deleteFromS3(existingItem.imageUrl);
+          } catch (error) {
+            console.error('Failed to delete old menu item image from S3:', error);
+          }
+        }
+        imageUrl = uploadResult.imageUrl;
+      } else {
+        return NextResponse.json({
+          success: false,
+          error: uploadResult.error
+        }, { status: 400 });
+      }
     }
 
     // Update the menu item

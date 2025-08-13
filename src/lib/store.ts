@@ -200,27 +200,54 @@ interface LocationState {
     latitude: number;
     longitude: number;
   } | null;
+  currentAddress: {
+    address: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+  } | null;
   permissionStatus: 'granted' | 'denied' | 'prompt' | null;
   isLoading: boolean;
   error: string | null;
   setLocation: (location: { latitude: number; longitude: number }) => void;
+  setAddress: (address: { address: string; city?: string; state?: string; zipCode?: string }) => void;
   setPermissionStatus: (status: 'granted' | 'denied' | 'prompt') => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   requestLocation: () => Promise<void>;
+  getDisplayText: () => string;
 }
 
 export const useLocationStore = create<LocationState>()(
   persist(
     (set, get) => ({
       currentLocation: null,
+      currentAddress: null,
       permissionStatus: null,
       isLoading: false,
       error: null,
       setLocation: (currentLocation) => set({ currentLocation }),
+      setAddress: (currentAddress) => set({ currentAddress }),
       setPermissionStatus: (permissionStatus) => set({ permissionStatus }),
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
+      getDisplayText: () => {
+        const state = get();
+        if (state.currentAddress && state.currentAddress.address) {
+          // Try to create a short, user-friendly address
+          const address = state.currentAddress.address;
+          const parts = address.split(',');
+          if (parts.length >= 2) {
+            // Return first two parts for a concise display
+            return `${parts[0].trim()}, ${parts[1].trim()}`;
+          }
+          return address.length > 40 ? address.substring(0, 37) + '...' : address;
+        }
+        if (state.currentLocation) {
+          return 'Current Location';
+        }
+        return 'Set your location';
+      },
       requestLocation: async () => {
         if (!navigator.geolocation) {
           set({ error: 'Geolocation is not supported by this browser.' });
@@ -274,6 +301,7 @@ export const useLocationStore = create<LocationState>()(
       name: 'location-storage',
       partialize: (state) => ({
         currentLocation: state.currentLocation,
+        currentAddress: state.currentAddress,
         permissionStatus: state.permissionStatus,
       }),
     }
@@ -307,10 +335,13 @@ export const useStore = () => {
     
     // Location
     location: location.currentLocation,
+    locationAddress: location.currentAddress,
     locationPermission: location.permissionStatus,
     locationLoading: location.isLoading,
     locationError: location.error,
     setLocation: location.setLocation,
+    setAddress: location.setAddress,
+    getLocationDisplayText: location.getDisplayText,
     requestLocation: location.requestLocation,
     
     // App
