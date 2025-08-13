@@ -38,4 +38,4 @@ declare module 'next-auth/jwt' {
     restaurantId?: string;
     isNewUser?: boolean;
   }
-} 
+}

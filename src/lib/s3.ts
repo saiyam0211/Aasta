@@ -1,4 +1,9 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -11,14 +16,17 @@ const s3Client = new S3Client({
   },
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || process.env.AWS_S3_BUCKET || 'aasta-delivery-images';
+const BUCKET_NAME =
+  process.env.AWS_S3_BUCKET_NAME ||
+  process.env.AWS_S3_BUCKET ||
+  'aasta-delivery-images';
 
 // Allowed file types for images
 const ALLOWED_IMAGE_TYPES = [
   'image/jpeg',
-  'image/jpg', 
+  'image/jpg',
   'image/png',
-  'image/webp'
+  'image/webp',
 ];
 
 // Maximum file size (5MB)
@@ -36,16 +44,27 @@ export interface UploadResult {
  * @param folder - The S3 folder/prefix (e.g., 'restaurants', 'menu-items')
  * @returns Promise with upload result
  */
-export async function uploadToS3(file: File, folder: string): Promise<UploadResult> {
+export async function uploadToS3(
+  file: File,
+  folder: string
+): Promise<UploadResult> {
   try {
-    console.log('S3 upload started for file:', file.name, 'Size:', file.size, 'Type:', file.type);
-    
+    console.log(
+      'S3 upload started for file:',
+      file.name,
+      'Size:',
+      file.size,
+      'Type:',
+      file.type
+    );
+
     // Validate file type
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
       console.log('Invalid file type:', file.type);
       return {
         success: false,
-        error: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.'
+        error:
+          'Invalid file type. Only JPEG, PNG, and WebP images are allowed.',
       };
     }
 
@@ -54,7 +73,7 @@ export async function uploadToS3(file: File, folder: string): Promise<UploadResu
       console.log('File too large:', file.size, 'Max:', MAX_FILE_SIZE);
       return {
         success: false,
-        error: 'File size too large. Maximum size is 5MB.'
+        error: 'File size too large. Maximum size is 5MB.',
       };
     }
 
@@ -66,7 +85,7 @@ export async function uploadToS3(file: File, folder: string): Promise<UploadResu
     console.log('S3 upload config:', {
       bucket: BUCKET_NAME,
       key: s3Key,
-      contentType: file.type
+      contentType: file.type,
     });
 
     // Convert file to buffer
@@ -92,14 +111,13 @@ export async function uploadToS3(file: File, folder: string): Promise<UploadResu
 
     return {
       success: true,
-      imageUrl
+      imageUrl,
     };
-
   } catch (error) {
     console.error('Error uploading to S3:', error);
     return {
       success: false,
-      error: 'Failed to upload image to cloud storage.'
+      error: 'Failed to upload image to cloud storage.',
     };
   }
 }
@@ -109,7 +127,9 @@ export async function uploadToS3(file: File, folder: string): Promise<UploadResu
  * @param imageUrl - The full URL of the image to delete
  * @returns Promise with deletion result
  */
-export async function deleteFromS3(imageUrl: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteFromS3(
+  imageUrl: string
+): Promise<{ success: boolean; error?: string }> {
   try {
     // Extract the S3 key from the URL
     const url = new URL(imageUrl);
@@ -127,7 +147,7 @@ export async function deleteFromS3(imageUrl: string): Promise<{ success: boolean
     console.error('Error deleting from S3:', error);
     return {
       success: false,
-      error: 'Failed to delete image from cloud storage.'
+      error: 'Failed to delete image from cloud storage.',
     };
   }
 }
@@ -141,9 +161,9 @@ export async function deleteFromS3(imageUrl: string): Promise<{ success: boolean
  * @returns Promise with upload result
  */
 export async function uploadBufferToS3(
-  buffer: Buffer, 
-  fileName: string, 
-  contentType: string, 
+  buffer: Buffer,
+  fileName: string,
+  contentType: string,
   folder: string
 ): Promise<UploadResult> {
   try {
@@ -151,7 +171,8 @@ export async function uploadBufferToS3(
     if (!ALLOWED_IMAGE_TYPES.includes(contentType)) {
       return {
         success: false,
-        error: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.'
+        error:
+          'Invalid file type. Only JPEG, PNG, and WebP images are allowed.',
       };
     }
 
@@ -177,14 +198,13 @@ export async function uploadBufferToS3(
 
     return {
       success: true,
-      imageUrl
+      imageUrl,
     };
-
   } catch (error) {
     console.error('Error uploading buffer to S3:', error);
     return {
       success: false,
-      error: 'Failed to upload image to cloud storage.'
+      error: 'Failed to upload image to cloud storage.',
     };
   }
 }
@@ -195,7 +215,10 @@ export async function uploadBufferToS3(
  * @param expiresIn - URL expiration time in seconds (default: 1 hour)
  * @returns Promise with presigned URL
  */
-export async function getPresignedUrl(s3Key: string, expiresIn: number = 3600): Promise<string | null> {
+export async function getPresignedUrl(
+  s3Key: string,
+  expiresIn: number = 3600
+): Promise<string | null> {
   try {
     const command = new GetObjectCommand({
       Bucket: BUCKET_NAME,
@@ -231,15 +254,19 @@ export function extractS3Key(imageUrl: string): string | null {
  * @param folder - The S3 folder/prefix
  * @returns Promise with upload result containing presigned URL
  */
-export async function uploadToS3WithPresignedUrl(file: File, folder: string): Promise<UploadResult> {
+export async function uploadToS3WithPresignedUrl(
+  file: File,
+  folder: string
+): Promise<UploadResult> {
   try {
     console.log('S3 upload with presigned URL started for file:', file.name);
-    
+
     // Validate file type
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
       return {
         success: false,
-        error: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.'
+        error:
+          'Invalid file type. Only JPEG, PNG, and WebP images are allowed.',
       };
     }
 
@@ -247,7 +274,7 @@ export async function uploadToS3WithPresignedUrl(file: File, folder: string): Pr
     if (file.size > MAX_FILE_SIZE) {
       return {
         success: false,
-        error: 'File size too large. Maximum size is 5MB.'
+        error: 'File size too large. Maximum size is 5MB.',
       };
     }
 
@@ -274,21 +301,20 @@ export async function uploadToS3WithPresignedUrl(file: File, folder: string): Pr
 
     // Generate presigned URL (valid for 7 days)
     const presignedUrl = await getPresignedUrl(s3Key, 7 * 24 * 3600);
-    
+
     if (!presignedUrl) {
       throw new Error('Failed to generate presigned URL');
     }
 
     return {
       success: true,
-      imageUrl: presignedUrl
+      imageUrl: presignedUrl,
     };
-
   } catch (error) {
     console.error('Error uploading to S3 with presigned URL:', error);
     return {
       success: false,
-      error: 'Failed to upload image to cloud storage.'
+      error: 'Failed to upload image to cloud storage.',
     };
   }
 }

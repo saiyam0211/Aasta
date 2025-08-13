@@ -6,31 +6,28 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
-    
+
     const skip = (page - 1) * limit;
 
     // Build where clause for search
     const where: any = {
-      role: 'CUSTOMER'
+      role: 'CUSTOMER',
     };
 
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } }
+        { phone: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -44,32 +41,32 @@ export async function GET(request: NextRequest) {
               orders: {
                 include: {
                   restaurant: {
-                    select: { name: true }
+                    select: { name: true },
                   },
                   orderItems: {
                     include: {
                       menuItem: {
-                        select: { name: true, price: true }
-                      }
-                    }
-                  }
+                        select: { name: true, price: true },
+                      },
+                    },
+                  },
                 },
-                orderBy: { createdAt: 'desc' }
+                orderBy: { createdAt: 'desc' },
               },
               _count: {
                 select: {
                   orders: true,
-                  addresses: true
-                }
-              }
-            }
-          }
+                  addresses: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit
+        take: limit,
       }),
-      prisma.user.count({ where })
+      prisma.user.count({ where }),
     ]);
 
     // Calculate customer statistics
@@ -79,30 +76,39 @@ export async function GET(request: NextRequest) {
 
         const orders = customer.customer.orders;
         const totalOrders = orders.length;
-        const totalSpent = orders.reduce((sum, order) => sum + order.totalAmount, 0);
-        const averageOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0;
-        
+        const totalSpent = orders.reduce(
+          (sum, order) => sum + order.totalAmount,
+          0
+        );
+        const averageOrderValue =
+          totalOrders > 0 ? totalSpent / totalOrders : 0;
+
         // Find highest and lowest order amounts
-        const orderAmounts = orders.map(order => order.totalAmount);
-        const highestSpent = orderAmounts.length > 0 ? Math.max(...orderAmounts) : 0;
-        const lowestSpent = orderAmounts.length > 0 ? Math.min(...orderAmounts) : 0;
+        const orderAmounts = orders.map((order) => order.totalAmount);
+        const highestSpent =
+          orderAmounts.length > 0 ? Math.max(...orderAmounts) : 0;
+        const lowestSpent =
+          orderAmounts.length > 0 ? Math.min(...orderAmounts) : 0;
 
         // Get recent orders (last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const recentOrders = orders.filter(order => 
-          new Date(order.createdAt) >= thirtyDaysAgo
+        const recentOrders = orders.filter(
+          (order) => new Date(order.createdAt) >= thirtyDaysAgo
         );
 
         // Get favorite restaurants
-        const restaurantFrequency = orders.reduce((acc, order) => {
-          const restaurantName = order.restaurant.name;
-          acc[restaurantName] = (acc[restaurantName] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
+        const restaurantFrequency = orders.reduce(
+          (acc, order) => {
+            const restaurantName = order.restaurant.name;
+            acc[restaurantName] = (acc[restaurantName] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>
+        );
 
         const favoriteRestaurants = Object.entries(restaurantFrequency)
-          .sort(([,a], [,b]) => b - a)
+          .sort(([, a], [, b]) => b - a)
           .slice(0, 5)
           .map(([name, count]) => ({ name, orderCount: count }));
 
@@ -116,8 +122,8 @@ export async function GET(request: NextRequest) {
             lowestSpent,
             recentOrdersCount: recentOrders.length,
             favoriteRestaurants,
-            lastOrderDate: orders.length > 0 ? orders[0].createdAt : null
-          }
+            lastOrderDate: orders.length > 0 ? orders[0].createdAt : null,
+          },
         };
       })
     );
@@ -134,11 +140,10 @@ export async function GET(request: NextRequest) {
           total: totalCount,
           totalPages,
           hasNext: page < totalPages,
-          hasPrev: page > 1
-        }
-      }
+          hasPrev: page > 1,
+        },
+      },
     });
-
   } catch (error) {
     console.error('Error fetching customers:', error);
     return NextResponse.json(

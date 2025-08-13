@@ -61,7 +61,7 @@ export const useCartStore = create<CartState>()(
       error: null,
       addItem: (item, restaurant) => {
         const currentCart = get().cart;
-        
+
         // If cart is empty or from different restaurant, create new cart
         if (!currentCart || currentCart.restaurantId !== restaurant.id) {
           set({
@@ -80,13 +80,13 @@ export const useCartStore = create<CartState>()(
           const existingItemIndex = currentCart.items.findIndex(
             (cartItem) => cartItem.menuItemId === item.menuItemId
           );
-          
+
           if (existingItemIndex >= 0) {
             // Update existing item
             const updatedItems = [...currentCart.items];
             updatedItems[existingItemIndex].quantity += item.quantity;
             updatedItems[existingItemIndex].subtotal += item.subtotal;
-            
+
             set({
               cart: {
                 ...currentCart,
@@ -103,17 +103,17 @@ export const useCartStore = create<CartState>()(
             });
           }
         }
-        
+
         get().calculateTotals();
       },
       removeItem: (menuItemId) => {
         const currentCart = get().cart;
         if (!currentCart) return;
-        
+
         const updatedItems = currentCart.items.filter(
           (item) => item.menuItemId !== menuItemId
         );
-        
+
         if (updatedItems.length === 0) {
           set({ cart: null });
         } else {
@@ -129,12 +129,12 @@ export const useCartStore = create<CartState>()(
       updateQuantity: (menuItemId, quantity) => {
         const currentCart = get().cart;
         if (!currentCart) return;
-        
+
         if (quantity <= 0) {
           get().removeItem(menuItemId);
           return;
         }
-        
+
         const updatedItems = currentCart.items.map((item) => {
           if (item.menuItemId === menuItemId) {
             const unitPrice = item.subtotal / item.quantity;
@@ -146,14 +146,14 @@ export const useCartStore = create<CartState>()(
           }
           return item;
         });
-        
+
         set({
           cart: {
             ...currentCart,
             items: updatedItems,
           },
         });
-        
+
         get().calculateTotals();
       },
       getItemQuantityInCart: (menuItemId) => {
@@ -168,15 +168,15 @@ export const useCartStore = create<CartState>()(
       calculateTotals: () => {
         const currentCart = get().cart;
         if (!currentCart) return;
-        
+
         const subtotal = currentCart.items.reduce(
           (total, item) => total + item.subtotal,
           0
         );
-        
+
         const taxes = subtotal * 0.05; // 5% tax
         const total = subtotal + currentCart.deliveryFee + taxes;
-        
+
         set({
           cart: {
             ...currentCart,
@@ -210,7 +210,12 @@ interface LocationState {
   isLoading: boolean;
   error: string | null;
   setLocation: (location: { latitude: number; longitude: number }) => void;
-  setAddress: (address: { address: string; city?: string; state?: string; zipCode?: string }) => void;
+  setAddress: (address: {
+    address: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+  }) => void;
   setPermissionStatus: (status: 'granted' | 'denied' | 'prompt') => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -241,7 +246,9 @@ export const useLocationStore = create<LocationState>()(
             // Return first two parts for a concise display
             return `${parts[0].trim()}, ${parts[1].trim()}`;
           }
-          return address.length > 40 ? address.substring(0, 37) + '...' : address;
+          return address.length > 40
+            ? address.substring(0, 37) + '...'
+            : address;
         }
         if (state.currentLocation) {
           return 'Current Location';
@@ -253,9 +260,9 @@ export const useLocationStore = create<LocationState>()(
           set({ error: 'Geolocation is not supported by this browser.' });
           return;
         }
-        
+
         set({ isLoading: true, error: null });
-        
+
         try {
           const position = await new Promise<GeolocationPosition>(
             (resolve, reject) => {
@@ -266,12 +273,12 @@ export const useLocationStore = create<LocationState>()(
               });
             }
           );
-          
+
           const location = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           };
-          
+
           set({
             currentLocation: location,
             permissionStatus: 'granted',
@@ -279,7 +286,7 @@ export const useLocationStore = create<LocationState>()(
           });
         } catch (error: any) {
           let errorMessage = 'Failed to get location';
-          
+
           switch (error.code) {
             case error.PERMISSION_DENIED:
               errorMessage = 'Location access denied by user';
@@ -292,7 +299,7 @@ export const useLocationStore = create<LocationState>()(
               errorMessage = 'Location request timed out';
               break;
           }
-          
+
           set({ error: errorMessage, isLoading: false });
         }
       },
@@ -314,7 +321,7 @@ export const useStore = () => {
   const cart = useCartStore();
   const location = useLocationStore();
   const app = useAppStore();
-  
+
   return {
     // Auth
     user: auth.user,
@@ -323,7 +330,7 @@ export const useStore = () => {
     authError: auth.error,
     setUser: auth.setUser,
     logout: auth.logout,
-    
+
     // Cart
     cart: cart.cart,
     cartLoading: cart.isLoading,
@@ -332,7 +339,7 @@ export const useStore = () => {
     removeFromCart: cart.removeItem,
     updateCartQuantity: cart.updateQuantity,
     clearCart: cart.clearCart,
-    
+
     // Location
     location: location.currentLocation,
     locationAddress: location.currentAddress,
@@ -343,7 +350,7 @@ export const useStore = () => {
     setAddress: location.setAddress,
     getLocationDisplayText: location.getDisplayText,
     requestLocation: location.requestLocation,
-    
+
     // App
     isOnline: app.isOnline,
     theme: app.theme,

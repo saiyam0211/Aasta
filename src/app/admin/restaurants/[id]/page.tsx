@@ -4,7 +4,9 @@ interface RestaurantDetailPageProps {
   }>;
 }
 
-export default async function RestaurantDetailPage({ params }: RestaurantDetailPageProps) {
+export default async function RestaurantDetailPage({
+  params,
+}: RestaurantDetailPageProps) {
   const { id } = await params;
 
   return (

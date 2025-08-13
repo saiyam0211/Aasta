@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  Bell, 
-  Mail, 
-  MessageSquare, 
-  Smartphone, 
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Bell,
+  Mail,
+  MessageSquare,
+  Smartphone,
   Clock,
   Save,
-  RefreshCw
-} from "lucide-react";
+  RefreshCw,
+} from 'lucide-react';
 
 interface NotificationPreferences {
   id: string;
@@ -33,7 +33,8 @@ interface NotificationPreferences {
 }
 
 export default function NotificationSettings() {
-  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
+  const [preferences, setPreferences] =
+    useState<NotificationPreferences | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [userId] = useState('cmdlep9va0007unmntpim932o'); // This should come from auth context
@@ -45,9 +46,11 @@ export default function NotificationSettings() {
   const fetchPreferences = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/notifications/preferences?userId=${userId}`);
+      const response = await fetch(
+        `/api/notifications/preferences?userId=${userId}`
+      );
       const data = await response.json();
-      
+
       if (data.success) {
         setPreferences(data.data);
       }
@@ -72,7 +75,7 @@ export default function NotificationSettings() {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setPreferences(data.data);
         // Show success message
@@ -90,23 +93,26 @@ export default function NotificationSettings() {
     if (!preferences) return;
     setPreferences({
       ...preferences,
-      [key]: value
+      [key]: value,
     });
   };
 
-  const handleInputChange = (key: keyof NotificationPreferences, value: string) => {
+  const handleInputChange = (
+    key: keyof NotificationPreferences,
+    value: string
+  ) => {
     if (!preferences) return;
     setPreferences({
       ...preferences,
-      [key]: value
+      [key]: value,
     });
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="flex items-center gap-2">
-          <RefreshCw className="w-6 h-6 animate-spin" />
+          <RefreshCw className="h-6 w-6 animate-spin" />
           <span>Loading preferences...</span>
         </div>
       </div>
@@ -115,9 +121,11 @@ export default function NotificationSettings() {
 
   if (!preferences) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Failed to load preferences</h2>
+          <h2 className="mb-2 text-xl font-semibold">
+            Failed to load preferences
+          </h2>
           <Button onClick={fetchPreferences}>Try Again</Button>
         </div>
       </div>
@@ -125,14 +133,18 @@ export default function NotificationSettings() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Notification Settings</h1>
-          <p className="text-gray-600 mt-1">Manage how you receive notifications</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Notification Settings
+          </h1>
+          <p className="mt-1 text-gray-600">
+            Manage how you receive notifications
+          </p>
         </div>
         <Button onClick={updatePreferences} disabled={isSaving}>
-          <Save className={`w-4 h-4 mr-2 ${isSaving ? 'animate-spin' : ''}`} />
+          <Save className={`mr-2 h-4 w-4 ${isSaving ? 'animate-spin' : ''}`} />
           {isSaving ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
@@ -141,44 +153,58 @@ export default function NotificationSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="w-5 h-5" />
+            <Bell className="h-5 w-5" />
             Notification Channels
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Mail className="w-5 h-5 text-blue-600" />
+              <Mail className="h-5 w-5 text-blue-600" />
               <div>
-                <Label className="text-base font-medium">Email Notifications</Label>
-                <p className="text-sm text-gray-600">Receive notifications via email</p>
+                <Label className="text-base font-medium">
+                  Email Notifications
+                </Label>
+                <p className="text-sm text-gray-600">
+                  Receive notifications via email
+                </p>
               </div>
             </div>
             <Switch
               checked={preferences.emailEnabled}
-              onCheckedChange={(checked) => handleToggle('emailEnabled', checked)}
+              onCheckedChange={(checked) =>
+                handleToggle('emailEnabled', checked)
+              }
             />
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Smartphone className="w-5 h-5 text-green-600" />
+              <Smartphone className="h-5 w-5 text-green-600" />
               <div>
-                <Label className="text-base font-medium">Push Notifications</Label>
-                <p className="text-sm text-gray-600">Receive browser push notifications</p>
+                <Label className="text-base font-medium">
+                  Push Notifications
+                </Label>
+                <p className="text-sm text-gray-600">
+                  Receive browser push notifications
+                </p>
               </div>
             </div>
             <Switch
               checked={preferences.pushEnabled}
-              onCheckedChange={(checked) => handleToggle('pushEnabled', checked)}
+              onCheckedChange={(checked) =>
+                handleToggle('pushEnabled', checked)
+              }
             />
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <MessageSquare className="w-5 h-5 text-purple-600" />
+              <MessageSquare className="h-5 w-5 text-purple-600" />
               <div>
-                <Label className="text-base font-medium">SMS Notifications</Label>
+                <Label className="text-base font-medium">
+                  SMS Notifications
+                </Label>
                 <p className="text-sm text-gray-600">Receive text messages</p>
               </div>
             </div>
@@ -190,15 +216,21 @@ export default function NotificationSettings() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <MessageSquare className="w-5 h-5 text-blue-500" />
+              <MessageSquare className="h-5 w-5 text-blue-500" />
               <div>
-                <Label className="text-base font-medium">Telegram Notifications</Label>
-                <p className="text-sm text-gray-600">Receive notifications via Telegram</p>
+                <Label className="text-base font-medium">
+                  Telegram Notifications
+                </Label>
+                <p className="text-sm text-gray-600">
+                  Receive notifications via Telegram
+                </p>
               </div>
             </div>
             <Switch
               checked={preferences.telegramEnabled}
-              onCheckedChange={(checked) => handleToggle('telegramEnabled', checked)}
+              onCheckedChange={(checked) =>
+                handleToggle('telegramEnabled', checked)
+              }
             />
           </div>
         </CardContent>
@@ -213,18 +245,24 @@ export default function NotificationSettings() {
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-base font-medium">Order Updates</Label>
-              <p className="text-sm text-gray-600">Status changes for your orders</p>
+              <p className="text-sm text-gray-600">
+                Status changes for your orders
+              </p>
             </div>
             <Switch
               checked={preferences.orderUpdates}
-              onCheckedChange={(checked) => handleToggle('orderUpdates', checked)}
+              onCheckedChange={(checked) =>
+                handleToggle('orderUpdates', checked)
+              }
             />
           </div>
 
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-base font-medium">Promotions</Label>
-              <p className="text-sm text-gray-600">Special offers and discounts</p>
+              <p className="text-sm text-gray-600">
+                Special offers and discounts
+              </p>
             </div>
             <Switch
               checked={preferences.promotions}
@@ -235,22 +273,30 @@ export default function NotificationSettings() {
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-base font-medium">Delivery Alerts</Label>
-              <p className="text-sm text-gray-600">Updates from delivery partners</p>
+              <p className="text-sm text-gray-600">
+                Updates from delivery partners
+              </p>
             </div>
             <Switch
               checked={preferences.deliveryAlerts}
-              onCheckedChange={(checked) => handleToggle('deliveryAlerts', checked)}
+              onCheckedChange={(checked) =>
+                handleToggle('deliveryAlerts', checked)
+              }
             />
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-base font-medium">System Announcements</Label>
+              <Label className="text-base font-medium">
+                System Announcements
+              </Label>
               <p className="text-sm text-gray-600">Important system updates</p>
             </div>
             <Switch
               checked={preferences.systemAnnouncements}
-              onCheckedChange={(checked) => handleToggle('systemAnnouncements', checked)}
+              onCheckedChange={(checked) =>
+                handleToggle('systemAnnouncements', checked)
+              }
             />
           </div>
         </CardContent>
@@ -260,7 +306,7 @@ export default function NotificationSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
+            <Clock className="h-5 w-5" />
             Notification Frequency
           </CardTitle>
         </CardHeader>
@@ -270,7 +316,7 @@ export default function NotificationSettings() {
             <select
               value={preferences.frequency}
               onChange={(e) => handleInputChange('frequency', e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              className="focus:border-primary focus:ring-primary mt-1 block w-full rounded-md border-gray-300 shadow-sm"
             >
               <option value="REAL_TIME">Real-time</option>
               <option value="HOURLY">Hourly digest</option>
@@ -285,7 +331,9 @@ export default function NotificationSettings() {
               <Input
                 type="time"
                 value={preferences.quietHoursStart || ''}
-                onChange={(e) => handleInputChange('quietHoursStart', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange('quietHoursStart', e.target.value)
+                }
                 className="mt-1"
               />
             </div>
@@ -294,7 +342,9 @@ export default function NotificationSettings() {
               <Input
                 type="time"
                 value={preferences.quietHoursEnd || ''}
-                onChange={(e) => handleInputChange('quietHoursEnd', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange('quietHoursEnd', e.target.value)
+                }
                 className="mt-1"
               />
             </div>

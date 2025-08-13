@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform the data to match the expected format
-    const transformedRestaurants = restaurants.map(restaurant => ({
+    const transformedRestaurants = restaurants.map((restaurant) => ({
       id: restaurant.id,
       name: restaurant.name,
       ownerName: restaurant.ownerName,
@@ -49,17 +49,19 @@ export async function GET(request: NextRequest) {
       longitude: restaurant.longitude,
     }));
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      data: transformedRestaurants 
+      data: transformedRestaurants,
     });
-
   } catch (error) {
     console.error('Error fetching restaurants:', error);
-    return NextResponse.json({ 
-      success: false,
-      error: 'Internal server error' 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -72,14 +74,24 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
 
     // Validate required fields
-    const requiredFields = ['name', 'ownerName', 'phone', 'address', 'email', 'locationId'];
-    
+    const requiredFields = [
+      'name',
+      'ownerName',
+      'phone',
+      'address',
+      'email',
+      'locationId',
+    ];
+
     for (const field of requiredFields) {
       if (!data[field]) {
-        return NextResponse.json({ 
-          success: false,
-          error: `Missing required field: ${field}` 
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Missing required field: ${field}`,
+          },
+          { status: 400 }
+        );
       }
     }
 
@@ -109,22 +121,27 @@ export async function POST(request: NextRequest) {
         averagePreparationTime: data.averagePreparationTime || 20,
         minimumOrderAmount: data.minimumOrderAmount || 200,
         deliveryRadius: data.deliveryRadius || 5,
-        operatingHours: data.operatingHours || { "monday": "09:00-21:00" },
+        operatingHours: data.operatingHours || { monday: '09:00-21:00' },
         status: data.status || 'ACTIVE',
       },
     });
 
-    return NextResponse.json({ 
-      success: true,
-      message: 'Restaurant created successfully',
-      data: restaurant
-    }, { status: 201 });
-
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Restaurant created successfully',
+        data: restaurant,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating restaurant:', error);
-    return NextResponse.json({ 
-      success: false,
-      error: 'Internal server error' 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+      },
+      { status: 500 }
+    );
   }
 }

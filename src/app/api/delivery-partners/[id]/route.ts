@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
@@ -17,9 +17,9 @@ export async function GET(
             name: true,
             email: true,
             phone: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     if (!deliveryPartner) {
@@ -31,7 +31,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: deliveryPartner
+      data: deliveryPartner,
     });
   } catch (error) {
     console.error('Error fetching delivery partner:', error);
@@ -49,11 +49,17 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status, telegramPhone, currentLatitude, currentLongitude, assignedRestaurants } = body;
+    const {
+      status,
+      telegramPhone,
+      currentLatitude,
+      currentLongitude,
+      assignedRestaurants,
+    } = body;
 
     // Verify partner exists
     const existingPartner = await prisma.deliveryPartner.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!existingPartner) {
@@ -67,9 +73,12 @@ export async function PATCH(
     const updateData: any = {};
     if (status !== undefined) updateData.status = status;
     if (telegramPhone !== undefined) updateData.telegramPhone = telegramPhone;
-    if (currentLatitude !== undefined) updateData.currentLatitude = currentLatitude;
-    if (currentLongitude !== undefined) updateData.currentLongitude = currentLongitude;
-    if (assignedRestaurants !== undefined) updateData.assignedRestaurants = assignedRestaurants;
+    if (currentLatitude !== undefined)
+      updateData.currentLatitude = currentLatitude;
+    if (currentLongitude !== undefined)
+      updateData.currentLongitude = currentLongitude;
+    if (assignedRestaurants !== undefined)
+      updateData.assignedRestaurants = assignedRestaurants;
 
     const updatedPartner = await prisma.deliveryPartner.update({
       where: { id },
@@ -81,14 +90,14 @@ export async function PATCH(
             name: true,
             email: true,
             phone: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     return NextResponse.json({
       success: true,
-      data: updatedPartner
+      data: updatedPartner,
     });
   } catch (error) {
     console.error('Error updating delivery partner:', error);

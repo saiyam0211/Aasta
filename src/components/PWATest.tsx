@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
@@ -11,7 +11,8 @@ export default function PWATest() {
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [swRegistered, setSwRegistered] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermission>('default');
   const [manifestLoaded, setManifestLoaded] = useState(false);
   const [userEngaged, setUserEngaged] = useState(false);
   const [pushSubscribed, setPushSubscribed] = useState(false);
@@ -24,7 +25,7 @@ export default function PWATest() {
 
     // Check manifest loading
     fetch('/manifest.json')
-      .then(response => {
+      .then((response) => {
         if (response.ok) {
           setManifestLoaded(true);
           console.log('✅ Manifest loaded successfully');
@@ -32,7 +33,7 @@ export default function PWATest() {
           console.log('❌ Manifest failed to load:', response.status);
         }
       })
-      .catch(error => {
+      .catch((error) => {
         console.log('❌ Manifest fetch error:', error);
       });
 
@@ -42,8 +43,11 @@ export default function PWATest() {
       console.log('User engaged with the page');
     };
 
-    ['click', 'keydown', 'scroll', 'touchstart'].forEach(event => {
-      document.addEventListener(event, trackEngagement, { once: true, passive: true });
+    ['click', 'keydown', 'scroll', 'touchstart'].forEach((event) => {
+      document.addEventListener(event, trackEngagement, {
+        once: true,
+        passive: true,
+      });
     });
 
     // Listen for beforeinstallprompt event
@@ -58,7 +62,8 @@ export default function PWATest() {
 
     // Register service worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker
+        .register('/sw.js')
         .then((registration) => {
           console.log('SW registered: ', registration);
           setSwRegistered(true);
@@ -74,7 +79,10 @@ export default function PWATest() {
     }
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener(
+        'beforeinstallprompt',
+        handleBeforeInstallPrompt
+      );
     };
   }, []);
 
@@ -84,13 +92,13 @@ export default function PWATest() {
     try {
       await installPrompt.prompt();
       const choiceResult = await installPrompt.userChoice;
-      
+
       if (choiceResult.outcome === 'accepted') {
         console.log('User accepted the install prompt');
       } else {
         console.log('User dismissed the install prompt');
       }
-      
+
       setInstallPrompt(null);
       setIsInstallable(false);
     } catch (error) {
@@ -104,20 +112,25 @@ export default function PWATest() {
         const permission = await Notification.requestPermission();
         console.log('Notification permission result:', permission);
         setNotificationPermission(permission);
-        
+
         if (permission === 'granted') {
           console.log('✅ Notification permission granted!');
         } else if (permission === 'denied') {
           console.log('❌ Notification permission denied');
-          alert('Notifications are blocked. Please enable them in your browser settings.');
+          alert(
+            'Notifications are blocked. Please enable them in your browser settings.'
+          );
         } else {
           console.log('⚠️ Notification permission dismissed');
         }
-        
+
         return permission === 'granted';
       } catch (error) {
         console.error('Error requesting notification permission:', error);
-        alert('Error requesting notification permission: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        alert(
+          'Error requesting notification permission: ' +
+            (error instanceof Error ? error.message : 'Unknown error')
+        );
         return false;
       }
     } else {
@@ -131,11 +144,12 @@ export default function PWATest() {
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       try {
         const registration = await navigator.serviceWorker.ready;
-        const vapidPublicKey = 'BLrXB9jwTEIXyAEQNlQZqW-9OGDajzUW4m0AwrLI2G89Qe3Xc7dejs9XdXDlhNIG_PJFFE_WjisPKxPNAPqopPo';
-        
+        const vapidPublicKey =
+          'BLrXB9jwTEIXyAEQNlQZqW-9OGDajzUW4m0AwrLI2G89Qe3Xc7dejs9XdXDlhNIG_PJFFE_WjisPKxPNAPqopPo';
+
         const subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: vapidPublicKey
+          applicationServerKey: vapidPublicKey,
         });
 
         console.log('Push subscription:', subscription);
@@ -146,12 +160,12 @@ export default function PWATest() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(subscription)
+          body: JSON.stringify(subscription),
         });
 
         const result = await response.json();
         console.log('Subscription result:', result);
-        
+
         return subscription;
       } catch (error) {
         console.error('Error subscribing to push notifications:', error);
@@ -163,15 +177,16 @@ export default function PWATest() {
 
   const registerAsPWA = async () => {
     try {
-      const sessionId = sessionStorage.getItem('client-session-id') || 
-                       `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+      const sessionId =
+        sessionStorage.getItem('client-session-id') ||
+        `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
       if (!sessionStorage.getItem('client-session-id')) {
         sessionStorage.setItem('client-session-id', sessionId);
       }
 
       console.log('🔧 Manually registering as PWA client...');
-      
+
       const response = await fetch('/api/client-register', {
         method: 'POST',
         headers: {
@@ -182,19 +197,22 @@ export default function PWATest() {
           isPWA: true, // Force PWA registration
           userAgent: navigator.userAgent,
           pwaDetails: {
-            isStandalone: window.matchMedia('(display-mode: standalone)').matches,
+            isStandalone: window.matchMedia('(display-mode: standalone)')
+              .matches,
             isIOSStandalone: (window.navigator as any).standalone === true,
             isInAppBrowser: false,
             hasManifest: true,
-            manualOverride: true
-          }
-        })
+            manualOverride: true,
+          },
+        }),
       });
 
       if (response.ok) {
         const result = await response.json();
         console.log('✅ Manually registered as PWA:', result);
-        alert(`Successfully registered as PWA! Current PWA clients: ${result.stats.pwaClients}`);
+        alert(
+          `Successfully registered as PWA! Current PWA clients: ${result.stats.pwaClients}`
+        );
       } else {
         const error = await response.json();
         console.error('❌ Failed to register as PWA:', error);
@@ -202,15 +220,17 @@ export default function PWATest() {
       }
     } catch (error) {
       console.error('❌ Error manually registering as PWA:', error);
-      alert('Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      alert(
+        'Error: ' + (error instanceof Error ? error.message : 'Unknown error')
+      );
     }
   };
 
   return (
-    <Card className="fixed bottom-4 right-4 w-80 z-50">
+    <Card className="fixed right-4 bottom-4 z-50 w-80">
       <CardContent className="p-4">
-        <h3 className="font-bold mb-3">PWA Debug Panel</h3>
-        
+        <h3 className="mb-3 font-bold">PWA Debug Panel</h3>
+
         <div className="space-y-2 text-sm">
           <div>SW Registered: {swRegistered ? '✅' : '❌'}</div>
           <div>Manifest Loaded: {manifestLoaded ? '✅' : '❌'}</div>
@@ -221,16 +241,16 @@ export default function PWATest() {
         </div>
 
         <div className="mt-4 space-y-2">
-          <Button 
-            onClick={installApp} 
+          <Button
+            onClick={installApp}
             disabled={!isInstallable}
             className="w-full"
             size="sm"
           >
             Install App
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={requestNotificationPermission}
             className="w-full"
             size="sm"
@@ -238,17 +258,17 @@ export default function PWATest() {
           >
             Request Notifications
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={registerAsPWA}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full bg-blue-600 text-white hover:bg-blue-700"
             size="sm"
           >
             🚀 Register as PWA Client
           </Button>
-          
+
           {session?.user?.id && (
-            <Button 
+            <Button
               onClick={registerAsPWA}
               className="w-full bg-green-600 hover:bg-green-700"
               size="sm"
@@ -256,11 +276,12 @@ export default function PWATest() {
               🔧 Register as PWA
             </Button>
           )}
-          
-          <div className="text-xs text-gray-600 mt-2">
+
+          <div className="mt-2 text-xs text-gray-600">
             {notificationPermission === 'denied' && (
               <div className="text-red-600">
-                Notifications blocked! Click the lock icon in address bar and reset permissions, then refresh.
+                Notifications blocked! Click the lock icon in address bar and
+                reset permissions, then refresh.
               </div>
             )}
           </div>

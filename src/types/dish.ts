@@ -15,4 +15,5 @@ export interface Dish {
   distanceText?: string;
   distanceMeters?: number;
   durationText?: string;
-} 
+  restaurantId?: string; // stable id for cart scoping
+}

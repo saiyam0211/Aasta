@@ -12,7 +12,7 @@ export async function GET() {
         minimumOrderAmount: true,
         averagePreparationTime: true,
         deliveryRadius: true,
-      }
+      },
     });
 
     console.log('All restaurants with pricing fields:', restaurants);
@@ -20,13 +20,15 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       count: restaurants.length,
-      restaurants: restaurants
+      restaurants: restaurants,
     });
-
   } catch (error) {
     console.error('Error fetching restaurants:', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }

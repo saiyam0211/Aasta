@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -11,12 +11,12 @@ interface SafeImageProps {
   onError?: () => void;
 }
 
-export function SafeImage({ 
-  src, 
-  alt, 
-  className, 
+export function SafeImage({
+  src,
+  alt,
+  className,
   fallbackSrc,
-  onError 
+  onError,
 }: SafeImageProps) {
   const [imageSrc, setImageSrc] = useState(src);
   const [isError, setIsError] = useState(false);
@@ -25,16 +25,20 @@ export function SafeImage({
     if (!isError) {
       setIsError(true);
       onError?.();
-      
+
       // Determine appropriate fallback based on the original image path
       let defaultFallback = '/images/restaurant-placeholder.svg';
-      
-      if (src.includes('menu') || src.includes('dish') || src.includes('food')) {
+
+      if (
+        src.includes('menu') ||
+        src.includes('dish') ||
+        src.includes('food')
+      ) {
         defaultFallback = '/images/dish-placeholder.svg';
       } else if (src.includes('banner')) {
         defaultFallback = '/images/banners/night-delivery-banner.jpg';
       }
-      
+
       setImageSrc(fallbackSrc || defaultFallback);
     }
   };

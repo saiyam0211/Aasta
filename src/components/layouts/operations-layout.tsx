@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { 
-  Store, 
-  Users, 
-  Truck, 
-  ShoppingCart, 
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import {
+  Store,
+  Users,
+  Truck,
+  ShoppingCart,
   PlusCircle,
   BarChart3,
   Activity,
@@ -16,15 +16,18 @@ import {
   Menu,
   X,
   Clock,
-  MapPin
-} from "lucide-react";
+  MapPin,
+} from 'lucide-react';
 
 interface OperationsLayoutProps {
   children: React.ReactNode;
   type: 'restaurant' | 'delivery';
 }
 
-export default function OperationsLayout({ children, type }: OperationsLayoutProps) {
+export default function OperationsLayout({
+  children,
+  type,
+}: OperationsLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const router = useRouter();
 
@@ -48,54 +51,106 @@ export default function OperationsLayout({ children, type }: OperationsLayoutPro
     router.push('/operations/login');
   };
 
-const restaurantNavItems = [
-  { href: "/operations/restaurant/dashboard", icon: Activity, label: "Dashboard", active: true },
-  { href: "/operations/restaurant/restaurants", icon: Store, label: "Restaurants" },
-  { href: "/operations/restaurant/orders", icon: ShoppingCart, label: "Live Orders" },
-  { href: "/operations/restaurant/notifications", icon: PlusCircle, label: "Send Notifications" },
-  { href: "/operations/restaurant/partners", icon: Users, label: "Assigned Partners" },
-  { href: "/operations/restaurant/analytics", icon: BarChart3, label: "Analytics" },
-];
-
-  const deliveryNavItems = [
-    { href: "/operations/delivery/dashboard", icon: Activity, label: "Dashboard", active: true },
-    { href: "/operations/delivery/partners", icon: Users, label: "Delivery Partners" },
-    { href: "/operations/delivery/assignments", icon: MapPin, label: "Order Assignments" },
-    { href: "/operations/delivery/orders", icon: ShoppingCart, label: "Live Orders" },
-    { href: "/operations/delivery/analytics", icon: BarChart3, label: "Analytics" },
+  const restaurantNavItems = [
+    {
+      href: '/operations/restaurant/dashboard',
+      icon: Activity,
+      label: 'Dashboard',
+      active: true,
+    },
+    {
+      href: '/operations/restaurant/restaurants',
+      icon: Store,
+      label: 'Restaurants',
+    },
+    {
+      href: '/operations/restaurant/orders',
+      icon: ShoppingCart,
+      label: 'Live Orders',
+    },
+    {
+      href: '/operations/restaurant/notifications',
+      icon: PlusCircle,
+      label: 'Send Notifications',
+    },
+    {
+      href: '/operations/restaurant/partners',
+      icon: Users,
+      label: 'Assigned Partners',
+    },
+    {
+      href: '/operations/restaurant/analytics',
+      icon: BarChart3,
+      label: 'Analytics',
+    },
   ];
 
-  const navItems = type === 'restaurant' ? restaurantNavItems : deliveryNavItems;
-  const title = type === 'restaurant' ? 'Restaurant Operations' : 'Delivery Operations';
+  const deliveryNavItems = [
+    {
+      href: '/operations/delivery/dashboard',
+      icon: Activity,
+      label: 'Dashboard',
+      active: true,
+    },
+    {
+      href: '/operations/delivery/partners',
+      icon: Users,
+      label: 'Delivery Partners',
+    },
+    {
+      href: '/operations/delivery/assignments',
+      icon: MapPin,
+      label: 'Order Assignments',
+    },
+    {
+      href: '/operations/delivery/orders',
+      icon: ShoppingCart,
+      label: 'Live Orders',
+    },
+    {
+      href: '/operations/delivery/analytics',
+      icon: BarChart3,
+      label: 'Analytics',
+    },
+  ];
+
+  const navItems =
+    type === 'restaurant' ? restaurantNavItems : deliveryNavItems;
+  const title =
+    type === 'restaurant' ? 'Restaurant Operations' : 'Delivery Operations';
   const icon = type === 'restaurant' ? Store : Truck;
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar overlay */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" 
+        <div
+          className="bg-opacity-50 fixed inset-0 z-40 bg-black lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#002a01] transform ${
-        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } transition-transform duration-200 ease-in-out lg:translate-x-0`}>
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-64 transform bg-[#002a01] ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } transition-transform duration-200 ease-in-out lg:translate-x-0`}
+      >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-[#002a01]/20">
+        <div className="flex h-16 items-center justify-between border-b border-[#002a01]/20 px-6">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-[#d1f86a] rounded-lg flex items-center justify-center">
-              {React.createElement(icon, { className: "w-5 h-5 text-[#002a01]" })}
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#d1f86a]">
+              {React.createElement(icon, {
+                className: 'w-5 h-5 text-[#002a01]',
+              })}
             </div>
             <h2 className="text-xl font-bold text-[#d1f86a]">Aasta</h2>
           </div>
-          <button 
+          <button
             onClick={() => setIsSidebarOpen(false)}
-            className="lg:hidden p-2 rounded-md text-[#d1f86a] hover:bg-[#002a01]/50"
+            className="rounded-md p-2 text-[#d1f86a] hover:bg-[#002a01]/50 lg:hidden"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
@@ -106,13 +161,13 @@ const restaurantNavItems = [
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                  item.active 
-                    ? 'text-[#d1f86a] bg-[#d1f86a]/10 border border-[#d1f86a]/20'
-                    : 'text-[#fcfefe]/80 hover:text-[#d1f86a] hover:bg-[#fcfefe]/5'
+                className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
+                  item.active
+                    ? 'border border-[#d1f86a]/20 bg-[#d1f86a]/10 text-[#d1f86a]'
+                    : 'text-[#fcfefe]/80 hover:bg-[#fcfefe]/5 hover:text-[#d1f86a]'
                 }`}
               >
-                <item.icon className="w-5 h-5 mr-3" />
+                <item.icon className="mr-3 h-5 w-5" />
                 {item.label}
               </Link>
             ))}
@@ -120,16 +175,16 @@ const restaurantNavItems = [
         </nav>
 
         {/* Bottom Section */}
-        <div className="absolute bottom-4 left-4 right-4 space-y-2">
-          <button className="flex items-center w-full px-4 py-3 text-sm font-medium text-[#fcfefe]/80 hover:text-[#d1f86a] hover:bg-[#fcfefe]/5 rounded-lg transition-colors">
-            <Settings className="w-5 h-5 mr-3" />
+        <div className="absolute right-4 bottom-4 left-4 space-y-2">
+          <button className="flex w-full items-center rounded-lg px-4 py-3 text-sm font-medium text-[#fcfefe]/80 transition-colors hover:bg-[#fcfefe]/5 hover:text-[#d1f86a]">
+            <Settings className="mr-3 h-5 w-5" />
             Settings
           </button>
-          <button 
+          <button
             onClick={handleLogout}
-            className="flex items-center w-full px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            className="flex w-full items-center rounded-lg px-4 py-3 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10"
           >
-            <LogOut className="w-5 h-5 mr-3" />
+            <LogOut className="mr-3 h-5 w-5" />
             Sign Out
           </button>
         </div>
@@ -138,21 +193,19 @@ const restaurantNavItems = [
       {/* Main Content */}
       <div className="lg:pl-64">
         {/* Mobile Header */}
-        <div className="lg:hidden bg-white shadow-sm border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-          <button 
+        <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 shadow-sm lg:hidden">
+          <button
             onClick={() => setIsSidebarOpen(true)}
-            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            className="rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="h-6 w-6" />
           </button>
           <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
           <div className="w-10"></div>
         </div>
 
         {/* Page Content */}
-        <div className="p-6">
-          {children}
-        </div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );

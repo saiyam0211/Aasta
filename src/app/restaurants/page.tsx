@@ -1,90 +1,111 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import CustomerLayout from "@/components/layouts/customer-layout";
-import LocationInput from "@/components/location/location-input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { 
-  MapPin, 
-  Clock, 
-  Star, 
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import CustomerLayout from '@/components/layouts/customer-layout';
+import LocationInput from '@/components/location/location-input';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  MapPin,
+  Clock,
+  Star,
   Search,
   Heart,
   Filter,
   SlidersHorizontal,
   ChefHat,
-  Utensils
-} from "lucide-react";
-import { locationService } from "@/lib/location-service";
-import { useLocationStore } from "@/hooks/useLocation";
-import type { Restaurant, LocationWithAddress } from "@/lib/location-service";
+  Utensils,
+} from 'lucide-react';
+import { locationService } from '@/lib/location-service';
+import { useLocationStore } from '@/hooks/useLocation';
+import type { Restaurant, LocationWithAddress } from '@/lib/location-service';
 
 export default function RestaurantsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { latitude, longitude } = useLocationStore();
-  
+
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState<LocationWithAddress | null>(null);
+  const [selectedLocation, setSelectedLocation] =
+    useState<LocationWithAddress | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
   // Cuisine filter options
   const cuisineTypes = [
-    "North Indian", "South Indian", "Italian", "Chinese", 
-    "Fast Food", "Mughlai", "Continental", "Thai", "Mexican"
+    'North Indian',
+    'South Indian',
+    'Italian',
+    'Chinese',
+    'Fast Food',
+    'Mughlai',
+    'Continental',
+    'Thai',
+    'Mexican',
   ];
 
   useEffect(() => {
-    if (status === "loading") return;
-    
+    if (status === 'loading') return;
+
     if (!session) {
-      router.push("/auth/signin");
+      router.push('/auth/signin');
       return;
     }
 
     loadRestaurants();
     registerPWAClient();
   }, [session, status, router, selectedLocation, latitude, longitude]);
-  
+
   const registerPWAClient = async () => {
     if (!session?.user?.id) return;
-    
+
     try {
       // Generate session ID
       const sessionId = `restaurants_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // PWA Detection
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isStandalone = window.matchMedia(
+        '(display-mode: standalone)'
+      ).matches;
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isiOSStandalone = isIOS && (window.navigator as any).standalone === true;
+      const isiOSStandalone =
+        isIOS && (window.navigator as any).standalone === true;
       const isAndroidWebView = /wv/.test(navigator.userAgent);
-      const hasManifest = document.querySelector('link[rel="manifest"]') !== null;
-      
-      const isPWAMode = isStandalone || isiOSStandalone || (isAndroidWebView && hasManifest);
-      
+      const hasManifest =
+        document.querySelector('link[rel="manifest"]') !== null;
+
+      const isPWAMode =
+        isStandalone || isiOSStandalone || (isAndroidWebView && hasManifest);
+
       const pwaDetails = {
         isStandalone,
         isiOSStandalone,
         isAndroidWebView,
         hasManifest,
-        displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser',
-        userAgent: navigator.userAgent
+        displayMode: window.matchMedia('(display-mode: standalone)').matches
+          ? 'standalone'
+          : 'browser',
+        userAgent: navigator.userAgent,
       };
-      
+
       console.log('📱 Restaurants PWA Registration:', {
         sessionId,
         isPWAMode,
-        pwaDetails
+        pwaDetails,
       });
-      
+
       const response = await fetch('/api/client-register', {
         method: 'POST',
         headers: {
@@ -94,20 +115,23 @@ export default function RestaurantsPage() {
           sessionId,
           isPWA: isPWAMode,
           userAgent: navigator.userAgent,
-          pwaDetails
-        })
+          pwaDetails,
+        }),
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         console.log('✅ Restaurants PWA Client registered:', result);
       } else {
-        console.error('❌ Restaurants PWA Client registration failed:', response.status);
+        console.error(
+          '❌ Restaurants PWA Client registration failed:',
+          response.status
+        );
       }
     } catch (error) {
       console.error('❌ Restaurants PWA Client registration error:', error);
     }
-  }
+  };
 
   // Reload restaurants when search query or filters change
   useEffect(() => {
@@ -123,13 +147,14 @@ export default function RestaurantsPage() {
   const loadRestaurants = async () => {
     try {
       setIsLoading(true);
-      
+
       // Use selected location or current location
-      const location = selectedLocation || (latitude && longitude ? { latitude, longitude } : null) || {
-        latitude: 12.9716, // Default to Bengaluru
-        longitude: 77.5946
-      };
-      
+      const location = selectedLocation ||
+        (latitude && longitude ? { latitude, longitude } : null) || {
+          latitude: 12.9716, // Default to Bengaluru
+          longitude: 77.5946,
+        };
+
       console.log('🔍 Fetching restaurants with location:', location);
 
       // Build search parameters
@@ -155,8 +180,8 @@ export default function RestaurantsPage() {
           radius: 5,
           filters: {
             cuisineTypes: selectedCuisines,
-          }
-        })
+          },
+        }),
       });
 
       if (!response.ok) {
@@ -164,10 +189,10 @@ export default function RestaurantsPage() {
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
         let restaurantList = data.data.restaurants || [];
-        
+
         // Apply cuisine filters if any are selected
         if (selectedCuisines.length > 0) {
           restaurantList = restaurantList.filter((restaurant: any) =>
@@ -176,7 +201,7 @@ export default function RestaurantsPage() {
             )
           );
         }
-        
+
         setRestaurants(restaurantList);
       } else {
         console.error('API returned error:', data.error);
@@ -195,26 +220,42 @@ export default function RestaurantsPage() {
   };
 
   const toggleCuisineFilter = (cuisine: string) => {
-    setSelectedCuisines(prev => 
-      prev.includes(cuisine) 
-        ? prev.filter(c => c !== cuisine)
+    setSelectedCuisines((prev) =>
+      prev.includes(cuisine)
+        ? prev.filter((c) => c !== cuisine)
         : [...prev, cuisine]
     );
   };
 
   const clearFilters = () => {
     setSelectedCuisines([]);
-    setSearchQuery("");
+    setSearchQuery('');
   };
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--primary-dark-green)' }}>
+      <div
+        className="flex min-h-screen items-center justify-center"
+        style={{ backgroundColor: 'var(--primary-dark-green)' }}
+      >
         <div className="text-center">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'var(--accent-leaf-green)' }}>
-            <span className="text-brand font-bold text-xl" style={{ color: 'var(--primary-dark-green)' }}>A</span>
+          <div
+            className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+            style={{ backgroundColor: 'var(--accent-leaf-green)' }}
+          >
+            <span
+              className="text-brand text-xl font-bold"
+              style={{ color: 'var(--primary-dark-green)' }}
+            >
+              A
+            </span>
           </div>
-          <h1 className="text-brand text-2xl font-bold mb-4" style={{ color: 'var(--off-white)' }}>Aasta</h1>
+          <h1
+            className="text-brand mb-4 text-2xl font-bold"
+            style={{ color: 'var(--off-white)' }}
+          >
+            Aasta
+          </h1>
         </div>
       </div>
     );
@@ -224,13 +265,22 @@ export default function RestaurantsPage() {
 
   return (
     <CustomerLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ backgroundColor: 'var(--off-white)' }}>
+      <div
+        className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
+        style={{ backgroundColor: 'var(--off-white)' }}
+      >
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-brand text-3xl font-bold mb-2" style={{ color: 'var(--primary-dark-green)' }}>
+          <h1
+            className="text-brand mb-2 text-3xl font-bold"
+            style={{ color: 'var(--primary-dark-green)' }}
+          >
             Restaurants Near You
           </h1>
-          <p className="text-signature text-lg" style={{ color: 'var(--primary-dark-green)' }}>
+          <p
+            className="text-signature text-lg"
+            style={{ color: 'var(--primary-dark-green)' }}
+          >
             Discover amazing food for your late night cravings 🌙
           </p>
         </div>
@@ -242,11 +292,11 @@ export default function RestaurantsPage() {
             placeholder="Where should we deliver?"
             className="mb-4"
           />
-          
+
           <div className="flex space-x-4">
-            <div className="flex-1 relative">
-              <Search 
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" 
+            <div className="relative flex-1">
+              <Search
+                className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 transform"
                 style={{ color: 'var(--primary-dark-green)' }}
               />
               <Input
@@ -254,24 +304,26 @@ export default function RestaurantsPage() {
                 placeholder="Search restaurants or cuisines..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 border-2 rounded-xl selectable"
-                style={{ 
+                className="selectable h-12 rounded-xl border-2 pl-10"
+                style={{
                   borderColor: 'var(--primary-dark-green)',
-                  backgroundColor: 'var(--off-white)'
+                  backgroundColor: 'var(--off-white)',
                 }}
               />
             </div>
-            
+
             <Button
               onClick={() => setShowFilters(!showFilters)}
-              className="h-12 px-4 rounded-xl touchable"
+              className="touchable h-12 rounded-xl px-4"
               style={{
-                backgroundColor: showFilters ? 'var(--bright-yellow)' : 'var(--accent-leaf-green)',
+                backgroundColor: showFilters
+                  ? 'var(--bright-yellow)'
+                  : 'var(--accent-leaf-green)',
                 color: 'var(--primary-dark-green)',
-                border: '2px solid var(--primary-dark-green)'
+                border: '2px solid var(--primary-dark-green)',
               }}
             >
-              <SlidersHorizontal className="w-5 h-5" />
+              <SlidersHorizontal className="h-5 w-5" />
             </Button>
           </div>
         </div>
@@ -281,11 +333,14 @@ export default function RestaurantsPage() {
           <Card className="restaurant-card mb-8">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-heading" style={{ color: 'var(--primary-dark-green)' }}>
+                <CardTitle
+                  className="text-heading"
+                  style={{ color: 'var(--primary-dark-green)' }}
+                >
                   Filter by Cuisine
                 </CardTitle>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   onClick={clearFilters}
                   className="touchable"
                   style={{ color: 'var(--primary-dark-green)' }}
@@ -300,13 +355,13 @@ export default function RestaurantsPage() {
                   <Badge
                     key={cuisine}
                     onClick={() => toggleCuisineFilter(cuisine)}
-                    className="cursor-pointer touchable px-4 py-2 text-sm font-medium"
+                    className="touchable cursor-pointer px-4 py-2 text-sm font-medium"
                     style={{
-                      backgroundColor: selectedCuisines.includes(cuisine) 
-                        ? 'var(--bright-yellow)' 
+                      backgroundColor: selectedCuisines.includes(cuisine)
+                        ? 'var(--bright-yellow)'
                         : 'var(--accent-leaf-green)',
                       color: 'var(--primary-dark-green)',
-                      border: '1px solid var(--primary-dark-green)'
+                      border: '1px solid var(--primary-dark-green)',
                     }}
                   >
                     {cuisine}
@@ -319,16 +374,16 @@ export default function RestaurantsPage() {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <Card key={i} className="restaurant-card">
-                <div className="aspect-video bg-gray-200 skeleton"></div>
+                <div className="skeleton aspect-video bg-gray-200"></div>
                 <CardContent className="p-4">
-                  <div className="h-4 bg-gray-200 rounded skeleton mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded skeleton mb-3 w-2/3"></div>
+                  <div className="skeleton mb-2 h-4 rounded bg-gray-200"></div>
+                  <div className="skeleton mb-3 h-3 w-2/3 rounded bg-gray-200"></div>
                   <div className="flex justify-between">
-                    <div className="h-3 bg-gray-200 rounded skeleton w-1/3"></div>
-                    <div className="h-8 bg-gray-200 rounded skeleton w-20"></div>
+                    <div className="skeleton h-3 w-1/3 rounded bg-gray-200"></div>
+                    <div className="skeleton h-8 w-20 rounded bg-gray-200"></div>
                   </div>
                 </CardContent>
               </Card>
@@ -338,12 +393,15 @@ export default function RestaurantsPage() {
 
         {/* Results Header */}
         {!isLoading && (
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-heading text-xl font-bold" style={{ color: 'var(--primary-dark-green)' }}>
+          <div className="mb-6 flex items-center justify-between">
+            <h2
+              className="text-heading text-xl font-bold"
+              style={{ color: 'var(--primary-dark-green)' }}
+            >
               {restaurants.length} restaurants found
             </h2>
             <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Clock className="w-4 h-4" />
+              <Clock className="h-4 w-4" />
               <span>Open now (9 PM - 12 AM)</span>
             </div>
           </div>
@@ -351,57 +409,67 @@ export default function RestaurantsPage() {
 
         {/* Restaurants Grid */}
         {!isLoading && restaurants.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {restaurants.map((restaurant) => (
-              <Card key={restaurant.id} className="restaurant-card touchable cursor-pointer">
+              <Card
+                key={restaurant.id}
+                className="restaurant-card touchable cursor-pointer"
+              >
                 <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="mb-4 flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 
-                        className="text-xl font-semibold mb-2 cursor-pointer hover:underline"
+                      <h3
+                        className="mb-2 cursor-pointer text-xl font-semibold hover:underline"
                         style={{ color: '#002a01' }}
-                        onClick={() => router.push(`/restaurants/${restaurant.id}`)}
+                        onClick={() =>
+                          router.push(`/restaurants/${restaurant.id}`)
+                        }
                       >
                         {restaurant.name}
                       </h3>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium">{restaurant.rating}</span>
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm font-medium">
+                        {restaurant.rating}
+                      </span>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-2 mb-3">
-                    <Utensils className="w-4 h-4 text-gray-500" />
-                    <p className="text-gray-600 text-sm">
+
+                  <div className="mb-3 flex items-center space-x-2">
+                    <Utensils className="h-4 w-4 text-gray-500" />
+                    <p className="text-sm text-gray-600">
                       {restaurant.cuisineTypes.slice(0, 2).join(', ')}
                     </p>
                   </div>
 
-                  <div className="flex items-center space-x-2 mb-3">
-                    <MapPin className="w-4 h-4 text-gray-500" />
-                    <p className="text-gray-600 text-sm">
+                  <div className="mb-3 flex items-center space-x-2">
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <p className="text-sm text-gray-600">
                       {restaurant.address}
                     </p>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-1 text-gray-500">
-                      <Clock className="w-4 h-4" />
+                      <Clock className="h-4 w-4" />
                       <span className="text-sm">
-                        {restaurant.averagePreparationTime + 15}-{restaurant.averagePreparationTime + 25} min
+                        {restaurant.averagePreparationTime + 15}-
+                        {restaurant.averagePreparationTime + 25} min
                       </span>
                     </div>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="btn-primary"
-                      onClick={() => router.push(`/restaurants/${restaurant.id}`)}
+                      onClick={() =>
+                        router.push(`/restaurants/${restaurant.id}`)
+                      }
                     >
                       View Menu
                     </Button>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="mt-3 border-t border-gray-200 pt-3">
                     <p className="text-xs text-gray-500">
                       Min order: ₹{restaurant.minimumOrderAmount}
                     </p>
@@ -416,11 +484,14 @@ export default function RestaurantsPage() {
         {!isLoading && restaurants.length === 0 && (
           <Card className="restaurant-card">
             <CardContent className="p-8 text-center">
-              <Utensils className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--primary-dark-green)' }}>
+              <Utensils className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+              <h3
+                className="mb-2 text-lg font-semibold"
+                style={{ color: 'var(--primary-dark-green)' }}
+              >
                 No restaurants found
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="mb-4 text-gray-600">
                 Try adjusting your location or search filters
               </p>
               <Button onClick={clearFilters} className="btn-primary">
@@ -432,4 +503,4 @@ export default function RestaurantsPage() {
       </div>
     </CustomerLayout>
   );
-} 
+}

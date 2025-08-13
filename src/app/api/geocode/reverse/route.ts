@@ -7,19 +7,27 @@ export async function GET(request: NextRequest) {
     const lng = searchParams.get('lng');
 
     if (!lat || !lng) {
-      return NextResponse.json({
-        success: false,
-        error: 'Latitude and longitude are required'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Latitude and longitude are required',
+        },
+        { status: 400 }
+      );
     }
 
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    
+    const apiKey =
+      process.env.GOOGLE_MAPS_API_KEY ||
+      process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
     if (!apiKey) {
-      return NextResponse.json({
-        success: false,
-        error: 'Google Maps API key not configured'
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Google Maps API key not configured',
+        },
+        { status: 500 }
+      );
     }
 
     console.log('Reverse geocoding for:', { lat, lng });
@@ -42,15 +50,18 @@ export async function GET(request: NextRequest) {
     console.log('Google Maps API response status:', data.status);
 
     if (data.status !== 'OK' || !data.results || data.results.length === 0) {
-      return NextResponse.json({
-        success: false,
-        error: `Geocoding failed: ${data.status}`
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Geocoding failed: ${data.status}`,
+        },
+        { status: 400 }
+      );
     }
 
     const result = data.results[0];
     const addressComponents = result.address_components;
-    
+
     // Extract address components
     let city = '';
     let state = '';
@@ -58,7 +69,10 @@ export async function GET(request: NextRequest) {
 
     addressComponents.forEach((component: any) => {
       const types = component.types;
-      if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+      if (
+        types.includes('locality') ||
+        types.includes('administrative_area_level_2')
+      ) {
         city = component.long_name;
       }
       if (types.includes('administrative_area_level_1')) {
@@ -82,14 +96,16 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: locationData
+      data: locationData,
     });
-
   } catch (error) {
     console.error('Reverse geocoding error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to reverse geocode location'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to reverse geocode location',
+      },
+      { status: 500 }
+    );
   }
 }

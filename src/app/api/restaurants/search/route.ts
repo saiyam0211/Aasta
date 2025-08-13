@@ -22,8 +22,10 @@ function calculateDistance(
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
   return distance;
@@ -41,7 +43,8 @@ function isRestaurantOpen(operatingHours: any): boolean {
   const closeTime = 24 * 60; // 12 AM in minutes (midnight)
 
   // Check if current time is within operating hours
-  if (currentTime >= openTime || currentTime < 60) { // Allow until 1 AM for late orders
+  if (currentTime >= openTime || currentTime < 60) {
+    // Allow until 1 AM for late orders
     return true;
   }
 
@@ -51,7 +54,7 @@ function isRestaurantOpen(operatingHours: any): boolean {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -200,9 +203,15 @@ export async function GET(request: NextRequest) {
         dietaryTags: item.dietaryTags,
         spiceLevel: item.spiceLevel,
         featured: item.featured,
-        discount: item.originalPrice ? Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100) : 0,
+        discount: item.originalPrice
+          ? Math.round(
+              ((item.originalPrice - item.price) / item.originalPrice) * 100
+            )
+          : 0,
       })),
-      featuredItems: restaurant.menuItems.filter(item => item.featured).slice(0, 3),
+      featuredItems: restaurant.menuItems
+        .filter((item) => item.featured)
+        .slice(0, 3),
     }));
 
     return NextResponse.json({
@@ -213,12 +222,12 @@ export async function GET(request: NextRequest) {
         query: query,
         searchLocation: { latitude, longitude },
         searchRadius: radius,
-        message: clientRestaurants.length === 0 ? 
-          `No restaurants found${query ? ` matching "${query}"` : ''} within ${radius}km of your location.` :
-          `Found ${clientRestaurants.length} restaurant${clientRestaurants.length > 1 ? 's' : ''}${query ? ` matching "${query}"` : ''} within ${radius}km.`
+        message:
+          clientRestaurants.length === 0
+            ? `No restaurants found${query ? ` matching "${query}"` : ''} within ${radius}km of your location.`
+            : `Found ${clientRestaurants.length} restaurant${clientRestaurants.length > 1 ? 's' : ''}${query ? ` matching "${query}"` : ''} within ${radius}km.`,
       },
     });
-
   } catch (error) {
     console.error('Error searching restaurants:', error);
     return NextResponse.json(
@@ -231,7 +240,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -263,7 +272,6 @@ export async function POST(request: NextRequest) {
     });
 
     return await GET(getRequest);
-
   } catch (error) {
     console.error('Error in POST search restaurants:', error);
     return NextResponse.json(

@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import OperationsLayout from "@/components/layouts/operations-layout";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
+import { useState, useEffect } from 'react';
+import OperationsLayout from '@/components/layouts/operations-layout';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
   User,
   Clock,
   MapPin,
   Phone,
   Truck,
   Package,
-  RefreshCw
-} from "lucide-react";
+  RefreshCw,
+} from 'lucide-react';
 
 interface Assignment {
   id: string;
@@ -99,9 +99,9 @@ export default function Assignments() {
   if (isLoading) {
     return (
       <OperationsLayout type="restaurant">
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex min-h-screen items-center justify-center">
           <div className="flex items-center gap-2">
-            <RefreshCw className="w-5 h-5 animate-spin" />
+            <RefreshCw className="h-5 w-5 animate-spin" />
             Loading assignments...
           </div>
         </div>
@@ -114,18 +114,18 @@ export default function Assignments() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-primary-dark-green">
+            <h1 className="text-primary-dark-green text-3xl font-bold">
               Active Assignments
             </h1>
-            <p className="text-lg text-primary-dark-green mt-1">
+            <p className="text-primary-dark-green mt-1 text-lg">
               Delivery partners currently busy with orders
             </p>
           </div>
-          <Button 
+          <Button
             onClick={loadAssignments}
             className="bg-accent-leaf-green hover:bg-accent-leaf-green/90 text-primary-dark-green"
           >
-            <RefreshCw className="w-4 h-4 mr-2" />
+            <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
         </div>
@@ -133,8 +133,8 @@ export default function Assignments() {
         {assignments.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <Truck className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2 text-primary-dark-green">
+              <Truck className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+              <h3 className="text-primary-dark-green mb-2 text-lg font-semibold">
                 No Active Assignments
               </h3>
               <p className="text-gray-600">
@@ -143,18 +143,18 @@ export default function Assignments() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {assignments.map((assignment) => (
               <Card key={assignment.id} className="restaurant-card">
                 <CardContent className="p-6">
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="mb-4 flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary-dark-green text-white rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5" />
+                      <div className="bg-primary-dark-green flex h-10 w-10 items-center justify-center rounded-full text-white">
+                        <User className="h-5 w-5" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-primary-dark-green">
+                        <h3 className="text-primary-dark-green text-lg font-semibold">
                           {assignment.deliveryPartner.user.name}
                         </h3>
                         <p className="text-sm text-gray-600">
@@ -162,82 +162,108 @@ export default function Assignments() {
                         </p>
                       </div>
                     </div>
-                    <Badge className={`px-2 py-1 text-xs font-medium border ${getStatusBadgeColor(assignment.status)}`}>
+                    <Badge
+                      className={`border px-2 py-1 text-xs font-medium ${getStatusBadgeColor(assignment.status)}`}
+                    >
                       {assignment.status}
                     </Badge>
                   </div>
 
                   {/* Order Details */}
-                  <div className="space-y-3 mb-4">
+                  <div className="mb-4 space-y-3">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Order ID:</span>
-                      <span className="font-medium">{assignment.order.orderNumber}</span>
+                      <span className="font-medium">
+                        {assignment.order.orderNumber}
+                      </span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Restaurant:</span>
-                      <span className="font-medium">{assignment.order.restaurant.name}</span>
+                      <span className="font-medium">
+                        {assignment.order.restaurant.name}
+                      </span>
                     </div>
 
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Customer:</span>
-                      <span className="font-medium">{assignment.order.customer.name}</span>
+                      <span className="font-medium">
+                        {assignment.order.customer.name}
+                      </span>
                     </div>
 
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Order Amount:</span>
-                      <span className="font-medium text-primary-dark-green">₹{assignment.order.totalAmount}</span>
+                      <span className="text-primary-dark-green font-medium">
+                        ₹{assignment.order.totalAmount}
+                      </span>
                     </div>
 
                     <div className="flex items-start justify-between text-sm">
                       <span className="text-gray-600">Delivery Address:</span>
-                      <span className="font-medium text-right max-w-[60%]">
-                        {assignment.order.deliveryAddress.address}, {assignment.order.deliveryAddress.city}
+                      <span className="max-w-[60%] text-right font-medium">
+                        {assignment.order.deliveryAddress.address},{' '}
+                        {assignment.order.deliveryAddress.city}
                       </span>
                     </div>
                   </div>
 
                   {/* Time Details */}
-                  <div className="border-t pt-3 space-y-2">
+                  <div className="space-y-2 border-t pt-3">
                     <div className="flex items-center text-sm text-gray-600">
-                      <Clock className="w-4 h-4 mr-2" />
-                      <span>Pickup: {new Date(assignment.order.pickupTime).toLocaleTimeString()}</span>
+                      <Clock className="mr-2 h-4 w-4" />
+                      <span>
+                        Pickup:{' '}
+                        {new Date(
+                          assignment.order.pickupTime
+                        ).toLocaleTimeString()}
+                      </span>
                     </div>
-                    
+
                     <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="w-4 h-4 mr-2" />
-                      <span>ETA: {new Date(assignment.order.estimatedDeliveryTime).toLocaleTimeString()}</span>
+                      <MapPin className="mr-2 h-4 w-4" />
+                      <span>
+                        ETA:{' '}
+                        {new Date(
+                          assignment.order.estimatedDeliveryTime
+                        ).toLocaleTimeString()}
+                      </span>
                     </div>
-                    
+
                     <div className="flex items-center text-sm text-gray-600">
-                      <Package className="w-4 h-4 mr-2" />
-                      <span>Assigned: {new Date(assignment.assignedAt).toLocaleTimeString()}</span>
+                      <Package className="mr-2 h-4 w-4" />
+                      <span>
+                        Assigned:{' '}
+                        {new Date(assignment.assignedAt).toLocaleTimeString()}
+                      </span>
                     </div>
                   </div>
 
                   {/* Actions */}
                   <div className="mt-4 flex gap-2">
                     <Button
-                      className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm"
+                      className="flex-1 bg-blue-100 text-sm text-blue-700 hover:bg-blue-200"
                       onClick={() => {
                         if (assignment.order.customer.phone) {
                           window.open(`tel:${assignment.order.customer.phone}`);
                         }
                       }}
                     >
-                      <Phone className="w-4 h-4 mr-1" />
+                      <Phone className="mr-1 h-4 w-4" />
                       Call Customer
                     </Button>
-                    
+
                     <Button
-                      className="flex-1 bg-green-100 hover:bg-green-200 text-green-700 text-sm"
+                      className="flex-1 bg-green-100 text-sm text-green-700 hover:bg-green-200"
                       onClick={() => {
                         if (assignment.deliveryPartner.user.phone) {
-                          window.open(`tel:${assignment.deliveryPartner.user.phone}`);
+                          window.open(
+                            `tel:${assignment.deliveryPartner.user.phone}`
+                          );
                         }
                       }}
                     >
-                      <Phone className="w-4 h-4 mr-1" />
+                      <Phone className="mr-1 h-4 w-4" />
                       Call Partner
                     </Button>
                   </div>

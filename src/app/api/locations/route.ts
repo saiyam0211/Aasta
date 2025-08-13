@@ -11,14 +11,14 @@ export async function GET(req: NextRequest) {
         name: true,
         city: true,
         state: true,
-        country: true
+        country: true,
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
 
     return NextResponse.json({
       success: true,
-      locations
+      locations,
     });
   } catch (error) {
     console.error('Error fetching locations:', error);

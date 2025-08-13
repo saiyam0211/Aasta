@@ -15,7 +15,7 @@ interface DiscoverRequest {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -34,8 +34,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Get restaurants from database
-    console.log('🔍 Discover API - Searching for restaurants near:', { latitude, longitude, radius });
-    
+    console.log('🔍 Discover API - Searching for restaurants near:', {
+      latitude,
+      longitude,
+      radius,
+    });
+
     const allRestaurants = await prisma.restaurant.findMany({
       where: {
         status: 'ACTIVE',
@@ -66,8 +70,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log(`📊 Found ${allRestaurants.length} total restaurants in database`);
-    
+    console.log(
+      `📊 Found ${allRestaurants.length} total restaurants in database`
+    );
+
     // Calculate distances and filter by radius
     const nearbyRestaurants = allRestaurants
       .map((restaurant) => {
@@ -76,7 +82,9 @@ export async function POST(request: NextRequest) {
           { latitude: restaurant.latitude, longitude: restaurant.longitude }
         );
 
-        console.log(`📍 Restaurant "${restaurant.name}" - Distance: ${distance.toFixed(2)}km`);
+        console.log(
+          `📍 Restaurant "${restaurant.name}" - Distance: ${distance.toFixed(2)}km`
+        );
 
         return {
           ...restaurant,
@@ -87,14 +95,20 @@ export async function POST(request: NextRequest) {
       .filter((restaurant) => {
         const isWithinRadius = restaurant.distance <= radius;
         if (!isWithinRadius) {
-          console.log(`❌ "${restaurant.name}" is ${restaurant.distance.toFixed(2)}km away (outside ${radius}km radius)`);
+          console.log(
+            `❌ "${restaurant.name}" is ${restaurant.distance.toFixed(2)}km away (outside ${radius}km radius)`
+          );
         } else {
-          console.log(`✅ "${restaurant.name}" is ${restaurant.distance.toFixed(2)}km away (within ${radius}km radius)`);
+          console.log(
+            `✅ "${restaurant.name}" is ${restaurant.distance.toFixed(2)}km away (within ${radius}km radius)`
+          );
         }
         return isWithinRadius;
       });
-      
-    console.log(`🎯 ${nearbyRestaurants.length} restaurants found within ${radius}km radius`);
+
+    console.log(
+      `🎯 ${nearbyRestaurants.length} restaurants found within ${radius}km radius`
+    );
 
     // Apply additional filters
     let filteredRestaurants = nearbyRestaurants;
@@ -121,9 +135,14 @@ export async function POST(request: NextRequest) {
         filteredRestaurants = filteredRestaurants.filter((restaurant) => {
           const menuPrices = restaurant.menuItems.map((item) => item.price);
           if (menuPrices.length === 0) return false;
-          
-          const avgPrice = menuPrices.reduce((sum, price) => sum + price, 0) / menuPrices.length;
-          return avgPrice >= filters.priceRange!.min && avgPrice <= filters.priceRange!.max;
+
+          const avgPrice =
+            menuPrices.reduce((sum, price) => sum + price, 0) /
+            menuPrices.length;
+          return (
+            avgPrice >= filters.priceRange!.min &&
+            avgPrice <= filters.priceRange!.max
+          );
         });
       }
     }
@@ -137,13 +156,16 @@ export async function POST(request: NextRequest) {
             { latitude, longitude },
             restaurant.averagePreparationTime
           );
-          
+
           return {
             ...restaurant,
             estimatedDeliveryTime: eta,
           };
         } catch (error) {
-          console.error(`Error calculating ETA for restaurant ${restaurant.id}:`, error);
+          console.error(
+            `Error calculating ETA for restaurant ${restaurant.id}:`,
+            error
+          );
           return {
             ...restaurant,
             estimatedDeliveryTime: restaurant.averagePreparationTime + 30, // Fallback
@@ -155,7 +177,8 @@ export async function POST(request: NextRequest) {
     // Filter by delivery time if specified
     if (filters?.deliveryTime) {
       filteredRestaurants = restaurantsWithETA.filter(
-        (restaurant) => restaurant.estimatedDeliveryTime! <= filters.deliveryTime!
+        (restaurant) =>
+          restaurant.estimatedDeliveryTime! <= filters.deliveryTime!
       );
     } else {
       filteredRestaurants = restaurantsWithETA;
@@ -205,7 +228,6 @@ export async function POST(request: NextRequest) {
         searchRadius: radius,
       },
     });
-
   } catch (error) {
     console.error('Error discovering restaurants:', error);
     return NextResponse.json(
@@ -227,7 +249,8 @@ function isRestaurantOpen(operatingHours: any): boolean {
   const closeTime = 24 * 60; // 12 AM in minutes (midnight)
 
   // Check if current time is within operating hours
-  if (currentTime >= openTime || currentTime < 60) { // Allow until 1 AM for late orders
+  if (currentTime >= openTime || currentTime < 60) {
+    // Allow until 1 AM for late orders
     return true;
   }
 
@@ -266,8 +289,12 @@ export async function GET(request: NextRequest) {
       radius,
       filters: {
         cuisineTypes: searchParams.get('cuisines')?.split(',') || undefined,
-        rating: searchParams.get('rating') ? parseFloat(searchParams.get('rating')!) : undefined,
-        deliveryTime: searchParams.get('deliveryTime') ? parseInt(searchParams.get('deliveryTime')!) : undefined,
+        rating: searchParams.get('rating')
+          ? parseFloat(searchParams.get('rating')!)
+          : undefined,
+        deliveryTime: searchParams.get('deliveryTime')
+          ? parseInt(searchParams.get('deliveryTime')!)
+          : undefined,
       },
     };
 
@@ -282,7 +309,6 @@ export async function GET(request: NextRequest) {
     });
 
     return await POST(postRequest);
-
   } catch (error) {
     console.error('Error in GET discover restaurants:', error);
     return NextResponse.json(

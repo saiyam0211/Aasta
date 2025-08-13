@@ -9,48 +9,57 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
     const restaurantId = formData.get('restaurantId') as string;
 
-    console.log('FormData received:', { 
-      hasFile: !!file, 
-      fileName: file?.name, 
-      fileSize: file?.size, 
+    console.log('FormData received:', {
+      hasFile: !!file,
+      fileName: file?.name,
+      fileSize: file?.size,
       fileType: file?.type,
-      restaurantId 
+      restaurantId,
     });
 
     if (!file) {
       console.log('No file in form data');
-      return NextResponse.json({
-        success: false,
-        error: 'No file uploaded'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'No file uploaded',
+        },
+        { status: 400 }
+      );
     }
 
     if (!restaurantId) {
       console.log('No restaurant ID provided');
-      return NextResponse.json({
-        success: false,
-        error: 'Restaurant ID is required'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Restaurant ID is required',
+        },
+        { status: 400 }
+      );
     }
 
     console.log('AWS Config check:', {
       hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
       hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY,
       region: process.env.AWS_REGION,
-      bucket: process.env.AWS_S3_BUCKET_NAME || process.env.AWS_S3_BUCKET
+      bucket: process.env.AWS_S3_BUCKET_NAME || process.env.AWS_S3_BUCKET,
     });
 
     // Get current restaurant to check if it has an existing image
     const restaurant = await prisma.restaurant.findUnique({
       where: { id: restaurantId },
-      select: { imageUrl: true }
+      select: { imageUrl: true },
     });
 
     if (!restaurant) {
-      return NextResponse.json({
-        success: false,
-        error: 'Restaurant not found'
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Restaurant not found',
+        },
+        { status: 404 }
+      );
     }
 
     // Upload new image to S3 with presigned URL for immediate access
@@ -58,10 +67,13 @@ export async function POST(request: NextRequest) {
     const uploadResult = await uploadToS3(file, 'restaurants');
 
     if (!uploadResult.success) {
-      return NextResponse.json({
-        success: false,
-        error: uploadResult.error
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: uploadResult.error,
+        },
+        { status: 400 }
+      );
     }
 
     // Update restaurant with new image URL
@@ -84,16 +96,18 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         imageUrl: uploadResult.imageUrl,
-        restaurant: updatedRestaurant
+        restaurant: updatedRestaurant,
       },
-      message: 'Restaurant image uploaded successfully'
+      message: 'Restaurant image uploaded successfully',
     });
-
   } catch (error) {
     console.error('Error uploading restaurant image:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to upload restaurant image'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to upload restaurant image',
+      },
+      { status: 500 }
+    );
   }
 }

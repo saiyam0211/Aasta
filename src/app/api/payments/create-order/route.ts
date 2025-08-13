@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import PaymentService from "@/lib/payment-service";
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import PaymentService from '@/lib/payment-service';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
@@ -20,28 +20,28 @@ export async function POST(request: NextRequest) {
 
     if (!orderNumber) {
       return NextResponse.json(
-        { success: false, error: "Order number is required" },
+        { success: false, error: 'Order number is required' },
         { status: 400 }
       );
     }
 
     // First find the customer record
     const customer = await prisma.customer.findUnique({
-      where: { userId: session.user.id }
+      where: { userId: session.user.id },
     });
-    
+
     if (!customer) {
       return NextResponse.json(
-        { success: false, error: "Customer not found" },
+        { success: false, error: 'Customer not found' },
         { status: 404 }
       );
     }
-    
+
     // Find the order
     const order = await prisma.order.findFirst({
       where: {
         orderNumber,
-        customerId: customer.id
+        customerId: customer.id,
       },
       include: {
         customer: {
@@ -49,17 +49,17 @@ export async function POST(request: NextRequest) {
             user: {
               select: {
                 email: true,
-                phone: true
-              }
-            }
-          }
-        }
-      }
+                phone: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!order) {
       return NextResponse.json(
-        { success: false, error: "Order not found" },
+        { success: false, error: 'Order not found' },
         { status: 404 }
       );
     }
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     // Check if order is already paid
     if (order.paymentStatus === 'COMPLETED') {
       return NextResponse.json(
-        { success: false, error: "Order is already paid" },
+        { success: false, error: 'Order is already paid' },
         { status: 400 }
       );
     }
@@ -86,8 +86,8 @@ export async function POST(request: NextRequest) {
       where: { id: order.id },
       data: {
         razorpayOrderId: razorpayOrder.id,
-        paymentStatus: 'PENDING'
-      }
+        paymentStatus: 'PENDING',
+      },
     });
 
     // Create payment record
@@ -98,8 +98,8 @@ export async function POST(request: NextRequest) {
         amount: order.totalAmount,
         currency: 'INR',
         status: 'CREATED',
-        paymentMethod: 'RAZORPAY'
-      }
+        paymentMethod: 'RAZORPAY',
+      },
     });
 
     return NextResponse.json({
@@ -108,18 +108,18 @@ export async function POST(request: NextRequest) {
         id: razorpayOrder.id,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        key: process.env.RAZORPAY_KEY_ID
+        key: process.env.RAZORPAY_KEY_ID,
       },
       order: {
         id: order.id,
         orderNumber: order.orderNumber,
-        total: order.totalAmount
-      }
+        total: order.totalAmount,
+      },
     });
   } catch (error) {
-    console.error("Payment order creation failed:", error);
+    console.error('Payment order creation failed:', error);
     return NextResponse.json(
-      { success: false, error: "Failed to create payment order" },
+      { success: false, error: 'Failed to create payment order' },
       { status: 500 }
     );
   }

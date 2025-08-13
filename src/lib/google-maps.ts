@@ -29,17 +29,20 @@ export interface DeliveryCalculation {
 class GoogleMapsService {
   private loader: Loader;
   private placesService: google.maps.places.PlacesService | null = null;
-  private autocompleteService: google.maps.places.AutocompleteService | null = null;
+  private autocompleteService: google.maps.places.AutocompleteService | null =
+    null;
   private geocoder: google.maps.Geocoder | null = null;
   private isInitialized = false;
 
   constructor() {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    
+
     if (!apiKey) {
-      console.warn('Google Maps API key not found. Location features will be limited.');
+      console.warn(
+        'Google Maps API key not found. Location features will be limited.'
+      );
     }
-    
+
     this.loader = new Loader({
       apiKey: apiKey || '',
       version: 'weekly',
@@ -50,7 +53,9 @@ class GoogleMapsService {
   private checkApiKey(): boolean {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
-      console.warn('Google Maps API key not configured. Please add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your environment variables.');
+      console.warn(
+        'Google Maps API key not configured. Please add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your environment variables.'
+      );
       return false;
     }
     return true;
@@ -97,38 +102,55 @@ class GoogleMapsService {
           },
           async (predictions, status) => {
             clearTimeout(timeout);
-            
-            if (status === google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT) {
+
+            if (
+              status === google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT
+            ) {
               console.error('Google Places API quota exceeded');
               resolve([]);
               return;
             }
-            
-            if (status === google.maps.places.PlacesServiceStatus.REQUEST_DENIED) {
-              console.error('Google Places API request denied. Check your API key and restrictions.');
+
+            if (
+              status === google.maps.places.PlacesServiceStatus.REQUEST_DENIED
+            ) {
+              console.error(
+                'Google Places API request denied. Check your API key and restrictions.'
+              );
               resolve([]);
               return;
             }
-            
-            if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
+
+            if (
+              status !== google.maps.places.PlacesServiceStatus.OK ||
+              !predictions
+            ) {
               console.warn(`Google Places API returned status: ${status}`);
               resolve([]);
               return;
             }
 
             // Convert predictions to LocationWithAddress format
-            const locationPromises = predictions.slice(0, 5).map(async (prediction) => {
-              try {
-                const location = await this.geocodePlaceId(prediction.place_id!);
-                return location;
-              } catch (error) {
-                console.error('Error geocoding place:', error);
-                return null;
-              }
-            });
+            const locationPromises = predictions
+              .slice(0, 5)
+              .map(async (prediction) => {
+                try {
+                  const location = await this.geocodePlaceId(
+                    prediction.place_id!
+                  );
+                  return location;
+                } catch (error) {
+                  console.error('Error geocoding place:', error);
+                  return null;
+                }
+              });
 
             const locations = await Promise.all(locationPromises);
-            resolve(locations.filter((loc): loc is LocationWithAddress => loc !== null));
+            resolve(
+              locations.filter(
+                (loc): loc is LocationWithAddress => loc !== null
+              )
+            );
           }
         );
       });
@@ -145,14 +167,18 @@ class GoogleMapsService {
 
     return new Promise((resolve) => {
       this.geocoder!.geocode({ placeId }, (results, status) => {
-        if (status !== google.maps.GeocoderStatus.OK || !results || results.length === 0) {
+        if (
+          status !== google.maps.GeocoderStatus.OK ||
+          !results ||
+          results.length === 0
+        ) {
           resolve(null);
           return;
         }
 
         const result = results[0];
         const location = result.geometry.location;
-        
+
         // Extract address components
         const addressComponents = result.address_components;
         let city = '';
@@ -161,7 +187,10 @@ class GoogleMapsService {
 
         addressComponents.forEach((component) => {
           const types = component.types;
-          if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+          if (
+            types.includes('locality') ||
+            types.includes('administrative_area_level_2')
+          ) {
             city = component.long_name;
           }
           if (types.includes('administrative_area_level_1')) {
@@ -184,7 +213,10 @@ class GoogleMapsService {
     });
   }
 
-  async reverseGeocode(lat: number, lng: number): Promise<LocationWithAddress | null> {
+  async reverseGeocode(
+    lat: number,
+    lng: number
+  ): Promise<LocationWithAddress | null> {
     if (!this.checkApiKey()) {
       return null;
     }
@@ -207,27 +239,33 @@ class GoogleMapsService {
           { location: { lat, lng } },
           (results, status) => {
             clearTimeout(timeout);
-            
+
             if (status === google.maps.GeocoderStatus.OVER_QUERY_LIMIT) {
               console.error('Google Geocoding API quota exceeded');
               resolve(null);
               return;
             }
-            
+
             if (status === google.maps.GeocoderStatus.REQUEST_DENIED) {
-              console.error('Google Geocoding API request denied. Check your API key and restrictions.');
+              console.error(
+                'Google Geocoding API request denied. Check your API key and restrictions.'
+              );
               resolve(null);
               return;
             }
-            
-            if (status !== google.maps.GeocoderStatus.OK || !results || results.length === 0) {
+
+            if (
+              status !== google.maps.GeocoderStatus.OK ||
+              !results ||
+              results.length === 0
+            ) {
               console.warn(`Google Geocoding API returned status: ${status}`);
               resolve(null);
               return;
             }
 
             const result = results[0];
-            
+
             // Extract address components
             const addressComponents = result.address_components;
             let city = '';
@@ -236,7 +274,10 @@ class GoogleMapsService {
 
             addressComponents.forEach((component) => {
               const types = component.types;
-              if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+              if (
+                types.includes('locality') ||
+                types.includes('administrative_area_level_2')
+              ) {
                 city = component.long_name;
               }
               if (types.includes('administrative_area_level_1')) {
@@ -271,14 +312,18 @@ class GoogleMapsService {
 
     return new Promise((resolve) => {
       this.geocoder!.geocode({ address }, (results, status) => {
-        if (status !== google.maps.GeocoderStatus.OK || !results || results.length === 0) {
+        if (
+          status !== google.maps.GeocoderStatus.OK ||
+          !results ||
+          results.length === 0
+        ) {
           resolve(null);
           return;
         }
 
         const result = results[0];
         const location = result.geometry.location;
-        
+
         // Extract address components
         const addressComponents = result.address_components;
         let city = '';
@@ -287,7 +332,10 @@ class GoogleMapsService {
 
         addressComponents.forEach((component) => {
           const types = component.types;
-          if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+          if (
+            types.includes('locality') ||
+            types.includes('administrative_area_level_2')
+          ) {
             city = component.long_name;
           }
           if (types.includes('administrative_area_level_1')) {
@@ -320,17 +368,26 @@ class GoogleMapsService {
     customerLng: number,
     preparationTime: number = 20 // in minutes
   ): Promise<DeliveryCalculation> {
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const apiKey =
+      process.env.GOOGLE_MAPS_API_KEY ||
+      process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
       console.warn('Google Maps API key not found, using fallback calculation');
-      return this.calculateFallbackMetrics(restaurantLat, restaurantLng, customerLat, customerLng, preparationTime);
+      return this.calculateFallbackMetrics(
+        restaurantLat,
+        restaurantLng,
+        customerLat,
+        customerLng,
+        preparationTime
+      );
     }
 
     try {
       const origins = `${restaurantLat},${restaurantLng}`;
       const destinations = `${customerLat},${customerLng}`;
-      
-      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?` +
+
+      const url =
+        `https://maps.googleapis.com/maps/api/distancematrix/json?` +
         `origins=${encodeURIComponent(origins)}&` +
         `destinations=${encodeURIComponent(destinations)}&` +
         `mode=driving&` +
@@ -344,13 +401,25 @@ class GoogleMapsService {
 
       if (data.status !== 'OK') {
         console.warn(`Google Maps Distance Matrix API error: ${data.status}`);
-        return this.calculateFallbackMetrics(restaurantLat, restaurantLng, customerLat, customerLng, preparationTime);
+        return this.calculateFallbackMetrics(
+          restaurantLat,
+          restaurantLng,
+          customerLat,
+          customerLng,
+          preparationTime
+        );
       }
 
       const element = data.rows[0]?.elements[0];
       if (!element || element.status !== 'OK') {
         console.warn(`No route found: ${element?.status || 'Unknown error'}`);
-        return this.calculateFallbackMetrics(restaurantLat, restaurantLng, customerLat, customerLng, preparationTime);
+        return this.calculateFallbackMetrics(
+          restaurantLat,
+          restaurantLng,
+          customerLat,
+          customerLng,
+          preparationTime
+        );
       }
 
       const distanceKm = element.distance.value / 1000; // Convert meters to kilometers
@@ -358,16 +427,24 @@ class GoogleMapsService {
 
       // Calculate estimated delivery time (preparation time + travel time)
       const totalDeliveryMinutes = preparationTime + durationMinutes;
-      const estimatedDeliveryTime = new Date(Date.now() + totalDeliveryMinutes * 60 * 1000);
+      const estimatedDeliveryTime = new Date(
+        Date.now() + totalDeliveryMinutes * 60 * 1000
+      );
 
       return {
         distance: Math.round(distanceKm * 100) / 100, // Round to 2 decimal places
         duration: durationMinutes,
-        estimatedDeliveryTime
+        estimatedDeliveryTime,
       };
     } catch (error) {
       console.error('Error calculating delivery metrics:', error);
-      return this.calculateFallbackMetrics(restaurantLat, restaurantLng, customerLat, customerLng, preparationTime);
+      return this.calculateFallbackMetrics(
+        restaurantLat,
+        restaurantLng,
+        customerLat,
+        customerLng,
+        preparationTime
+      );
     }
   }
 
@@ -387,18 +464,20 @@ class GoogleMapsService {
       customerLat,
       customerLng
     );
-    
+
     // Estimate duration based on average speed (assuming 25 km/h in city traffic)
     // Add 20% buffer for actual road distance vs straight line
     const adjustedDistance = fallbackDistance * 1.2;
     const fallbackDuration = Math.ceil((adjustedDistance / 25) * 60);
     const totalDeliveryMinutes = preparationTime + fallbackDuration;
-    const estimatedDeliveryTime = new Date(Date.now() + totalDeliveryMinutes * 60 * 1000);
+    const estimatedDeliveryTime = new Date(
+      Date.now() + totalDeliveryMinutes * 60 * 1000
+    );
 
     return {
       distance: Math.round(adjustedDistance * 100) / 100,
       duration: fallbackDuration,
-      estimatedDeliveryTime
+      estimatedDeliveryTime,
     };
   }
 
@@ -414,15 +493,17 @@ class GoogleMapsService {
     const R = 6371; // Earth's radius in kilometers
     const dLat = this.toRadians(lat2 - lat1);
     const dLng = this.toRadians(lng2 - lng1);
-    
-    const a = 
+
+    const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
-    
+      Math.cos(this.toRadians(lat1)) *
+        Math.cos(this.toRadians(lat2)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
-    
+
     return Math.round(distance * 100) / 100; // Round to 2 decimal places
   }
 

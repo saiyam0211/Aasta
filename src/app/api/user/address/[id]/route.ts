@@ -3,12 +3,15 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
-export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await getServerSession(authOptions);
     const params = await context.params;
 
-if (!session || !session.user || !session.user.id) {
+    if (!session || !session.user || !session.user.id) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -18,7 +21,7 @@ if (!session || !session.user || !session.user.id) {
     // First find the customer record for this user
     const customer = await prisma.customer.findUnique({
       where: { userId: session.user.id },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!customer) {
@@ -28,14 +31,25 @@ if (!session || !session.user || !session.user.id) {
       );
     }
 
-    const { street, city, state, zipCode, landmark, instructions, type, latitude, longitude, isDefault } = await request.json();
+    const {
+      street,
+      city,
+      state,
+      zipCode,
+      landmark,
+      instructions,
+      type,
+      latitude,
+      longitude,
+      isDefault,
+    } = await request.json();
 
     // Validate that the address belongs to the user
     const existingAddress = await prisma.address.findFirst({
       where: {
         id: params.id,
-        customerId: customer.id
-      }
+        customerId: customer.id,
+      },
     });
 
     if (!existingAddress) {
@@ -49,7 +63,7 @@ if (!session || !session.user || !session.user.id) {
     if (isDefault && !existingAddress.isDefault) {
       await prisma.address.updateMany({
         where: { customerId: customer.id },
-        data: { isDefault: false }
+        data: { isDefault: false },
       });
     }
 
@@ -61,17 +75,22 @@ if (!session || !session.user || !session.user.id) {
         state: state || existingAddress.state,
         zipCode: zipCode || existingAddress.zipCode,
         landmark: landmark !== undefined ? landmark : existingAddress.landmark,
-        instructions: instructions !== undefined ? instructions : existingAddress.instructions,
+        instructions:
+          instructions !== undefined
+            ? instructions
+            : existingAddress.instructions,
         type: type || existingAddress.type,
         latitude: latitude !== undefined ? latitude : existingAddress.latitude,
-        longitude: longitude !== undefined ? longitude : existingAddress.longitude,
-        isDefault: isDefault !== undefined ? isDefault : existingAddress.isDefault
-      }
+        longitude:
+          longitude !== undefined ? longitude : existingAddress.longitude,
+        isDefault:
+          isDefault !== undefined ? isDefault : existingAddress.isDefault,
+      },
     });
 
     return NextResponse.json({
       success: true,
-      address: updatedAddress
+      address: updatedAddress,
     });
   } catch (error) {
     console.error('Update address error:', error);
@@ -82,12 +101,15 @@ if (!session || !session.user || !session.user.id) {
   }
 }
 
-export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await getServerSession(authOptions);
     const params = await context.params;
 
-if (!session || !session.user || !session.user.id) {
+    if (!session || !session.user || !session.user.id) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -97,7 +119,7 @@ if (!session || !session.user || !session.user.id) {
     // First find the customer record for this user
     const customer = await prisma.customer.findUnique({
       where: { userId: session.user.id },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!customer) {
@@ -110,12 +132,16 @@ if (!session || !session.user || !session.user.id) {
     // Check if the address is linked to any orders
     const linkedOrders = await prisma.order.findMany({
       where: { deliveryAddressId: params.id },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (linkedOrders.length > 0) {
       return NextResponse.json(
-        { success: false, message: 'This address is linked to existing orders and cannot be deleted. You can edit it instead.' },
+        {
+          success: false,
+          message:
+            'This address is linked to existing orders and cannot be deleted. You can edit it instead.',
+        },
         { status: 400 }
       );
     }
@@ -124,8 +150,8 @@ if (!session || !session.user || !session.user.id) {
     const existingAddress = await prisma.address.findFirst({
       where: {
         id: params.id,
-        customerId: customer.id
-      }
+        customerId: customer.id,
+      },
     });
 
     if (!existingAddress) {
@@ -136,12 +162,12 @@ if (!session || !session.user || !session.user.id) {
     }
 
     await prisma.address.delete({
-      where: { id: params.id }
+      where: { id: params.id },
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Address deleted successfully'
+      message: 'Address deleted successfully',
     });
   } catch (error) {
     console.error('Delete address error:', error);

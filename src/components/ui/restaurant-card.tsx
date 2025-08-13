@@ -1,10 +1,12 @@
-"use client";
+'use client';
 
-import { cn } from "@/lib/utils";
-import { SafeImage } from "@/components/ui/safe-image";
-import { Star, Clock, MapPin } from "lucide-react";
-import Link from "next/link";
-import { useRef, useState } from "react";
+import { cn } from '@/lib/utils';
+import { SafeImage } from '@/components/ui/safe-image';
+import { Star, Clock, MapPin } from 'lucide-react';
+import Link from 'next/link';
+import { useRef, useState, useEffect } from 'react';
+import { useLocationStore } from '@/hooks/useLocation';
+import { googleMapsService } from '@/lib/google-maps';
 
 export interface RestaurantSummary {
   id: string;
@@ -19,6 +21,10 @@ export interface RestaurantSummary {
   minimumOrderAmount?: number | null;
   isOpen?: boolean;
   featuredItems?: { name: string; price: number; image: string }[];
+  // Add these properties for distance calculation
+  latitude?: number | null;
+  longitude?: number | null;
+  averagePreparationTime?: number;
 }
 
 interface RestaurantCardProps {
@@ -32,7 +38,7 @@ interface RestaurantCardProps {
 
 function InfoChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-white/90 text-gray-900 border border-gray-200 shadow">
+    <span className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white/90 px-2 py-1 text-[11px] text-gray-900 shadow">
       {children}
     </span>
   );
@@ -47,10 +53,72 @@ export function RestaurantCard({
   className,
 }: RestaurantCardProps) {
   const [index, setIndex] = useState(0);
-  const items = restaurant.featuredItems && restaurant.featuredItems.length > 0 ? restaurant.featuredItems : undefined;
+  const [distanceText, setDistanceText] = useState<string | null>(null);
+  const { latitude, longitude } = useLocationStore();
+
+  const items =
+    restaurant.featuredItems && restaurant.featuredItems.length > 0
+      ? restaurant.featuredItems
+      : undefined;
   const current = items ? items[index % items.length] : undefined;
-  const heroFallback = restaurant.bannerImage || restaurant.imageUrl || "/images/restaurant-placeholder.svg";
+  const heroFallback =
+    restaurant.bannerImage ||
+    restaurant.imageUrl ||
+    '/images/restaurant-placeholder.svg';
   const heroImage = current?.image || heroFallback;
+
+  // Calculate distance using Google Maps
+  useEffect(() => {
+    const calculateDistance = async () => {
+      if (!restaurant || !latitude || !longitude) return;
+
+      const rLat = restaurant.latitude;
+      const rLng = restaurant.longitude;
+
+      if (typeof rLat !== 'number' || typeof rLng !== 'number') {
+        // Fallback to existing distanceKm if coordinates not available
+        if (typeof restaurant.distanceKm === 'number') {
+          const km = restaurant.distanceKm;
+          const text =
+            km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+          setDistanceText(text);
+        }
+        return;
+      }
+
+      try {
+        const metrics = await googleMapsService.calculateDeliveryMetrics(
+          rLat,
+          rLng,
+          latitude,
+          longitude,
+          restaurant.averagePreparationTime || 20
+        );
+        const km = metrics.distance;
+        const text =
+          km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+        setDistanceText(text);
+      } catch (e) {
+        console.error('Error calculating distance:', e);
+        // Fallback to existing distanceKm
+        if (typeof restaurant.distanceKm === 'number') {
+          const km = restaurant.distanceKm;
+          const text =
+            km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+          setDistanceText(text);
+        }
+      }
+    };
+
+    calculateDistance();
+  }, [
+    restaurant.latitude,
+    restaurant.longitude,
+    latitude,
+    longitude,
+    restaurant.averagePreparationTime,
+    restaurant.distanceKm,
+  ]);
 
   // Swipe handling
   const touchStartX = useRef<number | null>(null);
@@ -82,7 +150,7 @@ export function RestaurantCard({
   const content = (
     <div
       className={cn(
-        "w-full bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden",
+        'w-full overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm',
         className
       )}
       onClick={() => onClick?.(restaurant.id)}
@@ -98,60 +166,65 @@ export function RestaurantCard({
           key={index}
           src={heroImage}
           alt={restaurant.name}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
           fallbackSrc="/images/restaurant-placeholder.svg"
         />
         {/* Featured dish chip */}
         {current && (
           <div className="absolute top-3 left-3">
             <InfoChip>
-              <span className="font-medium line-clamp-1 max-w-[150px]">{current.name}</span>
+              <span className="line-clamp-1 max-w-[150px] font-medium">
+                {current.name}
+              </span>
               <span className="font-bold">₹{current.price}</span>
             </InfoChip>
           </div>
         )}
         {/* Dots */}
         {items && items.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+          <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1">
             {items.map((_, i) => (
-              <span key={i} className={cn("w-1.5 h-1.5 rounded-full", i === index ? "bg-white" : "bg-white/60")} />)
-            )}
+              <span
+                key={i}
+                className={cn(
+                  'h-1.5 w-1.5 rounded-full',
+                  i === index ? 'bg-white' : 'bg-white/60'
+                )}
+              />
+            ))}
           </div>
         )}
       </div>
 
       {/* Body */}
       <div className="p-4">
-        <div className="flex items-start justify-between mb-2">
+        <div className="mb-2 flex items-start justify-between">
           <div>
-            <div className="font-semibold text-gray-900 text-base leading-5 line-clamp-1">
+            <div className="line-clamp-1 text-base leading-5 font-semibold text-gray-900">
               {restaurant.name}
             </div>
             {restaurant.cuisineTypes && restaurant.cuisineTypes.length > 0 && (
-              <div className="text-xs text-gray-500 mt-1 line-clamp-1">
-                {restaurant.cuisineTypes.join(", ")}
+              <div className="mt-1 line-clamp-1 text-xs text-gray-500">
+                {restaurant.cuisineTypes.join(', ')}
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-gray-600">
-          <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" />
-            <span>{restaurant.rating ?? "--"}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
+        <div className="flex flex-col text-xs text-gray-600">
+          <div className="mb-2 flex items-center gap-1">
+            <Clock className="h-4 w-4" />
             <span>
               {typeof restaurant.estimatedDeliveryTime === 'string'
                 ? restaurant.estimatedDeliveryTime
-                : `${restaurant.estimatedDeliveryTime ?? "--"} min`}
+                : `${restaurant.estimatedDeliveryTime ?? '--'} min`}
             </span>
           </div>
-          {restaurant.distanceKm != null && (
+          {/* Show calculated distance or fallback to existing distanceKm */}
+          {distanceText && (
             <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              <span>{restaurant.distanceKm.toFixed(1)} km</span>
+              <MapPin className="h-4 w-4" />
+              <span>{distanceText}</span>
             </div>
           )}
         </div>
@@ -168,4 +241,4 @@ export function RestaurantCard({
   }
 
   return content;
-} 
+}

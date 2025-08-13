@@ -9,7 +9,7 @@ dotenv.config({ path: '.env.local' });
 
 async function startDevWithBot() {
   console.log('🚀 Starting Next.js dev server with Telegram bot...');
-  
+
   // Initialize the bot first
   try {
     await forceInitializeBot();
@@ -21,7 +21,7 @@ async function startDevWithBot() {
   // Start Next.js dev server
   const nextDev = spawn('npm', ['run', 'dev'], {
     stdio: 'inherit',
-    shell: true
+    shell: true,
   });
 
   // Handle process termination
@@ -44,4 +44,4 @@ async function startDevWithBot() {
 }
 
 // Start the development server with bot
-startDevWithBot().catch(console.error); 
+startDevWithBot().catch(console.error);

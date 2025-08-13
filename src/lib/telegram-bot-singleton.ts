@@ -12,7 +12,7 @@ class TelegramBotSingleton {
     if (this.isInitializing) {
       // Wait for initialization to complete
       while (this.isInitializing) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
       return this.instance;
     }
@@ -21,26 +21,32 @@ class TelegramBotSingleton {
 
     try {
       const botToken = process.env.TELEGRAM_BOT_TOKEN;
-      
+
       if (!botToken) {
-        console.warn('⚠️ TELEGRAM_BOT_TOKEN not found. Telegram bot will not start.');
+        console.warn(
+          '⚠️ TELEGRAM_BOT_TOKEN not found. Telegram bot will not start.'
+        );
         this.isInitializing = false;
         return null;
       }
 
       console.log('🚀 Initializing Telegram Bot Service...');
       this.instance = new TelegramBotService(botToken);
-      
+
       // Set up graceful shutdown
       process.on('SIGINT', () => {
-        console.log('\n🛑 Received SIGINT, shutting down Telegram bot gracefully...');
+        console.log(
+          '\n🛑 Received SIGINT, shutting down Telegram bot gracefully...'
+        );
         if (this.instance) {
           this.instance.bot.stopPolling();
         }
       });
 
       process.on('SIGTERM', () => {
-        console.log('\n🛑 Received SIGTERM, shutting down Telegram bot gracefully...');
+        console.log(
+          '\n🛑 Received SIGTERM, shutting down Telegram bot gracefully...'
+        );
         if (this.instance) {
           this.instance.bot.stopPolling();
         }
@@ -69,4 +75,4 @@ class TelegramBotSingleton {
   }
 }
 
-export default TelegramBotSingleton; 
+export default TelegramBotSingleton;

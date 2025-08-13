@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -21,7 +21,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (user.role !== 'RESTAURANT_OWNER') {
-      return NextResponse.json({ error: 'User must be a restaurant owner' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'User must be a restaurant owner' },
+        { status: 403 }
+      );
     }
 
     // Check if restaurant already exists for this user
@@ -30,23 +33,41 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingRestaurant) {
-      return NextResponse.json({ error: 'Restaurant already exists for this user' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Restaurant already exists for this user' },
+        { status: 400 }
+      );
     }
 
     const data = await request.json();
 
     // Validate required fields for simplified onboarding
-    const requiredFields = ['name', 'ownerName', 'phone', 'address', 'latitude', 'longitude', 'locationId', 'operatingHours'];
-    
+    const requiredFields = [
+      'name',
+      'ownerName',
+      'phone',
+      'address',
+      'latitude',
+      'longitude',
+      'locationId',
+      'operatingHours',
+    ];
+
     for (const field of requiredFields) {
       if (!data[field]) {
-        return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
+        return NextResponse.json(
+          { error: `Missing required field: ${field}` },
+          { status: 400 }
+        );
       }
     }
 
     // Validate coordinates are not zero
     if (data.latitude === 0 || data.longitude === 0) {
-      return NextResponse.json({ error: 'Valid location coordinates are required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Valid location coordinates are required' },
+        { status: 400 }
+      );
     }
 
     // Create the restaurant with new schema
@@ -71,25 +92,30 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ 
-      message: 'Restaurant created successfully',
-      restaurant: {
-        id: restaurant.id,
-        name: restaurant.name,
-        status: restaurant.status,
-      }
-    }, { status: 201 });
-
+    return NextResponse.json(
+      {
+        message: 'Restaurant created successfully',
+        restaurant: {
+          id: restaurant.id,
+          name: restaurant.name,
+          status: restaurant.status,
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating restaurant:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -107,9 +133,11 @@ export async function GET() {
     }
 
     return NextResponse.json({ restaurant: user.restaurant });
-
   } catch (error) {
     console.error('Error fetching restaurant:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

@@ -1,0 +1,17 @@
+node_modules
+.next
+dist
+build
+coverage
+.env*
+*.log
+.eslintrc.json
+.eslintrc.js
+.eslintrc.mjs
+eslint.config.js
+eslint.config.mjs
+*.config.js
+*.config.mjs
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

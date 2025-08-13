@@ -6,31 +6,22 @@ import { prisma } from '@/lib/prisma';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { userId, role } = await request.json();
 
     // Verify the user is updating their own role
     if (session.user.id !== userId) {
-      return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Validate role
     const validRoles = ['CUSTOMER', 'DELIVERY_PARTNER', 'RESTAURANT_OWNER'];
     if (!validRoles.includes(role)) {
-      return NextResponse.json(
-        { error: 'Invalid role' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
     // Update user role and create role-specific profile
@@ -78,7 +69,6 @@ export async function POST(request: NextRequest) {
       success: true,
       user: result,
     });
-
   } catch (error) {
     console.error('Error updating user role:', error);
     return NextResponse.json(
@@ -86,4 +76,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

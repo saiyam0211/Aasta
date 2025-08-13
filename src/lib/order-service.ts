@@ -3,8 +3,9 @@ import { prisma } from './prisma';
 export class OrderService {
   async createOrder(orderData: any) {
     // Calculate totals
-    const subtotal = orderData.items.reduce((sum: number, item: any) => 
-      sum + (item.unitPrice * item.quantity), 0
+    const subtotal = orderData.items.reduce(
+      (sum: number, item: any) => sum + item.unitPrice * item.quantity,
+      0
     );
     const deliveryFee = orderData.deliveryFee || 50;
     const taxes = subtotal * 0.05; // 5% tax
@@ -13,7 +14,10 @@ export class OrderService {
 
     // Generate unique order number
     const orderNumber = `ORD${Date.now()}`;
-    const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const verificationCode = Math.random()
+      .toString(36)
+      .substring(2, 8)
+      .toUpperCase();
 
     const order = await prisma.order.create({
       data: {
@@ -36,9 +40,9 @@ export class OrderService {
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             totalPrice: item.unitPrice * item.quantity,
-            customizations: item.customizations || {}
-          }))
-        }
+            customizations: item.customizations || {},
+          })),
+        },
       },
       include: {
         orderItems: true,
@@ -51,7 +55,17 @@ export class OrderService {
     return order;
   }
 
-  async updateOrderStatus(orderId: string, status: 'PLACED' | 'CONFIRMED' | 'PREPARING' | 'READY_FOR_PICKUP' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED') {
+  async updateOrderStatus(
+    orderId: string,
+    status:
+      | 'PLACED'
+      | 'CONFIRMED'
+      | 'PREPARING'
+      | 'READY_FOR_PICKUP'
+      | 'OUT_FOR_DELIVERY'
+      | 'DELIVERED'
+      | 'CANCELLED'
+  ) {
     const order = await prisma.order.update({
       where: { id: orderId },
       data: { status },
@@ -100,7 +114,7 @@ export class OrderService {
 
   async getOrders(customerId?: string, page = 1, limit = 10) {
     const where = customerId ? { customerId } : {};
-    
+
     const orders = await prisma.order.findMany({
       where,
       include: {

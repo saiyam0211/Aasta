@@ -14,12 +14,9 @@ export async function sendTelegramNotification(
 
     // Find the delivery partner by phone number
     const partner = await prisma.deliveryPartner.findFirst({
-      where: { 
-        OR: [
-          { telegramPhone: phoneNumber },
-          { user: { phone: phoneNumber } }
-        ]
-      }
+      where: {
+        OR: [{ telegramPhone: phoneNumber }, { user: { phone: phoneNumber } }],
+      },
     });
 
     if (!partner || !partner.telegramChatId) {
@@ -73,4 +70,4 @@ export async function sendBatchNotificationToPartner(
 You have been assigned this delivery batch. Please review and confirm.`;
 
   return await sendTelegramNotification(phoneNumber, message);
-} 
+}

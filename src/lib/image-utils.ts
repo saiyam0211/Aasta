@@ -9,17 +9,17 @@
  */
 export function getSecureImageUrl(imageUrl: string): string {
   if (!imageUrl) return '';
-  
+
   // If it's already a local API URL, return as is
   if (imageUrl.startsWith('/api/images/')) {
     return imageUrl;
   }
-  
+
   // If it's a presigned URL (contains signature), return as is
   if (imageUrl.includes('X-Amz-Signature')) {
     return imageUrl;
   }
-  
+
   // If it's a public S3 URL, convert to local API route
   if (imageUrl.includes('amazonaws.com')) {
     try {
@@ -31,7 +31,7 @@ export function getSecureImageUrl(imageUrl: string): string {
       return imageUrl; // Return original URL as fallback
     }
   }
-  
+
   return imageUrl;
 }
 
@@ -73,12 +73,12 @@ export function extractS3KeyFromUrl(imageUrl: string): string | null {
       // Extract from local API route: /api/images/restaurants/filename.jpg
       return imageUrl.replace('/api/images/', '');
     }
-    
+
     if (isPublicS3Url(imageUrl) || isPresignedUrl(imageUrl)) {
       const url = new URL(imageUrl);
       return url.pathname.substring(1); // Remove leading slash
     }
-    
+
     return null;
   } catch (error) {
     console.error('Error extracting S3 key from URL:', error);

@@ -10,35 +10,47 @@ export interface AdminUser {
 const ADMIN_CREDENTIALS = {
   email: 'hi@aasta.food',
   password: '@asta.food',
-  name: 'Aasta Admin'
+  name: 'Aasta Admin',
 };
 
-export function validateAdminCredentials(email: string, password: string): AdminUser | null {
-  if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+export function validateAdminCredentials(
+  email: string,
+  password: string
+): AdminUser | null {
+  if (
+    email === ADMIN_CREDENTIALS.email &&
+    password === ADMIN_CREDENTIALS.password
+  ) {
     return {
       email: ADMIN_CREDENTIALS.email,
       role: 'admin',
-      name: ADMIN_CREDENTIALS.name
+      name: ADMIN_CREDENTIALS.name,
     };
   }
   return null;
 }
 
 export function isValidAdminSession(sessionData: any): boolean {
-  return sessionData?.user?.email === ADMIN_CREDENTIALS.email && sessionData?.user?.role === 'admin';
+  return (
+    sessionData?.user?.email === ADMIN_CREDENTIALS.email &&
+    sessionData?.user?.role === 'admin'
+  );
 }
 
 // Admin session management using localStorage (client-side)
 export const adminSession = {
   set: (user: AdminUser) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('admin_session', JSON.stringify({
-        user,
-        timestamp: Date.now()
-      }));
+      localStorage.setItem(
+        'admin_session',
+        JSON.stringify({
+          user,
+          timestamp: Date.now(),
+        })
+      );
     }
   },
-  
+
   get: (): AdminUser | null => {
     if (typeof window !== 'undefined') {
       const session = localStorage.getItem('admin_session');
@@ -52,10 +64,10 @@ export const adminSession = {
     }
     return null;
   },
-  
+
   clear: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('admin_session');
     }
-  }
+  },
 };

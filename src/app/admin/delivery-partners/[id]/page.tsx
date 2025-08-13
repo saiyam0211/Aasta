@@ -4,7 +4,9 @@ interface DeliveryPartnerDetailPageProps {
   }>;
 }
 
-export default async function DeliveryPartnerDetailPage({ params }: DeliveryPartnerDetailPageProps) {
+export default async function DeliveryPartnerDetailPage({
+  params,
+}: DeliveryPartnerDetailPageProps) {
   const { id } = await params;
 
   return (

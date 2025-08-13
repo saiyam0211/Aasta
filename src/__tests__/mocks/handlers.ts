@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse } from 'msw';
 
 export const handlers = [
   // Mock API endpoints
@@ -12,7 +12,7 @@ export const handlers = [
         isActive: true,
         createdAt: new Date().toISOString(),
       },
-    ])
+    ]);
   }),
 
   http.get('/api/admin/users', () => {
@@ -24,7 +24,7 @@ export const handlers = [
         role: 'CUSTOMER',
         createdAt: new Date().toISOString(),
       },
-    ])
+    ]);
   }),
 
   http.get('/api/analytics/metrics', () => {
@@ -35,7 +35,7 @@ export const handlers = [
         activeDeliveryPartners: 10,
         activeRestaurants: 5,
       },
-    })
+    });
   }),
 
   http.get('/api/delivery-partners', () => {
@@ -46,11 +46,11 @@ export const handlers = [
         status: 'AVAILABLE',
         currentLocation: {
           lat: 28.6139,
-          lng: 77.2090,
+          lng: 77.209,
         },
         createdAt: new Date().toISOString(),
       },
-    ])
+    ]);
   }),
 
   http.get('/api/orders', () => {
@@ -64,18 +64,18 @@ export const handlers = [
         restaurantId: '1',
         createdAt: new Date().toISOString(),
       },
-    ])
+    ]);
   }),
 
   http.post('/api/orders/create', async ({ request }) => {
-    const body = await request.json()
+    const body = await request.json();
     return HttpResponse.json({
       id: '1',
       orderNumber: 'ORD-001',
       status: 'PENDING',
       ...body,
       createdAt: new Date().toISOString(),
-    })
+    });
   }),
 
   http.get('/api/restaurants', () => {
@@ -88,16 +88,16 @@ export const handlers = [
         isActive: true,
         createdAt: new Date().toISOString(),
       },
-    ])
+    ]);
   }),
 
   http.post('/api/restaurants', async ({ request }) => {
-    const body = await request.json()
+    const body = await request.json();
     return HttpResponse.json({
       id: '1',
       ...body,
       createdAt: new Date().toISOString(),
-    })
+    });
   }),
 
   http.get('/api/payments/create-order', () => {
@@ -106,14 +106,14 @@ export const handlers = [
       amount: 50000,
       currency: 'INR',
       receipt: 'receipt_123',
-    })
+    });
   }),
 
   http.post('/api/payments/verify-payment', async ({ request }) => {
-    const body = await request.json()
+    const body = await request.json();
     return HttpResponse.json({
       success: true,
       orderId: body.orderId,
-    })
+    });
   }),
-]
+];

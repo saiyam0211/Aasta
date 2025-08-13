@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(
   request: NextRequest,
@@ -19,7 +19,7 @@ export async function POST(
 
     // Verify restaurant exists
     const restaurant = await prisma.restaurant.findUnique({
-      where: { id: restaurantId }
+      where: { id: restaurantId },
     });
 
     if (!restaurant) {
@@ -33,8 +33,8 @@ export async function POST(
     const updatedRestaurant = await prisma.restaurant.update({
       where: { id: restaurantId },
       data: {
-        assignedDeliveryPartners: deliveryPartnerIds
-      }
+        assignedDeliveryPartners: deliveryPartnerIds,
+      },
     });
 
     // Update delivery partners to include this restaurant in their assigned list
@@ -42,21 +42,21 @@ export async function POST(
     await prisma.deliveryPartner.updateMany({
       where: {
         assignedRestaurants: {
-          has: restaurantId
-        }
+          has: restaurantId,
+        },
       },
       data: {
         assignedRestaurants: {
-          set: []
-        }
-      }
+          set: [],
+        },
+      },
     });
 
     // Then add this restaurant to the selected partners' assigned list
     if (deliveryPartnerIds.length > 0) {
       for (const partnerId of deliveryPartnerIds) {
         const partner = await prisma.deliveryPartner.findUnique({
-          where: { id: partnerId }
+          where: { id: partnerId },
         });
 
         if (partner) {
@@ -68,8 +68,8 @@ export async function POST(
           await prisma.deliveryPartner.update({
             where: { id: partnerId },
             data: {
-              assignedRestaurants: updatedAssignedRestaurants
-            }
+              assignedRestaurants: updatedAssignedRestaurants,
+            },
           });
         }
       }
@@ -77,7 +77,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      data: updatedRestaurant
+      data: updatedRestaurant,
     });
   } catch (error) {
     console.error('Error assigning delivery partners:', error);
@@ -100,8 +100,8 @@ export async function GET(
       select: {
         id: true,
         name: true,
-        assignedDeliveryPartners: true
-      }
+        assignedDeliveryPartners: true,
+      },
     });
 
     if (!restaurant) {
@@ -114,7 +114,7 @@ export async function GET(
     // Get assigned delivery partners details
     const assignedPartners = await prisma.deliveryPartner.findMany({
       where: {
-        id: { in: restaurant.assignedDeliveryPartners }
+        id: { in: restaurant.assignedDeliveryPartners },
       },
       include: {
         user: {
@@ -123,17 +123,17 @@ export async function GET(
             name: true,
             email: true,
             phone: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     return NextResponse.json({
       success: true,
       data: {
         restaurant,
-        assignedPartners
-      }
+        assignedPartners,
+      },
     });
   } catch (error) {
     console.error('Error fetching assigned partners:', error);

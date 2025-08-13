@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
     });
 
     if (existingUser) {
@@ -33,12 +33,12 @@ export async function POST(request: NextRequest) {
         email,
         phone,
         role: role as any, // Will be validated by Prisma schema
-      }
+      },
     });
 
     return NextResponse.json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
     console.error('Error creating user:', error);

@@ -28,7 +28,7 @@ export default function PaymentPage() {
   const params = useParams();
   const router = useRouter();
   const orderNumber = params?.orderNumber as string;
-  
+
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -42,7 +42,7 @@ export default function PaymentPage() {
     try {
       const response = await fetch(`/api/orders/${orderNumber}`);
       const data = await response.json();
-      
+
       if (data.success) {
         setOrder(data.order);
       } else {
@@ -58,7 +58,7 @@ export default function PaymentPage() {
 
   const loadRazorpayScript = () => {
     if (window.Razorpay) return;
-    
+
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
@@ -67,9 +67,9 @@ export default function PaymentPage() {
 
   const initiatePayment = async () => {
     if (!order) return;
-    
+
     setProcessing(true);
-    
+
     try {
       // Create payment order
       const response = await fetch('/api/payments/create-order', {
@@ -78,12 +78,12 @@ export default function PaymentPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          orderNumber: order.orderNumber
+          orderNumber: order.orderNumber,
         }),
       });
 
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.error);
       }
@@ -102,17 +102,17 @@ export default function PaymentPage() {
         prefill: {
           name: 'Customer',
           email: 'customer@example.com',
-          contact: '9999999999'
+          contact: '9999999999',
         },
         theme: {
-          color: '#3B82F6'
+          color: '#3B82F6',
         },
         modal: {
           ondismiss: () => {
             setProcessing(false);
             toast.error('Payment cancelled');
-          }
-        }
+          },
+        },
       };
 
       const razorpay = new window.Razorpay(options);
@@ -138,7 +138,7 @@ export default function PaymentPage() {
       });
 
       const data = await verifyResponse.json();
-      
+
       if (data.success) {
         toast.success('Payment successful!');
         router.push(`/orders/${orderNumber}?payment=success`);
@@ -156,7 +156,7 @@ export default function PaymentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -164,12 +164,10 @@ export default function PaymentPage() {
 
   if (!order) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Order Not Found</h1>
-          <Button onClick={() => router.push('/orders')}>
-            View Orders
-          </Button>
+          <h1 className="mb-4 text-2xl font-bold">Order Not Found</h1>
+          <Button onClick={() => router.push('/orders')}>View Orders</Button>
         </div>
       </div>
     );
@@ -177,13 +175,9 @@ export default function PaymentPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="mb-6"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className="mx-auto max-w-2xl px-4">
+        <Button variant="ghost" onClick={() => router.back()} className="mb-6">
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
 
@@ -204,7 +198,9 @@ export default function PaymentPage() {
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">Delivery Address:</span>
-                <span className="text-right max-w-xs">{order.deliveryAddress}</span>
+                <span className="max-w-xs text-right">
+                  {order.deliveryAddress}
+                </span>
               </div>
               <div className="border-t pt-4">
                 <div className="flex justify-between text-lg font-bold">
@@ -219,38 +215,38 @@ export default function PaymentPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <CreditCard className="h-5 w-5 mr-2" />
+                <CreditCard className="mr-2 h-5 w-5" />
                 Payment Method
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="p-4 border rounded-lg bg-blue-50">
+                <div className="rounded-lg border bg-blue-50 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <Shield className="h-5 w-5 text-blue-600 mr-2" />
-                      <span className="font-medium">Razorpay Secure Checkout</span>
+                      <Shield className="mr-2 h-5 w-5 text-blue-600" />
+                      <span className="font-medium">
+                        Razorpay Secure Checkout
+                      </span>
                     </div>
                     <span className="text-sm text-gray-600">
                       Cards, UPI, Wallets & More
                     </span>
                   </div>
                 </div>
-                
+
                 <Button
                   onClick={initiatePayment}
                   disabled={processing}
-                  className="w-full h-12 text-lg"
+                  className="h-12 w-full text-lg"
                 >
                   {processing ? (
                     <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       Processing Payment...
                     </>
                   ) : (
-                    <>
-                      Pay ₹{order.total.toFixed(2)}
-                    </>
+                    <>Pay ₹{order.total.toFixed(2)}</>
                   )}
                 </Button>
               </div>
@@ -258,12 +254,15 @@ export default function PaymentPage() {
           </Card>
 
           {/* Security Note */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
             <div className="flex items-start">
-              <Shield className="h-5 w-5 text-green-600 mr-2 mt-0.5" />
+              <Shield className="mt-0.5 mr-2 h-5 w-5 text-green-600" />
               <div className="text-sm text-green-800">
-                <p className="font-medium mb-1">Secure Payment</p>
-                <p>Your payment information is encrypted and secure. We don't store your card details.</p>
+                <p className="mb-1 font-medium">Secure Payment</p>
+                <p>
+                  Your payment information is encrypted and secure. We don't
+                  store your card details.
+                </p>
               </div>
             </div>
           </div>

@@ -16,32 +16,40 @@ export async function PATCH(
     });
 
     if (!existingItem) {
-      return NextResponse.json({
-        success: false,
-        error: 'Menu item not found'
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Menu item not found',
+        },
+        { status: 404 }
+      );
     }
 
     // Update only the provided fields
     const updatedItem = await prisma.menuItem.update({
       where: { id },
       data: {
-        available: data.available !== undefined ? data.available : existingItem.available,
+        available:
+          data.available !== undefined
+            ? data.available
+            : existingItem.available,
       },
     });
 
     return NextResponse.json({
       success: true,
       data: updatedItem,
-      message: 'Menu item updated successfully'
+      message: 'Menu item updated successfully',
     });
-
   } catch (error) {
     console.error('Error updating menu item:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to update menu item'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to update menu item',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -61,10 +69,13 @@ export async function PUT(
     });
 
     if (!existingItem) {
-      return NextResponse.json({
-        success: false,
-        error: 'Menu item not found'
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Menu item not found',
+        },
+        { status: 404 }
+      );
     }
 
     let imageUrl = existingItem.imageUrl;
@@ -84,19 +95,28 @@ export async function PUT(
 
       if (uploadResult.success) {
         // Delete old image from S3 if it exists and was stored in S3
-        if (existingItem.imageUrl && existingItem.imageUrl.includes('amazonaws.com')) {
+        if (
+          existingItem.imageUrl &&
+          existingItem.imageUrl.includes('amazonaws.com')
+        ) {
           try {
             await deleteFromS3(existingItem.imageUrl);
           } catch (error) {
-            console.error('Failed to delete old menu item image from S3:', error);
+            console.error(
+              'Failed to delete old menu item image from S3:',
+              error
+            );
           }
         }
-        imageUrl = uploadResult.imageUrl;
+        imageUrl = uploadResult.imageUrl ?? null;
       } else {
-        return NextResponse.json({
-          success: false,
-          error: uploadResult.error
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            success: false,
+            error: uploadResult.error,
+          },
+          { status: 400 }
+        );
       }
     }
 
@@ -104,17 +124,37 @@ export async function PUT(
     const updatedItem = await prisma.menuItem.update({
       where: { id },
       data: {
-        name: data.name ? data.name as string : existingItem.name,
-        description: data.description ? data.description as string : existingItem.description,
-        price: data.price ? parseFloat(data.price as string) : existingItem.price,
-        originalPrice: data.originalPrice ? parseFloat(data.originalPrice as string) : existingItem.originalPrice,
-        category: data.category ? data.category as string : existingItem.category,
-        preparationTime: data.preparationTime ? parseInt(data.preparationTime as string) : existingItem.preparationTime,
+        name: data.name ? (data.name as string) : existingItem.name,
+        description: data.description
+          ? (data.description as string)
+          : existingItem.description,
+        price: data.price
+          ? parseFloat(data.price as string)
+          : existingItem.price,
+        originalPrice: data.originalPrice
+          ? parseFloat(data.originalPrice as string)
+          : existingItem.originalPrice,
+        category: data.category
+          ? (data.category as string)
+          : existingItem.category,
+        preparationTime: data.preparationTime
+          ? parseInt(data.preparationTime as string)
+          : existingItem.preparationTime,
         imageUrl: imageUrl,
-        dietaryTags: data.dietaryType ? [data.dietaryType as string] : existingItem.dietaryTags,
-        spiceLevel: data.spiceLevel ? data.spiceLevel as string : existingItem.spiceLevel,
-        available: data.available !== undefined ? data.available === 'true' : existingItem.available,
-        featured: data.featured !== undefined ? data.featured === 'true' : existingItem.featured,
+        dietaryTags: data.dietaryType
+          ? [data.dietaryType as string]
+          : existingItem.dietaryTags,
+        spiceLevel: data.spiceLevel
+          ? (data.spiceLevel as string)
+          : existingItem.spiceLevel,
+        available:
+          data.available !== undefined
+            ? data.available === 'true'
+            : existingItem.available,
+        featured:
+          data.featured !== undefined
+            ? data.featured === 'true'
+            : existingItem.featured,
         stockLeft: data.stockLeft ? parseInt(data.stockLeft as string) : null,
       },
     });
@@ -122,15 +162,17 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       data: updatedItem,
-      message: 'Menu item updated successfully'
+      message: 'Menu item updated successfully',
     });
-
   } catch (error) {
     console.error('Error updating menu item:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to update menu item'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to update menu item',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -148,10 +190,13 @@ export async function DELETE(
     });
 
     if (!existingItem) {
-      return NextResponse.json({
-        success: false,
-        error: 'Menu item not found'
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Menu item not found',
+        },
+        { status: 404 }
+      );
     }
 
     // Delete the menu item
@@ -161,15 +206,17 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Menu item deleted successfully'
+      message: 'Menu item deleted successfully',
     });
-
   } catch (error) {
     console.error('Error deleting menu item:', error);
-    return NextResponse.json({
-      success: false,  
-      error: 'Failed to delete menu item'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to delete menu item',
+      },
+      { status: 500 }
+    );
   }
 }
 // GET - Get single menu item
@@ -192,10 +239,13 @@ export async function GET(
     });
 
     if (!menuItem) {
-      return NextResponse.json({
-        success: false,
-        error: 'Menu item not found'
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Menu item not found',
+        },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({
@@ -217,14 +267,16 @@ export async function GET(
         restaurantId: menuItem.restaurantId,
         restaurantName: menuItem.restaurant.name,
       },
-      message: 'Menu item fetched successfully'
+      message: 'Menu item fetched successfully',
     });
-
   } catch (error) {
     console.error('Error fetching menu item:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch menu item'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch menu item',
+      },
+      { status: 500 }
+    );
   }
 }

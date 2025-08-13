@@ -7,12 +7,14 @@ This guide explains how to deploy your Next.js app with the integrated Telegram 
 ### 1. **Vercel (Recommended)**
 
 **Why Vercel?**
+
 - Perfect for Next.js apps
 - Automatic deployments from GitHub
 - Built-in environment variable management
 - Free tier available
 
 **Steps:**
+
 1. **Connect your GitHub repository** to Vercel
 2. **Add environment variables** in Vercel dashboard:
    ```
@@ -27,12 +29,14 @@ This guide explains how to deploy your Next.js app with the integrated Telegram 
 ### 2. **Railway**
 
 **Why Railway?**
+
 - Great for Node.js services
 - Automatic deployments
 - Good free tier
 - Easy database integration
 
 **Steps:**
+
 1. **Create a Railway account** and connect your repository
 2. **Add environment variables**:
    ```
@@ -46,11 +50,13 @@ This guide explains how to deploy your Next.js app with the integrated Telegram 
 ### 3. **Render**
 
 **Why Render?**
+
 - Free tier available
 - Simple setup
 - Good for small to medium apps
 
 **Steps:**
+
 1. **Create a Render account** and connect your repository
 2. **Create a new Web Service**
 3. **Configure:**
@@ -88,12 +94,14 @@ SMTP_PASS=your_smtp_password
 ## 🤖 Telegram Bot Setup
 
 ### 1. **Get Bot Token**
+
 1. Message @BotFather on Telegram
 2. Send `/newbot`
 3. Follow instructions to create your bot
 4. Copy the bot token
 
 ### 2. **Set Webhook (Optional)**
+
 If you want to use webhooks instead of polling:
 
 ```bash
@@ -105,23 +113,28 @@ curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook" \
 ## 📱 How the Integration Works
 
 ### **Development Mode**
+
 ```bash
 npm run dev
 ```
+
 - Starts Next.js development server
 - Automatically initializes Telegram bot
 - Bot runs in polling mode
 
 ### **Production Mode**
+
 ```bash
 npm run build
 npm start
 ```
+
 - Builds the Next.js app
 - Starts production server
 - Telegram bot initializes automatically
 
 ### **Bot Features**
+
 - **Automatic startup** when app starts
 - **Graceful shutdown** when app stops
 - **Order notifications** to delivery partners
@@ -131,12 +144,14 @@ npm start
 ## 🔄 Deployment Workflow
 
 ### **Local Testing**
+
 1. Set up environment variables in `.env.local`
 2. Run `npm run dev`
 3. Test bot functionality
 4. Test web app functionality
 
 ### **Production Deployment**
+
 1. Push code to GitHub
 2. Deploy to your chosen platform
 3. Set environment variables
@@ -146,11 +161,13 @@ npm start
 ## 📊 Monitoring
 
 ### **Bot Status**
+
 - Check logs for "✅ Telegram Bot integrated successfully"
 - Monitor for any error messages
 - Verify bot responds to commands
 
 ### **App Status**
+
 - Monitor Next.js app logs
 - Check database connectivity
 - Verify API endpoints work
@@ -158,16 +175,19 @@ npm start
 ## 🛠️ Troubleshooting
 
 ### **Bot Not Starting**
+
 1. Check `TELEGRAM_BOT_TOKEN` is set correctly
 2. Verify bot token is valid
 3. Check logs for initialization errors
 
 ### **Database Issues**
+
 1. Verify `DATABASE_URL` is correct
 2. Run `npm run db:generate` if needed
 3. Check database connectivity
 
 ### **Deployment Issues**
+
 1. Check build logs
 2. Verify environment variables
 3. Test locally first
@@ -175,13 +195,16 @@ npm start
 ## 🚀 Advanced Configuration
 
 ### **Custom Bot Commands**
+
 Edit `src/lib/telegram-bot-service.ts` to add custom commands.
 
 ### **Webhook vs Polling**
+
 - **Polling** (default): Bot checks for updates every few seconds
 - **Webhook**: Telegram sends updates to your server
 
 ### **Scaling**
+
 - For high traffic, consider separate bot deployment
 - Use Redis for session management
 - Implement rate limiting
@@ -189,6 +212,7 @@ Edit `src/lib/telegram-bot-service.ts` to add custom commands.
 ## 📞 Support
 
 If you encounter issues:
+
 1. Check the logs in your deployment platform
 2. Verify all environment variables are set
 3. Test the bot token manually
@@ -196,4 +220,4 @@ If you encounter issues:
 
 ---
 
-**🎉 Your integrated Telegram bot and Next.js app are now ready for deployment!** 
+**🎉 Your integrated Telegram bot and Next.js app are now ready for deployment!**

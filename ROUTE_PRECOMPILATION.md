@@ -188,11 +188,11 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '18'
-      
+
       - run: npm ci
       - run: npm run precompile-routes
       - run: npm run build
-      
+
       # Deploy to your hosting platform
       - run: npm run deploy
 ```
@@ -234,4 +234,4 @@ For issues or questions:
 2. Review this documentation
 3. Monitor system resources
 4. Test routes manually
-5. Contact the development team 
+5. Contact the development team

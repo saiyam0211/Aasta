@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 
@@ -14,7 +14,7 @@ const showPWANotification = async (title: string, body: string) => {
           body,
           icon: '/icons/icon-192x192.png',
           tag: 'pwa-install-instruction',
-          requireInteraction: true
+          requireInteraction: true,
         });
         console.log('📱 PWA Service Worker notification shown');
         return;
@@ -25,7 +25,7 @@ const showPWANotification = async (title: string, body: string) => {
     const browserNotification = new Notification(title, {
       body,
       icon: '/icons/icon-192x192.png',
-      tag: 'pwa-install-instruction'
+      tag: 'pwa-install-instruction',
     });
 
     // Auto-close after 10 seconds
@@ -50,7 +50,8 @@ interface BeforeInstallPromptEvent extends Event {
 
 export const usePWA = () => {
   const [isInstallable, setIsInstallable] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installPrompt, setInstallPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [isOnline, setIsOnline] = useState(true);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
@@ -58,10 +59,12 @@ export const usePWA = () => {
   useEffect(() => {
     // Check if already installed
     const checkInstalled = () => {
-      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+      const isStandaloneMode = window.matchMedia(
+        '(display-mode: standalone)'
+      ).matches;
       const isiOSStandalone = (window.navigator as any).standalone === true;
       const isInstalled = isStandaloneMode || isiOSStandalone;
-      
+
       if (isInstalled) {
         console.log('🎉 PWA is already installed');
         setIsInstalled(true);
@@ -78,7 +81,7 @@ export const usePWA = () => {
       e.preventDefault();
       setInstallPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
-      
+
       // Wait for user engagement before showing prompt
       console.log('✅ PWA install prompt ready, waiting for user engagement');
     };
@@ -94,7 +97,7 @@ export const usePWA = () => {
       setIsInstallable(false);
       setInstallPrompt(null);
       setShowInstallPrompt(false);
-      
+
       // Request notification permission immediately after installation
       requestNotificationPermissionAfterInstall();
     };
@@ -106,17 +109,24 @@ export const usePWA = () => {
 
     // Register service worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker
+        .register('/sw.js')
         .then((registration) => {
           console.log('✅ Service Worker registered:', registration);
         })
         .catch((registrationError) => {
-          console.error('❌ Service Worker registration failed:', registrationError);
+          console.error(
+            '❌ Service Worker registration failed:',
+            registrationError
+          );
         });
     }
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener(
+        'beforeinstallprompt',
+        handleBeforeInstallPrompt
+      );
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('appinstalled', handleAppInstalled);
@@ -125,23 +135,28 @@ export const usePWA = () => {
 
   const installApp = async () => {
     if (!installPrompt) {
-      console.log('❌ No install prompt available - trying manual instructions');
-      
+      console.log(
+        '❌ No install prompt available - trying manual instructions'
+      );
+
       // Show browser-specific instructions
       const userAgent = navigator.userAgent.toLowerCase();
       let instructions = '';
-      
+
       if (userAgent.includes('chrome') || userAgent.includes('edge')) {
-        instructions = 'Look for the install icon (⊕) in your address bar, or:\n1. Click the three dots menu (⋮)\n2. Select "Install Aasta"\n3. Click "Install" in the popup';
+        instructions =
+          'Look for the install icon (⊕) in your address bar, or:\n1. Click the three dots menu (⋮)\n2. Select "Install Aasta"\n3. Click "Install" in the popup';
       } else if (userAgent.includes('firefox')) {
-        instructions = 'Look for the install icon in your address bar, or:\n1. Click the address bar\n2. Look for "Install" option';
+        instructions =
+          'Look for the install icon in your address bar, or:\n1. Click the address bar\n2. Look for "Install" option';
       } else if (userAgent.includes('safari')) {
-        instructions = 'On Safari:\n1. Tap the Share button (□↗)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add"';
+        instructions =
+          'On Safari:\n1. Tap the Share button (□↗)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add"';
       } else {
-        instructions = 'Look for an "Install" or "Add to Home Screen" option in your browser menu';
+        instructions =
+          'Look for an "Install" or "Add to Home Screen" option in your browser menu';
       }
-      
-      
+
       console.log('📱 Manual install instructions:', instructions);
       return;
     }
@@ -150,13 +165,13 @@ export const usePWA = () => {
       console.log('🚀 Triggering PWA installation...');
       await installPrompt.prompt();
       const choiceResult = await installPrompt.userChoice;
-      
+
       if (choiceResult.outcome === 'accepted') {
         console.log('✅ User accepted the install prompt');
       } else {
         console.log('❌ User dismissed the install prompt');
       }
-      
+
       setInstallPrompt(null);
       setIsInstallable(false);
       setShowInstallPrompt(false);
@@ -180,22 +195,29 @@ export const usePWA = () => {
   };
 
   const requestNotificationPermissionAfterInstall = async () => {
-    console.log('🔔 Requesting notification permission after PWA installation...');
-    
+    console.log(
+      '🔔 Requesting notification permission after PWA installation...'
+    );
+
     // Small delay to ensure PWA is fully installed
     setTimeout(async () => {
       if ('Notification' in window && Notification.permission === 'default') {
         try {
           const permission = await Notification.requestPermission();
           if (permission === 'granted') {
-            console.log('✅ Notification permission granted after installation!');
+            console.log(
+              '✅ Notification permission granted after installation!'
+            );
             // Trigger push subscription
             await subscribeToPushNotifications();
           } else {
             console.log('❌ Notification permission denied after installation');
           }
         } catch (error) {
-          console.error('❌ Error requesting notification permission after install:', error);
+          console.error(
+            '❌ Error requesting notification permission after install:',
+            error
+          );
         }
       }
     }, 1000);
@@ -205,13 +227,15 @@ export const usePWA = () => {
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       try {
         const registration = await navigator.serviceWorker.ready;
-        
+
         // Use the VAPID public key
-        const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BLrXB9jwTEIXyAEQNlQZqW-9OGDajzUW4m0AwrLI2G89Qe3Xc7dejs9XdXDlhNIG_PJFFE_WjisPKxPNAPqopPo';
-        
+        const vapidPublicKey =
+          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+          'BLrXB9jwTEIXyAEQNlQZqW-9OGDajzUW4m0AwrLI2G89Qe3Xc7dejs9XdXDlhNIG_PJFFE_WjisPKxPNAPqopPo';
+
         const subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: vapidPublicKey
+          applicationServerKey: vapidPublicKey,
         });
 
         // Send subscription to server
@@ -220,7 +244,7 @@ export const usePWA = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(subscription)
+          body: JSON.stringify(subscription),
         });
 
         if (response.ok) {
@@ -250,6 +274,6 @@ export const usePWA = () => {
     installApp,
     dismissInstallPrompt,
     requestNotificationPermission,
-    subscribeToPushNotifications
+    subscribeToPushNotifications,
   };
 };

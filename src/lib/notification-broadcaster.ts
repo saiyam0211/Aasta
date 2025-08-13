@@ -25,17 +25,19 @@ class NotificationBroadcaster {
       userId,
       sessionId,
       isPWA,
-      lastSeen: new Date()
+      lastSeen: new Date(),
     });
-    
-    console.log(`📱 Client registered: ${userId} (PWA: ${isPWA}) - Session: ${sessionId}`);
+
+    console.log(
+      `📱 Client registered: ${userId} (PWA: ${isPWA}) - Session: ${sessionId}`
+    );
     this.cleanupOldClients();
-    
+
     return {
       success: true,
       sessionId,
       isPWA,
-      stats: this.getStats()
+      stats: this.getStats(),
     };
   }
 
@@ -44,7 +46,9 @@ class NotificationBroadcaster {
     const client = this.connectedClients.get(sessionId);
     if (client) {
       this.connectedClients.delete(sessionId);
-      console.log(`📱 Client unregistered: ${client.userId} - Session: ${sessionId}`);
+      console.log(
+        `📱 Client unregistered: ${client.userId} - Session: ${sessionId}`
+      );
     }
   }
 
@@ -62,32 +66,39 @@ class NotificationBroadcaster {
   // Broadcast notification to all PWA users
   broadcastToPWAUsers(title: string, body: string, data?: any) {
     const notificationId = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const notification = {
       id: notificationId,
       title,
       body,
       timestamp: new Date(),
-      data
+      data,
     };
 
     // Add to queue for persistence
     this.notificationQueue.push(notification);
 
     // Get all connected PWA clients
-    const pwaClients = Array.from(this.connectedClients.values()).filter(client => client.isPWA);
-    
-    console.log(`📢 Broadcasting notification to ${pwaClients.length} PWA clients:`, { 
-      title, 
-      body,
-      totalClients: this.connectedClients.size,
-      pwaClients: pwaClients.length
-    });
+    const pwaClients = Array.from(this.connectedClients.values()).filter(
+      (client) => client.isPWA
+    );
+
+    console.log(
+      `📢 Broadcasting notification to ${pwaClients.length} PWA clients:`,
+      {
+        title,
+        body,
+        totalClients: this.connectedClients.size,
+        pwaClients: pwaClients.length,
+      }
+    );
 
     // In a real implementation, this would trigger actual push notifications
     // For now, we'll log the broadcast and rely on the actual push notification system
-    pwaClients.forEach(client => {
-      console.log(`  → Queued for PWA user: ${client.userId} (session: ${client.sessionId})`);
+    pwaClients.forEach((client) => {
+      console.log(
+        `  → Queued for PWA user: ${client.userId} (session: ${client.sessionId})`
+      );
     });
 
     // Clean up old notifications
@@ -97,39 +108,48 @@ class NotificationBroadcaster {
       sent: pwaClients.length,
       notificationId,
       timestamp: notification.timestamp,
-      clients: pwaClients.map(c => ({ userId: c.userId, sessionId: c.sessionId }))
+      clients: pwaClients.map((c) => ({
+        userId: c.userId,
+        sessionId: c.sessionId,
+      })),
     };
   }
 
   // Send notification to specific users
   sendToUsers(userIds: string[], title: string, body: string, data?: any) {
     const notificationId = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const notification = {
       id: notificationId,
       title,
       body,
       timestamp: new Date(),
       targetUsers: userIds,
-      data
+      data,
     };
 
     // Add to queue for persistence
     this.notificationQueue.push(notification);
 
     // Find connected clients for specified users
-    const targetClients = Array.from(this.connectedClients.values())
-      .filter(client => userIds.includes(client.userId) && client.isPWA);
-    
-    console.log(`📤 Sending targeted notification to ${targetClients.length} users:`, { 
-      title, 
-      body,
-      targetUsers: userIds,
-      foundClients: targetClients.length
-    });
+    const targetClients = Array.from(this.connectedClients.values()).filter(
+      (client) => userIds.includes(client.userId) && client.isPWA
+    );
 
-    targetClients.forEach(client => {
-      console.log(`  → Targeted notification for: ${client.userId} (session: ${client.sessionId})`);
+    console.log(
+      `📤 Sending targeted notification to ${targetClients.length} users:`,
+      {
+        title,
+        body,
+        targetUsers: userIds,
+        foundClients: targetClients.length,
+      }
+    );
+
+    targetClients.forEach((client) => {
+      console.log(
+        `  → Targeted notification for: ${client.userId} (session: ${client.sessionId})`
+      );
     });
 
     return {
@@ -137,41 +157,46 @@ class NotificationBroadcaster {
       notificationId,
       timestamp: notification.timestamp,
       targetUsers: userIds,
-      clients: targetClients.map(c => ({ userId: c.userId, sessionId: c.sessionId }))
+      clients: targetClients.map((c) => ({
+        userId: c.userId,
+        sessionId: c.sessionId,
+      })),
     };
   }
 
   // Get stats
   getStats() {
     const allClients = Array.from(this.connectedClients.values());
-    const pwaClients = allClients.filter(client => client.isPWA);
-    const activeClients = allClients.filter(client => 
-      (Date.now() - client.lastSeen.getTime()) < 5 * 60 * 1000 // Active in last 5 minutes
+    const pwaClients = allClients.filter((client) => client.isPWA);
+    const activeClients = allClients.filter(
+      (client) => Date.now() - client.lastSeen.getTime() < 5 * 60 * 1000 // Active in last 5 minutes
     );
-    
+
     return {
       totalClients: allClients.length,
       pwaClients: pwaClients.length,
       activeClients: activeClients.length,
       regularClients: allClients.length - pwaClients.length,
       recentNotifications: this.notificationQueue.slice(-10),
-      lastUpdate: new Date()
+      lastUpdate: new Date(),
     };
   }
 
   // Get detailed client info
   getClientDetails() {
-    const clients = Array.from(this.connectedClients.values()).map(client => ({
-      userId: client.userId,
-      sessionId: client.sessionId,
-      isPWA: client.isPWA,
-      lastSeen: client.lastSeen,
-      isActive: (Date.now() - client.lastSeen.getTime()) < 5 * 60 * 1000
-    }));
+    const clients = Array.from(this.connectedClients.values()).map(
+      (client) => ({
+        userId: client.userId,
+        sessionId: client.sessionId,
+        isPWA: client.isPWA,
+        lastSeen: client.lastSeen,
+        isActive: Date.now() - client.lastSeen.getTime() < 5 * 60 * 1000,
+      })
+    );
 
     return {
       clients,
-      stats: this.getStats()
+      stats: this.getStats(),
     };
   }
 
@@ -179,17 +204,21 @@ class NotificationBroadcaster {
   private cleanupOldClients() {
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     let cleanedCount = 0;
-    
+
     for (const [sessionId, client] of this.connectedClients.entries()) {
       if (client.lastSeen < thirtyMinutesAgo) {
         this.connectedClients.delete(sessionId);
         cleanedCount++;
-        console.log(`🧹 Cleaned up inactive client: ${client.userId} (session: ${sessionId})`);
+        console.log(
+          `🧹 Cleaned up inactive client: ${client.userId} (session: ${sessionId})`
+        );
       }
     }
 
     if (cleanedCount > 0) {
-      console.log(`🧹 Cleanup complete: removed ${cleanedCount} inactive clients`);
+      console.log(
+        `🧹 Cleanup complete: removed ${cleanedCount} inactive clients`
+      );
     }
   }
 
@@ -215,12 +244,18 @@ class NotificationBroadcaster {
 export const notificationBroadcaster = new NotificationBroadcaster();
 
 // Auto-cleanup every 5 minutes
-setInterval(() => {
-  notificationBroadcaster['cleanupOldClients']();
-  notificationBroadcaster['cleanupOldNotifications']();
-}, 5 * 60 * 1000);
+setInterval(
+  () => {
+    notificationBroadcaster['cleanupOldClients']();
+    notificationBroadcaster['cleanupOldNotifications']();
+  },
+  5 * 60 * 1000
+);
 
 // Enhanced cleanup every hour
-setInterval(() => {
-  notificationBroadcaster.forceCleanup();
-}, 60 * 60 * 1000);
+setInterval(
+  () => {
+    notificationBroadcaster.forceCleanup();
+  },
+  60 * 60 * 1000
+);

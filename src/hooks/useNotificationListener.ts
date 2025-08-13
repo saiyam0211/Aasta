@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
@@ -18,8 +18,8 @@ const showNotification = async (notification: any) => {
           requireInteraction: true,
           data: {
             url: notification.url,
-            id: notification.id
-          }
+            id: notification.id,
+          },
         });
         console.log('📱 Service Worker notification shown');
         return;
@@ -31,7 +31,7 @@ const showNotification = async (notification: any) => {
       body: notification.body,
       icon: notification.icon || '/icons/icon-192x192.png',
       tag: notification.id || 'aasta-notification',
-      requireInteraction: true
+      requireInteraction: true,
     });
 
     // Handle notification click
@@ -69,7 +69,9 @@ export function useNotificationListener() {
         const sessionId = sessionStorage.getItem('client-session-id');
         if (!sessionId) return;
 
-        eventSource = new EventSource(`/api/notifications/stream?sessionId=${sessionId}`);
+        eventSource = new EventSource(
+          `/api/notifications/stream?sessionId=${sessionId}`
+        );
 
         eventSource.onopen = () => {
           console.log('📡 Notification SSE connection opened');
@@ -81,11 +83,18 @@ export function useNotificationListener() {
             console.log('📡 Received SSE message:', message);
 
             // Only show notifications for actual notification messages, ignore heartbeats and connection messages
-            if (message.type === 'notification' && message.title && message.body) {
+            if (
+              message.type === 'notification' &&
+              message.title &&
+              message.body
+            ) {
               console.log('📢 Processing notification:', message);
-              
+
               // Show browser notification if permission is granted
-              if ('Notification' in window && Notification.permission === 'granted') {
+              if (
+                'Notification' in window &&
+                Notification.permission === 'granted'
+              ) {
                 showNotification(message);
               }
             } else if (message.type === 'heartbeat') {
@@ -103,7 +112,7 @@ export function useNotificationListener() {
         eventSource.onerror = (error) => {
           console.error('📡 SSE error:', error);
           eventSource?.close();
-          
+
           // Retry connection after 5 seconds
           setTimeout(setupSSE, 5000);
         };

@@ -1,34 +1,39 @@
-"use client";
+'use client';
 
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import CustomerLayout from "@/components/layouts/customer-layout";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { MapPin, ChevronDown, Navigation, Search, Loader2 } from "lucide-react";
-import { MaterialSearchBar } from "@/components/ui/material-search-bar";
-import { HeroBanner } from "@/components/ui/hero-banner";
-import { FeaturedDishes } from "@/components/ui/featured-dishes";
-import { NearbyRestaurants } from "@/components/ui/nearby-restaurants";
-import { useStore } from "@/lib/store";
-import { locationService } from "@/lib/location-service";
-import { toast } from "sonner";
+import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import CustomerLayout from '@/components/layouts/customer-layout';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { MapPin, ChevronDown, Navigation, Search, Loader2 } from 'lucide-react';
+import { MaterialSearchBar } from '@/components/ui/material-search-bar';
+import { HeroBanner } from '@/components/ui/hero-banner';
+import { FeaturedDishes } from '@/components/ui/featured-dishes';
+import { NearbyRestaurants } from '@/components/ui/nearby-restaurants';
+import { useStore } from '@/lib/store';
+import { locationService } from '@/lib/location-service';
+import { toast } from 'sonner';
 
 export default function CustomerDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [addressInput, setAddressInput] = useState("");
+  const [addressInput, setAddressInput] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
-  
+
   const {
     location,
     locationAddress,
@@ -38,24 +43,24 @@ export default function CustomerDashboard() {
     requestLocation,
     setLocation,
     setAddress,
-    getLocationDisplayText
+    getLocationDisplayText,
   } = useStore();
-  
-  const [locationDisplay, setLocationDisplay] = useState("Set your location");
+
+  const [locationDisplay, setLocationDisplay] = useState('Set your location');
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
 
   // Update location display when location or address changes
   useEffect(() => {
-    let displayText = "Set your location";
-    
+    let displayText = 'Set your location';
+
     console.log('🔍 Location Display Effect triggered:', {
       location,
       locationAddress,
       hasLocation: !!location,
       hasAddress: !!locationAddress,
-      addressValue: locationAddress?.address
+      addressValue: locationAddress?.address,
     });
-    
+
     if (locationAddress && locationAddress.address) {
       // Try to create a short, user-friendly address
       const address = locationAddress.address;
@@ -64,26 +69,31 @@ export default function CustomerDashboard() {
         // Return first two parts for a concise display
         displayText = `${parts[0].trim()}, ${parts[1].trim()}`;
       } else {
-        displayText = address.length > 40 ? address.substring(0, 37) + '...' : address;
+        displayText =
+          address.length > 40 ? address.substring(0, 37) + '...' : address;
       }
       console.log('✅ Using address for display:', displayText);
     } else if (location) {
       displayText = 'Current Location';
       console.log('⚠️ Using fallback "Current Location" text');
     }
-    
+
     console.log('📍 Setting location display to:', displayText);
     setLocationDisplay(displayText);
-    
+
     // If we have location but no address, fetch it using our API
     if (location && !locationAddress) {
       console.log('🌐 Fetching address for location:', location);
       const apiUrl = `/api/geocode/reverse?lat=${location.latitude}&lng=${location.longitude}`;
       console.log('📡 API URL:', apiUrl);
-      
+
       fetch(apiUrl)
-        .then(response => {
-          console.log('📥 API Response status:', response.status, response.statusText);
+        .then((response) => {
+          console.log(
+            '📥 API Response status:',
+            response.status,
+            response.statusText
+          );
           return response.json();
         })
         .then((data) => {
@@ -118,10 +128,10 @@ export default function CustomerDashboard() {
   }, [location]);
 
   useEffect(() => {
-    if (status === "loading") return;
-    
+    if (status === 'loading') return;
+
     if (!session) {
-      router.push("/auth/signin");
+      router.push('/auth/signin');
       return;
     }
 
@@ -132,7 +142,7 @@ export default function CustomerDashboard() {
   // Fetch nearby restaurants from API
   const fetchNearbyRestaurants = async () => {
     if (!location) return;
-    
+
     setIsLoadingRestaurants(true);
     try {
       const response = await fetch('/api/restaurants/discover', {
@@ -151,22 +161,25 @@ export default function CustomerDashboard() {
         const data = await response.json();
         if (data.success && data.data.restaurants) {
           // Transform API data to component format
-          const transformedRestaurants = data.data.restaurants.map((restaurant: any) => ({
-            id: restaurant.id,
-            name: restaurant.name,
-            image: restaurant.imageUrl || '/images/restaurant-placeholder.svg',
-            cuisineTypes: restaurant.cuisineTypes,
-            rating: restaurant.rating,
-            reviewCount: restaurant.totalOrders || 0,
-            deliveryTime: `${restaurant.estimatedDeliveryTime || 30}-${(restaurant.estimatedDeliveryTime || 30) + 5} min`,
-            deliveryFee: 25, // Default delivery fee
-            distance: restaurant.distance,
-            isPromoted: false,
-            isFavorite: false,
-            minOrderAmount: restaurant.minimumOrderAmount,
-            avgCostForTwo: restaurant.minimumOrderAmount * 2,
-            isOpen: restaurant.isOpen,
-          }));
+          const transformedRestaurants = data.data.restaurants.map(
+            (restaurant: any) => ({
+              id: restaurant.id,
+              name: restaurant.name,
+              image:
+                restaurant.imageUrl || '/images/restaurant-placeholder.svg',
+              cuisineTypes: restaurant.cuisineTypes,
+              rating: restaurant.rating,
+              reviewCount: restaurant.totalOrders || 0,
+              deliveryTime: `${restaurant.estimatedDeliveryTime || 30}-${(restaurant.estimatedDeliveryTime || 30) + 5} min`,
+              deliveryFee: 25, // Default delivery fee
+              distance: restaurant.distance,
+              isPromoted: false,
+              isFavorite: false,
+              minOrderAmount: restaurant.minimumOrderAmount,
+              avgCostForTwo: restaurant.minimumOrderAmount * 2,
+              isOpen: restaurant.isOpen,
+            })
+          );
           setRestaurants(transformedRestaurants);
         }
       }
@@ -197,10 +210,11 @@ export default function CustomerDashboard() {
 
   const handleAddressSearch = async () => {
     if (!addressInput.trim()) return;
-    
+
     setIsSearchingAddress(true);
     try {
-      const suggestions = await locationService.getPlaceSuggestions(addressInput);
+      const suggestions =
+        await locationService.getPlaceSuggestions(addressInput);
       setSuggestions(suggestions);
     } catch (error) {
       toast.error('Failed to search for address');
@@ -226,17 +240,17 @@ export default function CustomerDashboard() {
         toast.success('Location updated!');
         setShowLocationModal(false);
         setSuggestions([]);
-        setAddressInput("");
+        setAddressInput('');
       }
     } catch (error) {
       toast.error('Failed to set location');
     }
   };
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-32 w-32 animate-spin rounded-full border-b-2 border-purple-600"></div>
       </div>
     );
   }
@@ -249,208 +263,215 @@ export default function CustomerDashboard() {
   const heroBanners = [
     {
       id: 1,
-      title: "Night Delivery is Live!",
-      subtitle: "Premium food delivery from 9 PM to 12 AM",
-      description: "Get your favorite food delivered fresh to your doorstep during late night hours",
-      image: "/images/banners/night-delivery-banner.jpg",
-      backgroundColor: "#1a365d",
-      textColor: "text-white",
-      ctaText: "Order Now",
-      ctaAction: () => router.push('/restaurants')
+      title: 'Night Delivery is Live!',
+      subtitle: 'Premium food delivery from 9 PM to 12 AM',
+      description:
+        'Get your favorite food delivered fresh to your doorstep during late night hours',
+      image: '/images/banners/night-delivery-banner.jpg',
+      backgroundColor: '#1a365d',
+      textColor: 'text-white',
+      ctaText: 'Order Now',
+      ctaAction: () => router.push('/restaurants'),
     },
     {
       id: 2,
-      title: "Free Delivery Weekend",
-      subtitle: "No delivery charges on orders above ₹299",
-      description: "Save more on your favorite meals with free delivery all weekend long",
-      image: "/images/banners/free-delivery-banner.jpg",
-      backgroundColor: "#2d5016",
-      textColor: "text-white",
-      ctaText: "Explore Offers",
-      ctaAction: () => router.push('/restaurants?filter=offers')
+      title: 'Free Delivery Weekend',
+      subtitle: 'No delivery charges on orders above ₹299',
+      description:
+        'Save more on your favorite meals with free delivery all weekend long',
+      image: '/images/banners/free-delivery-banner.jpg',
+      backgroundColor: '#2d5016',
+      textColor: 'text-white',
+      ctaText: 'Explore Offers',
+      ctaAction: () => router.push('/restaurants?filter=offers'),
     },
     {
       id: 3,
-      title: "New Restaurant Alert!",
-      subtitle: "50+ new restaurants added this week",
-      description: "Discover exciting new cuisines and flavors from recently added restaurants",
-      image: "/images/banners/new-restaurant-banner.jpg",
-      backgroundColor: "#7c2d12",
-      textColor: "text-white",
-      ctaText: "Discover New",
-      ctaAction: () => router.push('/restaurants?filter=new')
-    }
+      title: 'New Restaurant Alert!',
+      subtitle: '50+ new restaurants added this week',
+      description:
+        'Discover exciting new cuisines and flavors from recently added restaurants',
+      image: '/images/banners/new-restaurant-banner.jpg',
+      backgroundColor: '#7c2d12',
+      textColor: 'text-white',
+      ctaText: 'Discover New',
+      ctaAction: () => router.push('/restaurants?filter=new'),
+    },
   ];
 
   const featuredDishes = [
     {
-      id: "dish1",
-      name: "Butter Chicken with Naan",
-      image: "/images/dish-placeholder.svg",
+      id: 'dish1',
+      name: 'Butter Chicken with Naan',
+      image: '/images/dish-placeholder.svg',
       price: 299,
       originalPrice: 399,
       rating: 4.8,
       preparationTime: 25,
-      restaurant: "Midnight Bites",
-      category: "North Indian",
+      restaurant: 'Midnight Bites',
+      category: 'North Indian',
       isVegetarian: false,
       spiceLevel: 'medium' as const,
-      description: "Creamy tomato-based curry with tender chicken pieces served with fresh naan"
+      description:
+        'Creamy tomato-based curry with tender chicken pieces served with fresh naan',
     },
     {
-      id: "dish2",
-      name: "Margherita Pizza",
-      image: "/images/dish-placeholder.svg",
+      id: 'dish2',
+      name: 'Margherita Pizza',
+      image: '/images/dish-placeholder.svg',
       price: 249,
       originalPrice: 329,
       rating: 4.6,
       preparationTime: 20,
-      restaurant: "Night Owl Pizza",
-      category: "Italian",
+      restaurant: 'Night Owl Pizza',
+      category: 'Italian',
       isVegetarian: true,
       spiceLevel: 'mild' as const,
-      description: "Classic pizza with fresh mozzarella, tomato sauce, and basil leaves"
+      description:
+        'Classic pizza with fresh mozzarella, tomato sauce, and basil leaves',
     },
     {
-      id: "dish3",
-      name: "Hyderabadi Biryani",
-      image: "/images/dish-placeholder.svg",
+      id: 'dish3',
+      name: 'Hyderabadi Biryani',
+      image: '/images/dish-placeholder.svg',
       price: 349,
       originalPrice: 449,
       rating: 4.9,
       preparationTime: 35,
-      restaurant: "Royal Kitchen",
-      category: "Biryani",
+      restaurant: 'Royal Kitchen',
+      category: 'Biryani',
       isVegetarian: false,
       spiceLevel: 'spicy' as const,
-      description: "Aromatic basmati rice with tender mutton pieces and authentic spices"
+      description:
+        'Aromatic basmati rice with tender mutton pieces and authentic spices',
     },
     {
-      id: "dish4",
-      name: "Paneer Tikka Masala",
-      image: "/images/dish-placeholder.svg",
+      id: 'dish4',
+      name: 'Paneer Tikka Masala',
+      image: '/images/dish-placeholder.svg',
       price: 279,
       rating: 4.7,
       preparationTime: 22,
-      restaurant: "Veggie Delight",
-      category: "North Indian",
+      restaurant: 'Veggie Delight',
+      category: 'North Indian',
       isVegetarian: true,
       spiceLevel: 'medium' as const,
-      description: "Grilled cottage cheese in rich tomato and cream gravy"
+      description: 'Grilled cottage cheese in rich tomato and cream gravy',
     },
     {
-      id: "dish5",
-      name: "Chicken Hakka Noodles",
-      image: "/images/dish-placeholder.svg",
+      id: 'dish5',
+      name: 'Chicken Hakka Noodles',
+      image: '/images/dish-placeholder.svg',
       price: 199,
       originalPrice: 259,
       rating: 4.5,
       preparationTime: 18,
-      restaurant: "Dragon Palace",
-      category: "Chinese",
+      restaurant: 'Dragon Palace',
+      category: 'Chinese',
       isVegetarian: false,
       spiceLevel: 'mild' as const,
-      description: "Stir-fried noodles with chicken and fresh vegetables"
+      description: 'Stir-fried noodles with chicken and fresh vegetables',
     },
     {
-      id: "dish6",
-      name: "Masala Dosa",
-      image: "/images/dish-placeholder.svg",
+      id: 'dish6',
+      name: 'Masala Dosa',
+      image: '/images/dish-placeholder.svg',
       price: 129,
       rating: 4.8,
       preparationTime: 15,
-      restaurant: "South Spice",
-      category: "South Indian",
+      restaurant: 'South Spice',
+      category: 'South Indian',
       isVegetarian: true,
       spiceLevel: 'mild' as const,
-      description: "Crispy crepe filled with spiced potato curry served with chutney"
-    }
+      description:
+        'Crispy crepe filled with spiced potato curry served with chutney',
+    },
   ];
 
   const nearbyRestaurants = [
     {
-      id: "rest1",
-      name: "Midnight Bites",
-      image: "/images/restaurant-placeholder.svg",
-      cuisineTypes: ["North Indian", "Mughlai", "Tandoor"],
+      id: 'rest1',
+      name: 'Midnight Bites',
+      image: '/images/restaurant-placeholder.svg',
+      cuisineTypes: ['North Indian', 'Mughlai', 'Tandoor'],
       rating: 4.5,
       reviewCount: 1250,
-      deliveryTime: "25-30 min",
+      deliveryTime: '25-30 min',
       deliveryFee: 0,
       distance: 1.2,
       isPromoted: true,
       isFavorite: false,
-      discount: "20% OFF",
+      discount: '20% OFF',
       minOrderAmount: 199,
       avgCostForTwo: 350,
-      isOpen: true
+      isOpen: true,
     },
     {
-      id: "rest2",
-      name: "Night Owl Pizza",
-      image: "/images/restaurant-placeholder.svg",
-      cuisineTypes: ["Italian", "Pizza", "Pasta"],
+      id: 'rest2',
+      name: 'Night Owl Pizza',
+      image: '/images/restaurant-placeholder.svg',
+      cuisineTypes: ['Italian', 'Pizza', 'Pasta'],
       rating: 4.3,
       reviewCount: 890,
-      deliveryTime: "30-35 min",
+      deliveryTime: '30-35 min',
       deliveryFee: 25,
       distance: 2.1,
       isPromoted: false,
       isFavorite: true,
-      discount: "Free Delivery",
+      discount: 'Free Delivery',
       minOrderAmount: 249,
       avgCostForTwo: 450,
-      isOpen: true
+      isOpen: true,
     },
     {
-      id: "rest3",
-      name: "Royal Kitchen",
-      image: "/images/restaurant-placeholder.svg",
-      cuisineTypes: ["Biryani", "Hyderabadi", "Kebabs"],
+      id: 'rest3',
+      name: 'Royal Kitchen',
+      image: '/images/restaurant-placeholder.svg',
+      cuisineTypes: ['Biryani', 'Hyderabadi', 'Kebabs'],
       rating: 4.8,
       reviewCount: 2100,
-      deliveryTime: "35-40 min",
+      deliveryTime: '35-40 min',
       deliveryFee: 30,
       distance: 3.5,
       isPromoted: true,
       isFavorite: false,
       minOrderAmount: 299,
       avgCostForTwo: 500,
-      isOpen: true
+      isOpen: true,
     },
     {
-      id: "rest4",
-      name: "Dragon Palace",
-      image: "/images/restaurant-placeholder.svg",
-      cuisineTypes: ["Chinese", "Thai", "Asian"],
+      id: 'rest4',
+      name: 'Dragon Palace',
+      image: '/images/restaurant-placeholder.svg',
+      cuisineTypes: ['Chinese', 'Thai', 'Asian'],
       rating: 4.2,
       reviewCount: 675,
-      deliveryTime: "20-25 min",
+      deliveryTime: '20-25 min',
       deliveryFee: 20,
       distance: 1.8,
       isPromoted: false,
       isFavorite: true,
-      discount: "15% OFF",
+      discount: '15% OFF',
       minOrderAmount: 179,
       avgCostForTwo: 320,
-      isOpen: true
+      isOpen: true,
     },
     {
-      id: "rest5",
-      name: "South Spice",
-      image: "/images/restaurant-placeholder.svg",
-      cuisineTypes: ["South Indian", "Dosa", "Idli"],
+      id: 'rest5',
+      name: 'South Spice',
+      image: '/images/restaurant-placeholder.svg',
+      cuisineTypes: ['South Indian', 'Dosa', 'Idli'],
       rating: 4.6,
       reviewCount: 1540,
-      deliveryTime: "15-20 min",
+      deliveryTime: '15-20 min',
       deliveryFee: 0,
       distance: 0.8,
       isPromoted: false,
       isFavorite: false,
       minOrderAmount: 149,
       avgCostForTwo: 280,
-      isOpen: true
-    }
+      isOpen: true,
+    },
   ];
 
   const handleAddToCart = (dish: any) => {
@@ -460,36 +481,51 @@ export default function CustomerDashboard() {
 
   const handleFavoriteToggle = (id: string, isFavorite: boolean) => {
     // TODO: Implement favorite toggle API call
-    toast.success(isFavorite ? 'Added to favorites!' : 'Removed from favorites!');
+    toast.success(
+      isFavorite ? 'Added to favorites!' : 'Removed from favorites!'
+    );
   };
 
   return (
     <CustomerLayout>
       <div className="min-h-screen bg-gray-50">
         {/* Top Header Bar with Location and Profile */}
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="border-b bg-white shadow-sm">
+          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between">
               {/* Location Section */}
-              <div 
-                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors"
+              <div
+                className="flex cursor-pointer items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-50"
                 onClick={handleLocationClick}
               >
-                <MapPin className="w-5 h-5 text-red-500" />
+                <MapPin className="h-5 w-5 text-red-500" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{locationDisplay}</p>
-                  <p className="text-xs text-gray-500">Tap to change location</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {locationDisplay}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Tap to change location
+                  </p>
                   {/* Debug info - remove later */}
                   {process.env.NODE_ENV === 'development' && (
-                    <p className="text-xs text-blue-500">Debug: {JSON.stringify({ hasLoc: !!location, hasAddr: !!locationAddress })}</p>
+                    <p className="text-xs text-blue-500">
+                      Debug:{' '}
+                      {JSON.stringify({
+                        hasLoc: !!location,
+                        hasAddr: !!locationAddress,
+                      })}
+                    </p>
                   )}
                 </div>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
+                <ChevronDown className="h-4 w-4 text-gray-400" />
               </div>
 
               {/* Profile Avatar */}
-              <Avatar className="w-10 h-10 cursor-pointer hover:ring-2 hover:ring-primary-dark-green hover:ring-offset-2 transition-all">
-                <AvatarImage src={session.user?.image || ""} alt={session.user?.name || ""} />
+              <Avatar className="hover:ring-primary-dark-green h-10 w-10 cursor-pointer transition-all hover:ring-2 hover:ring-offset-2">
+                <AvatarImage
+                  src={session.user?.image || ''}
+                  alt={session.user?.name || ''}
+                />
                 <AvatarFallback className="bg-accent-leaf-green text-primary-dark-green font-semibold">
                   {session.user?.name?.charAt(0).toUpperCase()}
                 </AvatarFallback>
@@ -499,40 +535,47 @@ export default function CustomerDashboard() {
         </div>
 
         {/* Main Content Container */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+        <div className="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
           {/* Material 3 Search Bar */}
           <div className="relative">
             <MaterialSearchBar
               placeholder="Search restaurants, dishes, cuisines..."
-              onSearch={(query) => router.push(`/restaurants?search=${encodeURIComponent(query)}`)}
-              onFilter={() => {/* TODO: Implement filter modal */}}
-              onVoiceSearch={() => {/* TODO: Implement voice search */}}
+              onSearch={(query) =>
+                router.push(`/restaurants?search=${encodeURIComponent(query)}`)
+              }
+              onFilter={() => {
+                /* TODO: Implement filter modal */
+              }}
+              onVoiceSearch={() => {
+                /* TODO: Implement voice search */
+              }}
             />
           </div>
 
           {/* Hero Banner Section */}
-          <HeroBanner 
-            banners={heroBanners}
-            autoSlideInterval={5000}
-          />
+          <HeroBanner banners={heroBanners} autoSlideInterval={5000} />
 
           {/* Featured Dishes Section */}
-          <FeaturedDishes 
+          <FeaturedDishes
             dishes={featuredDishes}
             onAddToCart={handleAddToCart}
           />
 
           {/* Nearby Restaurants Section */}
-          <NearbyRestaurants 
-            restaurants={restaurants.length > 0 ? restaurants : nearbyRestaurants}
+          <NearbyRestaurants
+            restaurants={
+              restaurants.length > 0 ? restaurants : nearbyRestaurants
+            }
             onFavoriteToggle={handleFavoriteToggle}
             onRestaurantClick={(id) => router.push(`/restaurants/${id}`)}
           />
-          
+
           {isLoadingRestaurants && (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary-dark-green" />
-              <span className="ml-2 text-gray-600">Loading nearby restaurants...</span>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="text-primary-dark-green h-8 w-8 animate-spin" />
+              <span className="ml-2 text-gray-600">
+                Loading nearby restaurants...
+              </span>
             </div>
           )}
         </div>
@@ -544,12 +587,12 @@ export default function CustomerDashboard() {
           <DialogHeader>
             <DialogTitle>Set Your Location</DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             {/* Current Location Button */}
-            <Button 
+            <Button
               onClick={handleUseCurrentLocation}
-              className="w-full flex items-center justify-center gap-2"
+              className="flex w-full items-center justify-center gap-2"
               disabled={locationLoading}
             >
               {locationLoading ? (
@@ -559,20 +602,22 @@ export default function CustomerDashboard() {
               )}
               {locationLoading ? 'Getting location...' : 'Use Current Location'}
             </Button>
-            
+
             {locationError && (
-              <p className="text-sm text-red-600 text-center">{locationError}</p>
+              <p className="text-center text-sm text-red-600">
+                {locationError}
+              </p>
             )}
-            
+
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-muted-foreground">or</span>
+                <span className="text-muted-foreground bg-white px-2">or</span>
               </div>
             </div>
-            
+
             {/* Address Search */}
             <div className="space-y-2">
               <div className="flex gap-2">
@@ -582,7 +627,7 @@ export default function CustomerDashboard() {
                   onChange={(e) => setAddressInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAddressSearch()}
                 />
-                <Button 
+                <Button
                   onClick={handleAddressSearch}
                   disabled={isSearchingAddress || !addressInput.trim()}
                   size="sm"
@@ -594,21 +639,25 @@ export default function CustomerDashboard() {
                   )}
                 </Button>
               </div>
-              
+
               {/* Address Suggestions */}
               {suggestions.length > 0 && (
-                <div className="max-h-40 overflow-y-auto space-y-1 border rounded-md">
+                <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border">
                   {suggestions.map((suggestion, index) => (
                     <div
                       key={index}
-                      className="p-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                      className="flex cursor-pointer items-center gap-2 p-2 hover:bg-gray-100"
                       onClick={() => handleSelectSuggestion(suggestion)}
                     >
-                      <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{suggestion.address}</p>
+                      <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {suggestion.address}
+                        </p>
                         {suggestion.city && (
-                          <p className="text-xs text-gray-500 truncate">{suggestion.city}</p>
+                          <p className="truncate text-xs text-gray-500">
+                            {suggestion.city}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -619,7 +668,6 @@ export default function CustomerDashboard() {
           </div>
         </DialogContent>
       </Dialog>
-      
     </CustomerLayout>
   );
 }

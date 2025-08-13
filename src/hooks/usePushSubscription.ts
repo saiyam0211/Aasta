@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
@@ -9,13 +9,17 @@ export function usePushSubscription() {
   const [isSubscribing, setIsSubscribing] = useState(false);
 
   useEffect(() => {
-    if (!session?.user?.id || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (
+      !session?.user?.id ||
+      !('serviceWorker' in navigator) ||
+      !('PushManager' in window)
+    ) {
       return;
     }
 
     // Check if already subscribed
     checkSubscriptionStatus();
-    
+
     // Auto-subscribe if in PWA mode and not already subscribed
     autoSubscribe();
   }, [session?.user?.id]);
@@ -26,7 +30,10 @@ export function usePushSubscription() {
       const subscription = await registration.pushManager.getSubscription();
       const hasSubscription = !!subscription;
       setIsSubscribed(hasSubscription);
-      console.log('📊 Push subscription status:', hasSubscription ? 'Active' : 'None');
+      console.log(
+        '📊 Push subscription status:',
+        hasSubscription ? 'Active' : 'None'
+      );
       return hasSubscription;
     } catch (error) {
       console.error('❌ Error checking subscription status:', error);
@@ -37,9 +44,11 @@ export function usePushSubscription() {
   const autoSubscribe = async () => {
     try {
       // Only auto-subscribe if user is logged in and app is in standalone mode (PWA)
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isStandalone = window.matchMedia(
+        '(display-mode: standalone)'
+      ).matches;
       const isIOSStandalone = (window.navigator as any).standalone === true;
-      
+
       if (!isStandalone && !isIOSStandalone) {
         console.log('🔍 Not in PWA mode, skipping auto-subscription');
         return;
@@ -80,23 +89,28 @@ export function usePushSubscription() {
       console.log('⏳ Subscription already in progress...');
       return;
     }
-    
+
     setIsSubscribing(true);
-    
+
     try {
       const registration = await navigator.serviceWorker.ready;
-      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BLrXB9jwTEIXyAEQNlQZqW-9OGDajzUW4m0AwrLI2G89Qe3Xc7dejs9XdXDlhNIG_PJFFE_WjisPKxPNAPqopPo';
-      
-      console.log('🔑 Using VAPID key:', vapidPublicKey.substring(0, 20) + '...');
-      
+      const vapidPublicKey =
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+        'BLrXB9jwTEIXyAEQNlQZqW-9OGDajzUW4m0AwrLI2G89Qe3Xc7dejs9XdXDlhNIG_PJFFE_WjisPKxPNAPqopPo';
+
+      console.log(
+        '🔑 Using VAPID key:',
+        vapidPublicKey.substring(0, 20) + '...'
+      );
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: vapidPublicKey
+        applicationServerKey: vapidPublicKey,
       });
 
       console.log('📡 Push subscription created:', {
         endpoint: subscription.endpoint.substring(0, 50) + '...',
-        keys: Object.keys(subscription.toJSON().keys || {})
+        keys: Object.keys(subscription.toJSON().keys || {}),
       });
 
       // Send subscription to server
@@ -105,7 +119,7 @@ export function usePushSubscription() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(subscription.toJSON())
+        body: JSON.stringify(subscription.toJSON()),
       });
 
       if (response.ok) {
@@ -116,7 +130,7 @@ export function usePushSubscription() {
         console.error('❌ Failed to save push subscription:', error);
         throw new Error(error.error || 'Failed to save subscription');
       }
-      
+
       return subscription;
     } catch (error) {
       console.error('❌ Error subscribing to push notifications:', error);
@@ -131,15 +145,15 @@ export function usePushSubscription() {
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
-      
+
       if (subscription) {
         await subscription.unsubscribe();
-        
+
         // Remove from server
         await fetch('/api/push-subscription', {
           method: 'DELETE',
         });
-        
+
         setIsSubscribed(false);
         console.log('✅ Successfully unsubscribed from push notifications');
       }
@@ -153,6 +167,6 @@ export function usePushSubscription() {
     isSubscribing,
     subscribeToPush,
     unsubscribe,
-    checkSubscriptionStatus
+    checkSubscriptionStatus,
   };
 }

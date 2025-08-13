@@ -1,18 +1,24 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import OperationsLayout from "@/components/layouts/operations-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  ShoppingCart, 
-  Plus, 
-  Search, 
-  Store, 
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import OperationsLayout from '@/components/layouts/operations-layout';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  ShoppingCart,
+  Plus,
+  Search,
+  Store,
   Edit,
   Trash2,
   ImageIcon,
@@ -25,9 +31,9 @@ import {
   Eye,
   ToggleLeft,
   ToggleRight,
-  ArrowLeft
-} from "lucide-react";
-import Link from "next/link";
+  ArrowLeft,
+} from 'lucide-react';
+import Link from 'next/link';
 
 interface Restaurant {
   id: string;
@@ -63,7 +69,7 @@ export default function RestaurantMenuManagementPage() {
   if (!restaurantId) {
     return <div className="text-red-500">Invalid restaurant ID.</div>;
   }
-  
+
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,7 +85,7 @@ export default function RestaurantMenuManagementPage() {
     preparationTime: 15,
     imageUrl: '',
     dietaryType: 'Veg',
-    restaurantId: restaurantId
+    restaurantId: restaurantId,
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
@@ -90,7 +96,7 @@ export default function RestaurantMenuManagementPage() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      
+
       // Load restaurant details
       const restaurantRes = await fetch(`/api/restaurants/${restaurantId}`);
       const restaurantData = await restaurantRes.json();
@@ -99,7 +105,9 @@ export default function RestaurantMenuManagementPage() {
       }
 
       // Load menu items
-      const menuRes = await fetch(`/api/menu-items?restaurantId=${restaurantId}`);
+      const menuRes = await fetch(
+        `/api/menu-items?restaurantId=${restaurantId}`
+      );
       const menuData = await menuRes.json();
       if (menuData.success) {
         setMenuItems(menuData.data || []);
@@ -113,9 +121,11 @@ export default function RestaurantMenuManagementPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      const url = editingItem ? `/api/menu-items/${editingItem.id}` : '/api/menu-items';
+      const url = editingItem
+        ? `/api/menu-items/${editingItem.id}`
+        : '/api/menu-items';
       const method = editingItem ? 'PUT' : 'POST';
 
       // Create FormData for file upload
@@ -124,18 +134,24 @@ export default function RestaurantMenuManagementPage() {
       formDataToSend.append('name', formData.name);
       formDataToSend.append('description', formData.description);
       formDataToSend.append('price', formData.price.toString());
-      formDataToSend.append('preparationTime', formData.preparationTime.toString());
+      formDataToSend.append(
+        'preparationTime',
+        formData.preparationTime.toString()
+      );
       formDataToSend.append('dietaryType', formData.dietaryType || 'Veg');
       formDataToSend.append('featured', formData.featured ? 'true' : 'false');
-      
+
       if (formData.originalPrice) {
-        formDataToSend.append('originalPrice', formData.originalPrice.toString());
+        formDataToSend.append(
+          'originalPrice',
+          formData.originalPrice.toString()
+        );
       }
-      
+
       if (formData.stockLeft !== null && formData.stockLeft !== undefined) {
         formDataToSend.append('stockLeft', formData.stockLeft.toString());
       }
-      
+
       if (selectedImage) {
         formDataToSend.append('image', selectedImage);
       }
@@ -155,12 +171,12 @@ export default function RestaurantMenuManagementPage() {
           preparationTime: 15,
           imageUrl: '',
           dietaryType: 'Veg',
-          restaurantId: restaurantId
+          restaurantId: restaurantId,
         });
         setSelectedImage(null);
         setShowAddForm(false);
         setEditingItem(null);
-        
+
         // Reload menu items
         loadData();
       } else {
@@ -201,15 +217,15 @@ export default function RestaurantMenuManagementPage() {
   };
 
   const toggleDietaryTag = (tag: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       dietaryTags: (prev.dietaryTags || []).includes(tag)
-        ? (prev.dietaryTags || []).filter(t => t !== tag)
-        : [...(prev.dietaryTags || []), tag]
+        ? (prev.dietaryTags || []).filter((t) => t !== tag)
+        : [...(prev.dietaryTags || []), tag],
     }));
   };
 
-  const filteredMenuItems = menuItems.filter(item =>
+  const filteredMenuItems = menuItems.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -217,7 +233,7 @@ export default function RestaurantMenuManagementPage() {
     return (
       <OperationsLayout type="restaurant">
         <div className="space-y-6">
-          <div className="text-center py-12">
+          <div className="py-12 text-center">
             <p className="text-gray-500">Loading menu management...</p>
           </div>
         </div>
@@ -229,11 +245,11 @@ export default function RestaurantMenuManagementPage() {
     <OperationsLayout type="restaurant">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+        <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
             <Link href="/operations/restaurant/restaurants">
-              <Button className="bg-gray-100 hover:bg-gray-200 text-gray-700 touchable">
-                <ArrowLeft className="w-4 h-4 mr-2" />
+              <Button className="touchable bg-gray-100 text-gray-700 hover:bg-gray-200">
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Restaurants
               </Button>
             </Link>
@@ -241,34 +257,38 @@ export default function RestaurantMenuManagementPage() {
               <h1 className="text-3xl font-bold text-[#002a01]">
                 Menu Management
               </h1>
-              <p className="text-[#002a01]/70 mt-1">
-                {restaurant ? `Managing menu for ${restaurant.name}` : 'Loading restaurant...'}
+              <p className="mt-1 text-[#002a01]/70">
+                {restaurant
+                  ? `Managing menu for ${restaurant.name}`
+                  : 'Loading restaurant...'}
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-3">
-            <Button 
+            <Button
               onClick={loadData}
-              className="bg-[#d1f86a] hover:bg-[#d1f86a]/90 text-[#002a01] font-semibold"
+              className="bg-[#d1f86a] font-semibold text-[#002a01] hover:bg-[#d1f86a]/90"
               disabled={isLoading}
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+              />
               Refresh Data
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={() => {
                 setShowAddForm(true);
                 setEditingItem(null);
                 setFormData({
                   ...formData,
-                  restaurantId: restaurantId
+                  restaurantId: restaurantId,
                 });
               }}
-              className="bg-[#ffd500] hover:bg-[#ffd500]/90 text-[#002a01] font-semibold"
+              className="bg-[#ffd500] font-semibold text-[#002a01] hover:bg-[#ffd500]/90"
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Add Menu Item
             </Button>
           </div>
@@ -276,17 +296,21 @@ export default function RestaurantMenuManagementPage() {
 
         {/* Restaurant Info Card */}
         {restaurant && (
-          <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
+          <Card className="border-0 bg-white/70 shadow-lg backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold text-[#002a01]">{restaurant.name}</h3>
+                  <h3 className="text-xl font-semibold text-[#002a01]">
+                    {restaurant.name}
+                  </h3>
                   <p className="text-gray-600">Owner: {restaurant.ownerName}</p>
                   <p className="text-sm text-gray-500">{restaurant.address}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-500">Total Menu Items</p>
-                  <p className="text-2xl font-bold text-[#002a01]">{menuItems.length}</p>
+                  <p className="text-2xl font-bold text-[#002a01]">
+                    {menuItems.length}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -294,16 +318,16 @@ export default function RestaurantMenuManagementPage() {
         )}
 
         {/* Search */}
-        <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
+        <Card className="border-0 bg-white/70 shadow-lg backdrop-blur-sm">
           <CardContent className="p-6">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 type="text"
                 placeholder="Search menu items..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10 border-2 border-gray-300 rounded-lg focus:border-[#002a01] focus:outline-none"
+                className="h-10 rounded-lg border-2 border-gray-300 pl-10 focus:border-[#002a01] focus:outline-none"
               />
             </div>
           </CardContent>
@@ -311,22 +335,27 @@ export default function RestaurantMenuManagementPage() {
 
         {/* Add/Edit Menu Item Form */}
         {showAddForm && (
-          <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
+          <Card className="border-0 bg-white/70 shadow-lg backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-xl font-bold text-[#002a01]">
                 {editingItem ? 'Edit Menu Item' : 'Add New Menu Item'}
               </CardTitle>
               <CardDescription className="text-[#002a01]/60">
-                {editingItem ? 'Update the menu item details' : 'Add a new item to the restaurant menu'}
+                {editingItem
+                  ? 'Update the menu item details'
+                  : 'Add a new item to the restaurant menu'}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   {/* Basic Information */}
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="name" className="text-sm font-medium text-primary-dark-green">
+                      <Label
+                        htmlFor="name"
+                        className="text-primary-dark-green text-sm font-medium"
+                      >
                         Item Name *
                       </Label>
                       <Input
@@ -334,35 +363,50 @@ export default function RestaurantMenuManagementPage() {
                         type="text"
                         placeholder="Enter item name"
                         value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
                         required
-                        className="mt-1 h-10 border-2 border-gray-300 rounded-lg selectable"
+                        className="selectable mt-1 h-10 rounded-lg border-2 border-gray-300"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="description" className="text-sm font-medium text-primary-dark-green">
+                      <Label
+                        htmlFor="description"
+                        className="text-primary-dark-green text-sm font-medium"
+                      >
                         Description *
                       </Label>
                       <textarea
                         id="description"
                         placeholder="Enter item description"
                         value={formData.description}
-                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            description: e.target.value,
+                          })
+                        }
                         required
-                        className="mt-1 w-full h-20 px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-primary-dark-green selectable"
+                        className="focus:border-primary-dark-green selectable mt-1 h-20 w-full rounded-lg border-2 border-gray-300 px-3 py-2"
                       />
                     </div>
 
                     <div>
-                      <Label className="text-sm font-medium text-primary-dark-green">
+                      <Label className="text-primary-dark-green text-sm font-medium">
                         Dietary Type *
                       </Label>
                       <select
                         value={formData.dietaryType}
-                        onChange={(e) => setFormData({...formData, dietaryType: e.target.value as 'Veg' | 'Non-Veg'})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            dietaryType: e.target.value as 'Veg' | 'Non-Veg',
+                          })
+                        }
                         required
-                        className="mt-1 w-full h-10 px-3 border-2 border-gray-300 rounded-lg focus:border-primary-dark-green selectable"
+                        className="focus:border-primary-dark-green selectable mt-1 h-10 w-full rounded-lg border-2 border-gray-300 px-3"
                       >
                         {DIETARY_TYPES.map((type) => (
                           <option key={type} value={type}>
@@ -377,7 +421,10 @@ export default function RestaurantMenuManagementPage() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="price" className="text-sm font-medium text-primary-dark-green">
+                        <Label
+                          htmlFor="price"
+                          className="text-primary-dark-green text-sm font-medium"
+                        >
                           Price (₹) *
                         </Label>
                         <Input
@@ -385,16 +432,24 @@ export default function RestaurantMenuManagementPage() {
                           type="number"
                           placeholder="0"
                           value={formData.price}
-                          onChange={(e) => setFormData({...formData, price: Number(e.target.value)})}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              price: Number(e.target.value),
+                            })
+                          }
                           required
                           min="0"
                           step="0.01"
-                          className="mt-1 h-10 border-2 border-gray-300 rounded-lg selectable"
+                          className="selectable mt-1 h-10 rounded-lg border-2 border-gray-300"
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="originalPrice" className="text-sm font-medium text-primary-dark-green">
+                        <Label
+                          htmlFor="originalPrice"
+                          className="text-primary-dark-green text-sm font-medium"
+                        >
                           Original Price (₹)
                         </Label>
                         <Input
@@ -402,16 +457,26 @@ export default function RestaurantMenuManagementPage() {
                           type="number"
                           placeholder="0"
                           value={formData.originalPrice || ''}
-                          onChange={(e) => setFormData({...formData, originalPrice: e.target.value ? Number(e.target.value) : undefined})}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              originalPrice: e.target.value
+                                ? Number(e.target.value)
+                                : undefined,
+                            })
+                          }
                           min="0"
                           step="0.01"
-                          className="mt-1 h-10 border-2 border-gray-300 rounded-lg selectable"
+                          className="selectable mt-1 h-10 rounded-lg border-2 border-gray-300"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <Label htmlFor="preparationTime" className="text-sm font-medium text-primary-dark-green">
+                      <Label
+                        htmlFor="preparationTime"
+                        className="text-primary-dark-green text-sm font-medium"
+                      >
                         Preparation Time (minutes) *
                       </Label>
                       <Input
@@ -419,23 +484,35 @@ export default function RestaurantMenuManagementPage() {
                         type="number"
                         placeholder="15"
                         value={formData.preparationTime}
-                        onChange={(e) => setFormData({...formData, preparationTime: Number(e.target.value)})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            preparationTime: Number(e.target.value),
+                          })
+                        }
                         required
                         min="1"
-                        className="mt-1 h-10 border-2 border-gray-300 rounded-lg selectable"
+                        className="selectable mt-1 h-10 rounded-lg border-2 border-gray-300"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="image" className="text-sm font-medium text-primary-dark-green">
+                      <Label
+                        htmlFor="image"
+                        className="text-primary-dark-green text-sm font-medium"
+                      >
                         Item Image
                       </Label>
                       <Input
                         id="image"
                         type="file"
                         accept="image/*"
-                        onChange={(e) => setSelectedImage(e.target.files ? e.target.files[0] : null)}
-                        className="mt-1 h-10 border-2 border-gray-300 rounded-lg selectable file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:mr-4 file:text-sm file:font-semibold"
+                        onChange={(e) =>
+                          setSelectedImage(
+                            e.target.files ? e.target.files[0] : null
+                          )
+                        }
+                        className="selectable mt-1 h-10 rounded-lg border-2 border-gray-300 file:mr-4 file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm file:font-semibold"
                       />
                     </div>
 
@@ -445,10 +522,18 @@ export default function RestaurantMenuManagementPage() {
                         id="featured"
                         type="checkbox"
                         checked={formData.featured || false}
-                        onChange={(e) => setFormData({...formData, featured: e.target.checked})}
-                        className="h-4 w-4 text-primary-dark-green focus:ring-primary-dark-green border-gray-300 rounded"
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            featured: e.target.checked,
+                          })
+                        }
+                        className="text-primary-dark-green focus:ring-primary-dark-green h-4 w-4 rounded border-gray-300"
                       />
-                      <Label htmlFor="featured" className="text-sm font-medium text-primary-dark-green">
+                      <Label
+                        htmlFor="featured"
+                        className="text-primary-dark-green text-sm font-medium"
+                      >
                         Featured Product
                       </Label>
                     </div>
@@ -458,17 +543,24 @@ export default function RestaurantMenuManagementPage() {
                       <input
                         id="fewStocksLeft"
                         type="checkbox"
-                        checked={formData.stockLeft !== null && formData.stockLeft !== undefined && formData.stockLeft <= 5}
+                        checked={
+                          formData.stockLeft !== null &&
+                          formData.stockLeft !== undefined &&
+                          formData.stockLeft <= 5
+                        }
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setFormData({...formData, stockLeft: 5}); // Set to 5 to indicate few stocks left
+                            setFormData({ ...formData, stockLeft: 5 }); // Set to 5 to indicate few stocks left
                           } else {
-                            setFormData({...formData, stockLeft: null});
+                            setFormData({ ...formData, stockLeft: null });
                           }
                         }}
-                        className="h-4 w-4 text-primary-dark-green focus:ring-primary-dark-green border-gray-300 rounded"
+                        className="text-primary-dark-green focus:ring-primary-dark-green h-4 w-4 rounded border-gray-300"
                       />
-                      <Label htmlFor="fewStocksLeft" className="text-sm font-medium text-primary-dark-green">
+                      <Label
+                        htmlFor="fewStocksLeft"
+                        className="text-primary-dark-green text-sm font-medium"
+                      >
                         Mark as "Few Stocks Left"
                       </Label>
                     </div>
@@ -481,7 +573,7 @@ export default function RestaurantMenuManagementPage() {
                     type="submit"
                     className="bg-accent-leaf-green hover:bg-accent-leaf-green/90 text-primary-dark-green touchable"
                   >
-                    <Save className="w-4 h-4 mr-2" />
+                    <Save className="mr-2 h-4 w-4" />
                     {editingItem ? 'Update Item' : 'Add Item'}
                   </Button>
                   <Button
@@ -490,7 +582,7 @@ export default function RestaurantMenuManagementPage() {
                       setShowAddForm(false);
                       setEditingItem(null);
                     }}
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 touchable"
+                    className="touchable bg-gray-100 text-gray-700 hover:bg-gray-200"
                   >
                     Cancel
                   </Button>
@@ -503,7 +595,7 @@ export default function RestaurantMenuManagementPage() {
         {/* Menu Items List */}
         <Card className="restaurant-card">
           <CardHeader>
-            <CardTitle className="text-heading text-xl text-primary-dark-green">
+            <CardTitle className="text-heading text-primary-dark-green text-xl">
               Menu Items ({filteredMenuItems.length})
             </CardTitle>
             <CardDescription>
@@ -512,44 +604,50 @@ export default function RestaurantMenuManagementPage() {
           </CardHeader>
           <CardContent>
             {filteredMenuItems.length === 0 ? (
-              <div className="text-center py-8">
-                <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2 text-primary-dark-green">
+              <div className="py-8 text-center">
+                <ShoppingCart className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                <h3 className="text-primary-dark-green mb-2 text-lg font-semibold">
                   No menu items found
                 </h3>
-                <p className="text-gray-600 mb-4">
-                  {searchQuery ? 'Try adjusting your search' : 'Start by adding some menu items'}
+                <p className="mb-4 text-gray-600">
+                  {searchQuery
+                    ? 'Try adjusting your search'
+                    : 'Start by adding some menu items'}
                 </p>
-                <Button 
+                <Button
                   onClick={() => setShowAddForm(true)}
                   className="bg-accent-leaf-green hover:bg-accent-leaf-green/90 text-primary-dark-green touchable"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="mr-2 h-4 w-4" />
                   Add First Item
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredMenuItems.map((item) => (
                   <Card key={item.id} className="border">
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="mb-3 flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="font-semibold text-primary-dark-green">{item.name}</h4>
-                          <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
+                          <h4 className="text-primary-dark-green font-semibold">
+                            {item.name}
+                          </h4>
+                          <p className="line-clamp-2 text-sm text-gray-600">
+                            {item.description}
+                          </p>
                         </div>
-                        <div className="flex gap-1 ml-2">
+                        <div className="ml-2 flex gap-1">
                           <Button
                             onClick={() => handleEdit(item)}
-                            className="p-1 bg-blue-100 hover:bg-blue-200 text-blue-700 touchable"
+                            className="touchable bg-blue-100 p-1 text-blue-700 hover:bg-blue-200"
                           >
-                            <Edit className="w-3 h-3" />
+                            <Edit className="h-3 w-3" />
                           </Button>
                           <Button
                             onClick={() => handleDelete(item.id!)}
-                            className="p-1 bg-red-100 hover:bg-red-200 text-red-700 touchable"
+                            className="touchable bg-red-100 p-1 text-red-700 hover:bg-red-200"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
@@ -557,19 +655,27 @@ export default function RestaurantMenuManagementPage() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1">
-                            <Badge className={`text-xs ${(item.dietaryTags && item.dietaryTags.includes('Veg')) || item.dietaryType === 'Veg' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                              {item.dietaryType || (item.dietaryTags && item.dietaryTags.find(tag => ['Veg', 'Non-Veg'].includes(tag))) || 'Unknown'}
+                            <Badge
+                              className={`text-xs ${(item.dietaryTags && item.dietaryTags.includes('Veg')) || item.dietaryType === 'Veg' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                            >
+                              {item.dietaryType ||
+                                (item.dietaryTags &&
+                                  item.dietaryTags.find((tag) =>
+                                    ['Veg', 'Non-Veg'].includes(tag)
+                                  )) ||
+                                'Unknown'}
                             </Badge>
                             {item.featured && (
-                              <Badge className="text-xs bg-yellow-100 text-yellow-800">
+                              <Badge className="bg-yellow-100 text-xs text-yellow-800">
                                 Featured
                               </Badge>
                             )}
-                            {item.stockLeft !== null && item.stockLeft !== undefined && (
-                              <Badge className="text-xs bg-orange-100 text-orange-800">
-                                {item.stockLeft} left
-                              </Badge>
-                            )}
+                            {item.stockLeft !== null &&
+                              item.stockLeft !== undefined && (
+                                <Badge className="bg-orange-100 text-xs text-orange-800">
+                                  {item.stockLeft} left
+                                </Badge>
+                              )}
                           </div>
                           <div className="flex items-center gap-2">
                             {item.originalPrice && (
@@ -577,7 +683,7 @@ export default function RestaurantMenuManagementPage() {
                                 ₹{item.originalPrice}
                               </span>
                             )}
-                            <span className="font-semibold text-primary-dark-green">
+                            <span className="text-primary-dark-green font-semibold">
                               ₹{item.price}
                             </span>
                           </div>
@@ -585,7 +691,7 @@ export default function RestaurantMenuManagementPage() {
 
                         <div className="flex items-center justify-between text-xs text-gray-600">
                           <div className="flex items-center">
-                            <Clock className="w-3 h-3 mr-1" />
+                            <Clock className="mr-1 h-3 w-3" />
                             {item.preparationTime}m
                           </div>
                         </div>

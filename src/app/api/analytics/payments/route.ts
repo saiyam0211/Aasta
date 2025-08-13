@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
@@ -42,14 +42,14 @@ export async function GET(request: NextRequest) {
     const baseFilter: any = {
       createdAt: {
         gte: startDate,
-        lte: now
-      }
+        lte: now,
+      },
     };
 
     // Add restaurant filter if provided
     if (restaurantId) {
       baseFilter.order = {
-        restaurantId: restaurantId
+        restaurantId: restaurantId,
       };
     }
 
@@ -60,33 +60,33 @@ export async function GET(request: NextRequest) {
       failedPayments,
       refunds,
       paymentMethods,
-      revenueByDay
+      revenueByDay,
     ] = await Promise.all([
       // Total revenue
       prisma.payment.aggregate({
         where: {
           ...baseFilter,
-          status: 'COMPLETED'
+          status: 'COMPLETED',
         },
         _sum: {
-          amount: true
-        }
+          amount: true,
+        },
       }),
 
       // Completed payments count
       prisma.payment.count({
         where: {
           ...baseFilter,
-          status: 'COMPLETED'
-        }
+          status: 'COMPLETED',
+        },
       }),
 
       // Failed payments count
       prisma.payment.count({
         where: {
           ...baseFilter,
-          status: 'FAILED'
-        }
+          status: 'FAILED',
+        },
       }),
 
       // Refunds
@@ -94,15 +94,15 @@ export async function GET(request: NextRequest) {
         where: {
           createdAt: {
             gte: startDate,
-            lte: now
-          }
+            lte: now,
+          },
         },
         _sum: {
-          amount: true
+          amount: true,
         },
         _count: {
-          id: true
-        }
+          id: true,
+        },
       }),
 
       // Payment methods breakdown
@@ -110,14 +110,14 @@ export async function GET(request: NextRequest) {
         by: ['paymentMethod'],
         where: {
           ...baseFilter,
-          status: 'COMPLETED'
+          status: 'COMPLETED',
         },
         _sum: {
-          amount: true
+          amount: true,
         },
         _count: {
-          id: true
-        }
+          id: true,
+        },
       }),
 
       // Revenue by day
@@ -132,13 +132,17 @@ export async function GET(request: NextRequest) {
           AND status = 'COMPLETED'
         GROUP BY DATE(createdAt)
         ORDER BY date DESC
-      `
+      `,
     ]);
 
     // Calculate metrics
     const totalTransactions = completedPayments + failedPayments;
-    const successRate = totalTransactions > 0 ? (completedPayments / totalTransactions) * 100 : 0;
-    const averageOrderValue = completedPayments > 0 ? (totalRevenue._sum.amount || 0) / completedPayments : 0;
+    const successRate =
+      totalTransactions > 0 ? (completedPayments / totalTransactions) * 100 : 0;
+    const averageOrderValue =
+      completedPayments > 0
+        ? (totalRevenue._sum.amount || 0) / completedPayments
+        : 0;
 
     // Commission calculations (assuming 10% platform fee)
     const platformRevenue = (totalRevenue._sum.amount || 0) * 0.1;
@@ -157,27 +161,31 @@ export async function GET(request: NextRequest) {
           successRate: Math.round(successRate * 100) / 100,
           averageOrderValue: Math.round(averageOrderValue * 100) / 100,
           totalRefunds: refunds._sum.amount || 0,
-          refundCount: refunds._count.id || 0
+          refundCount: refunds._count.id || 0,
         },
-        paymentMethods: paymentMethods.map(method => ({
+        paymentMethods: paymentMethods.map((method) => ({
           method: method.paymentMethod,
           revenue: method._sum.amount || 0,
           transactions: method._count.id,
-          percentage: totalRevenue._sum.amount ? 
-            Math.round(((method._sum.amount || 0) / (totalRevenue._sum.amount || 1)) * 10000) / 100 : 0
+          percentage: totalRevenue._sum.amount
+            ? Math.round(
+                ((method._sum.amount || 0) / (totalRevenue._sum.amount || 1)) *
+                  10000
+              ) / 100
+            : 0,
         })),
         revenueByDay: revenueByDay,
         period: {
           start: startDate.toISOString(),
           end: now.toISOString(),
-          period
-        }
-      }
+          period,
+        },
+      },
     });
   } catch (error) {
-    console.error("Payment analytics failed:", error);
+    console.error('Payment analytics failed:', error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch payment analytics" },
+      { success: false, error: 'Failed to fetch payment analytics' },
       { status: 500 }
     );
   }

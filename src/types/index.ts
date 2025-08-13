@@ -1,4 +1,12 @@
-import { UserRole, OrderStatus, RestaurantStatus, PartnerStatus, AddressType, BatchStatus, StopStatus } from "@prisma/client"
+import {
+  UserRole,
+  OrderStatus,
+  RestaurantStatus,
+  PartnerStatus,
+  AddressType,
+  BatchStatus,
+  StopStatus,
+} from '@prisma/client';
 
 // Custom types for API responses and forms
 export interface ApiResponse<T = any> {
@@ -348,4 +356,4 @@ export interface LocationState {
   permissionStatus: 'granted' | 'denied' | 'prompt' | null;
   isLoading: boolean;
   error: string | null;
-} 
+}

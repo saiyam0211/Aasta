@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Star, 
-  Clock, 
-  Heart, 
-  MapPin, 
-  Zap, 
+import { useState } from 'react';
+import Link from 'next/link';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Star,
+  Clock,
+  Heart,
+  MapPin,
+  Zap,
   Truck,
   ChefHat,
   ArrowRight,
-  Plus
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+  Plus,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface MobileRestaurantCardProps {
   id: string;
@@ -70,12 +70,12 @@ export function MobileRestaurantCard({
   };
 
   return (
-    <Card 
+    <Card
       className={cn(
-        "overflow-hidden transition-all duration-300 ease-out cursor-pointer border-0 group",
-        "bg-white shadow-md hover:shadow-xl",
-        "mobile-card smooth-transition",
-        isPressed && "scale-[0.98]",
+        'group cursor-pointer overflow-hidden border-0 transition-all duration-300 ease-out',
+        'bg-white shadow-md hover:shadow-xl',
+        'mobile-card smooth-transition',
+        isPressed && 'scale-[0.98]',
         className
       )}
       onMouseDown={() => setIsPressed(true)}
@@ -92,40 +92,40 @@ export function MobileRestaurantCard({
             src={image}
             alt={name}
             className={cn(
-              "w-full h-full object-cover transition-all duration-500",
-              "group-hover:scale-105",
-              imageLoaded ? "opacity-100" : "opacity-0"
+              'h-full w-full object-cover transition-all duration-500',
+              'group-hover:scale-105',
+              imageLoaded ? 'opacity-100' : 'opacity-0'
             )}
             onLoad={() => setImageLoaded(true)}
           />
-          
+
           {/* Loading Skeleton */}
           {!imageLoaded && (
-            <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
-              <ChefHat className="w-12 h-12 text-gray-400" />
+            <div className="absolute inset-0 flex animate-pulse items-center justify-center bg-gray-200">
+              <ChefHat className="h-12 w-12 text-gray-400" />
             </div>
           )}
-          
+
           {/* Badges */}
-          <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
+          <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
             {discount && (
-              <Badge className="bg-red-500 text-white shadow-lg font-semibold px-3 py-1">
+              <Badge className="bg-red-500 px-3 py-1 font-semibold text-white shadow-lg">
                 {discount}
               </Badge>
             )}
             {promoted && (
-              <Badge className="bg-accent-leaf-green text-primary-dark-green shadow-lg font-semibold px-3 py-1">
-                <Zap className="w-3 h-3 mr-1" />
+              <Badge className="bg-accent-leaf-green text-primary-dark-green px-3 py-1 font-semibold shadow-lg">
+                <Zap className="mr-1 h-3 w-3" />
                 Promoted
               </Badge>
             )}
             {isNewlyLaunched && (
-              <Badge className="bg-blue-500 text-white shadow-lg font-semibold px-3 py-1">
+              <Badge className="bg-blue-500 px-3 py-1 font-semibold text-white shadow-lg">
                 New
               </Badge>
             )}
           </div>
-          
+
           {/* Favorite Button */}
           <div className="absolute top-3 right-3 z-10">
             <Button
@@ -133,53 +133,54 @@ export function MobileRestaurantCard({
               size="sm"
               onClick={handleFavoriteToggle}
               className={cn(
-                "w-10 h-10 p-0 rounded-full backdrop-blur-sm transition-all duration-200",
-                "mobile-touch shadow-lg hover:scale-110",
+                'h-10 w-10 rounded-full p-0 backdrop-blur-sm transition-all duration-200',
+                'mobile-touch shadow-lg hover:scale-110',
                 favoriteState
-                  ? "bg-red-500/90 hover:bg-red-600 text-white"
-                  : "bg-white/90 hover:bg-white text-gray-700"
+                  ? 'bg-red-500/90 text-white hover:bg-red-600'
+                  : 'bg-white/90 text-gray-700 hover:bg-white'
               )}
             >
-              <Heart className={cn(
-                "w-5 h-5",
-                favoriteState && "fill-current"
-              )} />
+              <Heart
+                className={cn('h-5 w-5', favoriteState && 'fill-current')}
+              />
             </Button>
           </div>
-          
+
           {/* Quick Order Button - Appears on Hover/Touch */}
-          <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+          <div className="absolute right-3 bottom-3 translate-y-2 transform opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
             <Button
               onClick={handleOrderNow}
               size="sm"
-              className="bg-primary-dark-green hover:bg-green-800 text-white shadow-lg hover:shadow-xl rounded-full px-4 py-2 font-semibold"
+              className="bg-primary-dark-green rounded-full px-4 py-2 font-semibold text-white shadow-lg hover:bg-green-800 hover:shadow-xl"
             >
-              <Plus className="w-4 h-4 mr-1" />
+              <Plus className="mr-1 h-4 w-4" />
               Quick Add
             </Button>
           </div>
         </div>
-        
+
         {/* Content */}
         <CardContent className="p-4">
           {/* Header */}
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-lg text-gray-900 truncate group-hover:text-primary-dark-green transition-colors">
+          <div className="mb-3 flex items-start justify-between">
+            <div className="min-w-0 flex-1">
+              <h3 className="group-hover:text-primary-dark-green truncate text-lg font-bold text-gray-900 transition-colors">
                 {name}
               </h3>
-              <p className="text-gray-600 text-sm truncate">{cuisine}</p>
+              <p className="truncate text-sm text-gray-600">{cuisine}</p>
             </div>
-            <div className="flex items-center space-x-1 bg-green-50 px-2 py-1 rounded-lg ml-2 flex-shrink-0">
-              <Star className="w-4 h-4 fill-green-500 text-green-500" />
-              <span className="text-sm font-semibold text-green-700">{rating}</span>
+            <div className="ml-2 flex flex-shrink-0 items-center space-x-1 rounded-lg bg-green-50 px-2 py-1">
+              <Star className="h-4 w-4 fill-green-500 text-green-500" />
+              <span className="text-sm font-semibold text-green-700">
+                {rating}
+              </span>
             </div>
           </div>
-          
+
           {/* Details */}
-          <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+          <div className="mb-4 flex items-center justify-between text-sm text-gray-500">
             <div className="flex items-center space-x-1">
-              <Clock className="w-4 h-4" />
+              <Clock className="h-4 w-4" />
               <span>{deliveryTime}</span>
             </div>
             {avgCost && (
@@ -188,14 +189,14 @@ export function MobileRestaurantCard({
               </div>
             )}
           </div>
-          
+
           {/* Action Button */}
-          <Button 
+          <Button
             onClick={handleOrderNow}
-            className="w-full bg-primary-dark-green hover:bg-green-800 text-white rounded-xl py-3 font-semibold transition-all duration-200 group-hover:scale-[1.02] shadow-md hover:shadow-lg"
+            className="bg-primary-dark-green w-full rounded-xl py-3 font-semibold text-white shadow-md transition-all duration-200 group-hover:scale-[1.02] hover:bg-green-800 hover:shadow-lg"
           >
             Order Now
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardContent>
       </Link>

@@ -45,14 +45,14 @@ export function filterRestaurantsByDistance(
       if (!restaurant.latitude || !restaurant.longitude) {
         return null; // Skip restaurants without location data
       }
-      
+
       const distance = calculateDistance(
         userLat,
         userLng,
         restaurant.latitude,
         restaurant.longitude
       );
-      
+
       return {
         ...restaurant,
         distance: distance,

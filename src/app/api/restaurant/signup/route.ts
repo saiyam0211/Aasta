@@ -4,7 +4,8 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, restaurantName, ownerName, phone } = await request.json();
+    const { email, password, restaurantName, ownerName, phone } =
+      await request.json();
 
     // Validation
     if (!email || !password) {
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
     });
 
     if (existingUser) {
@@ -44,15 +45,14 @@ export async function POST(request: NextRequest) {
         phone: phone || null,
         password: hashedPassword, // Store hashed password
         role: 'RESTAURANT_OWNER',
-      }
+      },
     });
-    
+
     return NextResponse.json({
       success: true,
       message: 'Restaurant account created successfully',
-      userId: user.id
+      userId: user.id,
     });
-
   } catch (error) {
     console.error('Restaurant signup error:', error);
     return NextResponse.json(

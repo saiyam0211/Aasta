@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         const data = `data: ${JSON.stringify({
           type: 'connected',
           timestamp: new Date().toISOString(),
-          sessionId
+          sessionId,
         })}\n\n`;
         controller.enqueue(encoder.encode(data));
 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
           try {
             const heartbeatData = `data: ${JSON.stringify({
               type: 'heartbeat',
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
             })}\n\n`;
             controller.enqueue(encoder.encode(heartbeatData));
           } catch (error) {
@@ -45,7 +45,11 @@ export async function GET(request: NextRequest) {
         }, 30000); // Send heartbeat every 30 seconds
 
         // Register client with notification broadcaster
-        notificationBroadcaster.registerClient(session.user.id, sessionId, false);
+        notificationBroadcaster.registerClient(
+          session.user.id,
+          sessionId,
+          false
+        );
 
         // Handle cleanup when connection closes
         request.signal?.addEventListener('abort', () => {
@@ -53,21 +57,21 @@ export async function GET(request: NextRequest) {
           notificationBroadcaster.unregisterClient(sessionId);
           controller.close();
         });
-      }
+      },
     });
 
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        Connection: 'keep-alive',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET',
-        'Access-Control-Allow-Headers': 'Cache-Control'
-      }
+        'Access-Control-Allow-Headers': 'Cache-Control',
+      },
     });
   } catch (error) {
     console.error('❌ Error in notification stream:', error);
     return new Response('Internal Server Error', { status: 500 });
   }
-} 
+}

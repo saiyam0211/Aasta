@@ -1,10 +1,16 @@
-"use client";
+'use client';
 
-import { signIn } from "next-auth/react";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { signIn } from 'next-auth/react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 
 export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -12,77 +18,84 @@ export default function SignInPage() {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signIn("google", { 
-        callbackUrl: "/",
-        redirect: true 
+      await signIn('google', {
+        callbackUrl: '/',
+        redirect: true,
       });
     } catch (error) {
-      console.error("Sign in error:", error);
+      console.error('Sign in error:', error);
       setIsLoading(false);
     }
   };
 
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center p-4"
+    <div
+      className="flex min-h-screen items-center justify-center p-4"
       style={{ backgroundColor: '#002a01' }}
     >
-      <Card className="w-full max-w-md" style={{ backgroundColor: '#fcfefe', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0, 42, 1, 0.15)' }}>
+      <Card
+        className="w-full max-w-md"
+        style={{
+          backgroundColor: '#fcfefe',
+          borderRadius: '16px',
+          boxShadow: '0 4px 20px rgba(0, 42, 1, 0.15)',
+        }}
+      >
         <CardHeader className="space-y-1 text-center">
           {/* Aasta Logo */}
-          <div className="flex justify-center mb-6">
-            <div 
-              className="w-20 h-20 flex items-center justify-center"
-              style={{ 
-                backgroundColor: '#d1f86a', 
-                borderRadius: '16px' 
+          <div className="mb-6 flex justify-center">
+            <div
+              className="flex h-20 w-20 items-center justify-center"
+              style={{
+                backgroundColor: '#d1f86a',
+                borderRadius: '16px',
               }}
             >
-              <span 
-                className="font-bold text-3xl"
-                style={{ 
+              <span
+                className="text-3xl font-bold"
+                style={{
                   color: '#002a01',
                   fontFamily: 'Inter, sans-serif',
-                  fontWeight: '700'
+                  fontWeight: '700',
                 }}
               >
                 A
               </span>
             </div>
           </div>
-          
-          <CardTitle 
+
+          <CardTitle
             className="text-3xl font-bold"
-            style={{ 
+            style={{
               color: '#002a01',
               fontFamily: 'Inter, sans-serif',
-              fontWeight: '700'
+              fontWeight: '700',
             }}
           >
             Welcome to Aasta
           </CardTitle>
-          <CardDescription 
+          <CardDescription
             className="text-lg"
-            style={{ 
+            style={{
               color: '#002a01',
-              fontStyle: 'italic'
+              fontStyle: 'italic',
             }}
           >
             Premium late night food delivery from 9 PM to 12 AM ✨
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           <Button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full h-12 font-semibold text-base"
+            className="h-12 w-full text-base font-semibold"
             style={{
               backgroundColor: '#d1f86a',
               color: '#002a01',
               border: '2px solid #002a01',
               borderRadius: '12px',
-              minHeight: '48px'
+              minHeight: '48px',
             }}
           >
             {isLoading ? (
@@ -114,50 +127,49 @@ export default function SignInPage() {
               </>
             )}
           </Button>
-          
-          <div className="text-center space-y-2">
+
+          <div className="space-y-2 text-center">
             <p className="text-xs text-gray-600">
-              By continuing, you agree to our{" "}
-              <a href="/terms" className="underline hover:no-underline" style={{ color: '#002a01' }}>
+              By continuing, you agree to our{' '}
+              <a
+                href="/terms"
+                className="underline hover:no-underline"
+                style={{ color: '#002a01' }}
+              >
                 Terms of Service
-              </a>{" "}
-              and{" "}
-              <a href="/privacy" className="underline hover:no-underline" style={{ color: '#002a01' }}>
+              </a>{' '}
+              and{' '}
+              <a
+                href="/privacy"
+                className="underline hover:no-underline"
+                style={{ color: '#002a01' }}
+              >
                 Privacy Policy
               </a>
             </p>
           </div>
-          
-          <div 
+
+          <div
             className="rounded-xl p-4 text-center"
             style={{ backgroundColor: 'rgba(209, 248, 106, 0.2)' }}
           >
-            <p 
-              className="font-semibold mb-1"
-              style={{ 
+            <p
+              className="mb-1 font-semibold"
+              style={{
                 color: '#002a01',
                 fontFamily: 'Inter, sans-serif',
-                fontWeight: '600'
+                fontWeight: '600',
               }}
             >
               Operating Hours:
             </p>
-            <p 
-              className="text-2xl font-bold"
-              style={{ color: '#002a01' }}
-            >
+            <p className="text-2xl font-bold" style={{ color: '#002a01' }}>
               9:00 PM
             </p>
-            <p 
-              className="text-sm"
-              style={{ color: '#002a01' }}
-            >
+            <p className="text-sm" style={{ color: '#002a01' }}>
               to
             </p>
-            <p 
-              className="text-2xl font-bold"
-              style={{ color: '#002a01' }}
-            >
+            <p className="text-2xl font-bold" style={{ color: '#002a01' }}>
               12:00 AM
             </p>
           </div>
@@ -165,4 +177,4 @@ export default function SignInPage() {
       </Card>
     </div>
   );
-} 
+}

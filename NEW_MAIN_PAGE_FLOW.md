@@ -1,16 +1,19 @@
 # New Main Page Flow Implementation
 
 ## Overview
+
 I have completely redesigned the main page flow according to your specifications, implementing a modern Material 3 expressive theme with all the requested components and layout structure.
 
 ## New Layout Flow
 
 ### 1. **Top Header Bar**
+
 - **Location Section** (Left): Location pin icon + user location with "Tap to change location" text
 - **Profile Avatar** (Right): User profile picture with hover effects
 - Clean, minimal design without hamburger menu or cart icon (moved to dock)
 
 ### 2. **Material 3 Search Bar**
+
 - **Expressive Material 3 design** with rounded corners and proper elevation
 - **Interactive focus states** with color transitions and ring effects
 - **Integrated action buttons**: Clear, Voice Search, and Filter options
@@ -18,6 +21,7 @@ I have completely redesigned the main page flow according to your specifications
 - **Future-ready**: Framework for search suggestions dropdown
 
 ### 3. **Hero Banner Section**
+
 - **Auto-sliding banners** that change every 5 seconds
 - **Smooth transitions** with fade and scale effects
 - **Interactive indicator dots** for manual navigation
@@ -26,6 +30,7 @@ I have completely redesigned the main page flow according to your specifications
 - **Gradient overlays** for better text readability
 
 ### 4. **Featured Dishes Section**
+
 - **Horizontal scrollable grid** without visible scrollbars
 - **Professional menu item cards** with:
   - High-quality dish images with loading states
@@ -40,6 +45,7 @@ I have completely redesigned the main page flow according to your specifications
 - **Smooth scroll snapping** for better mobile experience
 
 ### 5. **Nearby Restaurants Section**
+
 - **Vertical list layout** with one restaurant per row
 - **Comprehensive restaurant information**:
   - Restaurant images with promotion badges
@@ -57,6 +63,7 @@ I have completely redesigned the main page flow according to your specifications
 ### New Components Created
 
 #### 1. **MaterialSearchBar** (`/src/components/ui/material-search-bar.tsx`)
+
 ```typescript
 - Material 3 expressive design with proper elevation
 - Focus states with ring effects and color transitions
@@ -66,6 +73,7 @@ I have completely redesigned the main page flow according to your specifications
 ```
 
 #### 2. **HeroBanner** (`/src/components/ui/hero-banner.tsx`)
+
 ```typescript
 - Auto-slide functionality with configurable intervals
 - Smooth transitions with opacity and scale effects
@@ -76,6 +84,7 @@ I have completely redesigned the main page flow according to your specifications
 ```
 
 #### 3. **FeaturedDishes** (`/src/components/ui/featured-dishes.tsx`)
+
 ```typescript
 - Horizontal scrollable layout with snap scrolling
 - Comprehensive dish cards with all required information
@@ -86,6 +95,7 @@ I have completely redesigned the main page flow according to your specifications
 ```
 
 #### 4. **NearbyRestaurants** (`/src/components/ui/nearby-restaurants.tsx`)
+
 ```typescript
 - Vertical list layout optimized for mobile
 - Comprehensive restaurant information display
@@ -98,6 +108,7 @@ I have completely redesigned the main page flow according to your specifications
 ### Enhanced Customer Dashboard
 
 #### **Complete Redesign** (`/src/app/customer/dashboard/page.tsx`)
+
 - **New layout structure** following your exact specifications
 - **Material 3 design principles** throughout
 - **Mobile-first approach** with responsive breakpoints
@@ -108,6 +119,7 @@ I have completely redesigned the main page flow according to your specifications
 ## Design Features
 
 ### Visual Improvements
+
 1. **Material 3 Expressive Theme**: Modern, clean design with proper elevation and shadows
 2. **Smooth Animations**: 300ms transitions with proper easing curves
 3. **Interactive Elements**: Hover effects, focus states, and touch feedback
@@ -115,6 +127,7 @@ I have completely redesigned the main page flow according to your specifications
 5. **Color-coded Information**: Veg/non-veg indicators, spice levels, ratings
 
 ### Mobile Optimization
+
 1. **Touch-friendly Targets**: 48px minimum touch targets
 2. **Horizontal Scrolling**: Smooth scroll with snap points
 3. **Responsive Grid**: Adapts to different screen sizes
@@ -122,6 +135,7 @@ I have completely redesigned the main page flow according to your specifications
 5. **Toast Notifications**: User feedback for actions
 
 ### User Experience
+
 1. **Auto-sliding Banners**: 5-second intervals with smooth transitions
 2. **Search Integration**: Direct navigation to restaurants page with search params
 3. **Favorite System**: Interactive heart toggles with state management
@@ -131,35 +145,64 @@ I have completely redesigned the main page flow according to your specifications
 ## Data Structure
 
 ### Mock Data Implementation
+
 ```typescript
 // Hero Banners with rich content
-heroBanners: [{
-  title, subtitle, description,
-  image, backgroundColor, textColor,
-  ctaText, ctaAction
-}]
+heroBanners: [
+  {
+    title,
+    subtitle,
+    description,
+    image,
+    backgroundColor,
+    textColor,
+    ctaText,
+    ctaAction,
+  },
+];
 
 // Featured Dishes with comprehensive info
-featuredDishes: [{
-  name, image, price, originalPrice,
-  rating, preparationTime, restaurant,
-  category, isVegetarian, spiceLevel,
-  description
-}]
+featuredDishes: [
+  {
+    name,
+    image,
+    price,
+    originalPrice,
+    rating,
+    preparationTime,
+    restaurant,
+    category,
+    isVegetarian,
+    spiceLevel,
+    description,
+  },
+];
 
 // Nearby Restaurants with full details
-nearbyRestaurants: [{
-  name, image, cuisineTypes,
-  rating, reviewCount, deliveryTime,
-  deliveryFee, distance, isPromoted,
-  isFavorite, discount, minOrderAmount,
-  avgCostForTwo, isOpen
-}]
+nearbyRestaurants: [
+  {
+    name,
+    image,
+    cuisineTypes,
+    rating,
+    reviewCount,
+    deliveryTime,
+    deliveryFee,
+    distance,
+    isPromoted,
+    isFavorite,
+    discount,
+    minOrderAmount,
+    avgCostForTwo,
+    isOpen,
+  },
+];
 ```
 
 ## Integration Points
 
 ### Ready for API Integration
+
 1. **Search functionality** → `/restaurants?search=${query}`
 2. **Category filtering** → `/restaurants?category=${category}`
 3. **Restaurant navigation** → `/restaurants/${id}`
@@ -168,6 +211,7 @@ nearbyRestaurants: [{
 6. **Location services** → Geolocation and distance calculation
 
 ### Toast Notifications
+
 - **Success messages** for add to cart actions
 - **Favorite toggles** with appropriate feedback
 - **Error handling** framework in place
@@ -183,18 +227,21 @@ nearbyRestaurants: [{
 ## Responsive Design
 
 ### Mobile First Approach
+
 - **Single column** layouts on mobile
 - **Touch-optimized** interactions
 - **Proper spacing** for thumb navigation
 - **Readable text sizes** (16px minimum)
 
 ### Tablet & Desktop
+
 - **Multi-column** layouts where appropriate
 - **Hover effects** for desktop interactions
 - **Keyboard navigation** support
 - **Larger touch targets** on larger screens
 
 ## File Structure
+
 ```
 src/
 ├── app/

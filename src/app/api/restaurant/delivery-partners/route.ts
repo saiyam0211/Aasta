@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -20,7 +20,10 @@ export async function GET() {
     });
 
     if (!user?.restaurant) {
-      return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Restaurant not found' },
+        { status: 404 }
+      );
     }
 
     const restaurant = user.restaurant;
@@ -42,7 +45,7 @@ export async function GET() {
     });
 
     // Format the response
-    const formattedPartners = deliveryPartners.map(partner => ({
+    const formattedPartners = deliveryPartners.map((partner) => ({
       id: partner.id,
       name: partner.user.name || 'Unknown',
       status: partner.status,
@@ -54,7 +57,6 @@ export async function GET() {
       success: true,
       partners: formattedPartners,
     });
-
   } catch (error) {
     console.error('Error fetching delivery partners:', error);
     return NextResponse.json(

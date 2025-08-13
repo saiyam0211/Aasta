@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
@@ -11,17 +11,17 @@ export async function GET() {
             name: true,
             email: true,
             phone: true,
-          }
-        }
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     });
 
     return NextResponse.json({
       success: true,
-      data: deliveryPartners
+      data: deliveryPartners,
     });
   } catch (error) {
     console.error('Error fetching delivery partners:', error);
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     // Check if delivery partner already exists
     const existingPartner = await prisma.deliveryPartner.findUnique({
-      where: { userId }
+      where: { userId },
     });
 
     if (existingPartner) {
@@ -67,14 +67,14 @@ export async function POST(request: NextRequest) {
             name: true,
             email: true,
             phone: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     return NextResponse.json({
       success: true,
-      data: deliveryPartner
+      data: deliveryPartner,
     });
   } catch (error) {
     console.error('Error creating delivery partner:', error);

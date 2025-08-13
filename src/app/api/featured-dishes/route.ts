@@ -10,8 +10,10 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
   const dLon = toRad(lon2 - lon1);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -19,7 +21,7 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -39,8 +41,8 @@ export async function GET(request: NextRequest) {
         featured: true,
         available: true,
         restaurant: {
-          status: 'ACTIVE'
-        }
+          status: 'ACTIVE',
+        },
       },
       include: {
         restaurant: {
@@ -51,28 +53,35 @@ export async function GET(request: NextRequest) {
             averagePreparationTime: true,
             latitude: true,
             longitude: true,
-          }
-        }
+          },
+        },
       },
-      orderBy: [
-        { restaurant: { rating: 'desc' } },
-        { createdAt: 'desc' }
-      ],
-      take: limit
+      orderBy: [{ restaurant: { rating: 'desc' } }, { createdAt: 'desc' }],
+      take: limit,
     });
 
     // Transform data for client
     const clientFeaturedDishes = featuredDishes.map((dish) => {
       const tags = (dish.dietaryTags || []).map((t: string) => t.toLowerCase());
-      const isNonVeg = tags.some((t: string) => t.includes('non') && t.includes('veg'));
-      const isVegTag = tags.some((t: string) => t.includes('veg') || t.includes('vegetarian') || t.includes('vegan'));
+      const isNonVeg = tags.some(
+        (t: string) => t.includes('non') && t.includes('veg')
+      );
+      const isVegTag = tags.some(
+        (t: string) =>
+          t.includes('veg') || t.includes('vegetarian') || t.includes('vegan')
+      );
       const isVegetarian = !isNonVeg && isVegTag;
 
       let distanceText: string | undefined;
       let distanceMeters: number | undefined;
       if (hasCoords && dish.restaurant.latitude && dish.restaurant.longitude) {
         distanceMeters = Math.round(
-          haversine(lat, lng, dish.restaurant.latitude, dish.restaurant.longitude)
+          haversine(
+            lat,
+            lng,
+            dish.restaurant.latitude,
+            dish.restaurant.longitude
+          )
         );
         if (distanceMeters < 1000) distanceText = `${distanceMeters} m`;
         else distanceText = `${(distanceMeters / 1000).toFixed(1)} km`;
@@ -86,12 +95,16 @@ export async function GET(request: NextRequest) {
         price: dish.price,
         originalPrice: dish.originalPrice,
         rating: dish.restaurant.rating,
-        preparationTime: dish.preparationTime || dish.restaurant.averagePreparationTime,
+        preparationTime:
+          dish.preparationTime || dish.restaurant.averagePreparationTime,
         restaurant: dish.restaurant.name,
         category: dish.category,
         isVegetarian,
-        spiceLevel: dish.dietaryTags.includes('SPICY') ? 'spicy' : 
-                    dish.dietaryTags.includes('MEDIUM_SPICY') ? 'medium' : 'mild',
+        spiceLevel: dish.dietaryTags.includes('SPICY')
+          ? 'spicy'
+          : dish.dietaryTags.includes('MEDIUM_SPICY')
+            ? 'medium'
+            : 'mild',
         restaurantId: dish.restaurant.id,
         dietaryTags: dish.dietaryTags,
         distanceText,
@@ -102,9 +115,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: clientFeaturedDishes,
-      total: clientFeaturedDishes.length
+      total: clientFeaturedDishes.length,
     });
-
   } catch (error) {
     console.error('Error fetching featured dishes:', error);
     return NextResponse.json(

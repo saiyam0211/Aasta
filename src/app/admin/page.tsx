@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { adminSession } from "@/lib/admin-auth";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { adminSession } from '@/lib/admin-auth';
 
 export default function AdminRootPage() {
   const router = useRouter();
@@ -10,19 +10,23 @@ export default function AdminRootPage() {
   useEffect(() => {
     const session = adminSession.get();
     if (session) {
-      router.push("/admin/dashboard");
+      router.push('/admin/dashboard');
     } else {
-      router.push("/admin/login");
+      router.push('/admin/login');
     }
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-primary-dark-green">
+    <div className="bg-primary-dark-green flex min-h-screen items-center justify-center">
       <div className="text-center">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-accent-leaf-green">
-          <span className="text-brand font-bold text-xl text-primary-dark-green">A</span>
+        <div className="bg-accent-leaf-green mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+          <span className="text-brand text-primary-dark-green text-xl font-bold">
+            A
+          </span>
         </div>
-        <h1 className="text-brand text-2xl font-bold mb-4 text-off-white">Aasta Admin</h1>
+        <h1 className="text-brand text-off-white mb-4 text-2xl font-bold">
+          Aasta Admin
+        </h1>
         <p className="text-off-white">Redirecting...</p>
       </div>
     </div>

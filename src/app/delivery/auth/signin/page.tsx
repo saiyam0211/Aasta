@@ -1,12 +1,18 @@
-"use client";
+'use client';
 
-import { signIn, getSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Bike } from "lucide-react";
-import { toast } from "sonner";
+import { signIn, getSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Loader2, Bike } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function DeliverySignInPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -19,7 +25,7 @@ export default function DeliverySignInPage() {
       if (session) {
         // Check if user already has delivery partner role
         if (session.user.role === 'DELIVERY_PARTNER') {
-          router.push("/delivery/dashboard");
+          router.push('/delivery/dashboard');
         } else if (session.user.role === 'CUSTOMER') {
           // User is authenticated but needs role update
           setIsLoading(true);
@@ -52,7 +58,7 @@ export default function DeliverySignInPage() {
 
       // Show success message and reload to refresh the session
       toast.success('Delivery partner account created successfully!');
-      
+
       // Use setTimeout to give the toast time to show, then reload
       setTimeout(() => {
         window.location.href = '/delivery/dashboard';
@@ -67,10 +73,10 @@ export default function DeliverySignInPage() {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      
+
       // Sign in with Google
-      const result = await signIn("google", { 
-        redirect: false // Don't redirect automatically
+      const result = await signIn('google', {
+        redirect: false, // Don't redirect automatically
       });
 
       if (result?.ok) {
@@ -91,61 +97,65 @@ export default function DeliverySignInPage() {
 
           if (!response.ok) {
             console.error('Failed to update user role:', await response.json());
-            toast.error('Failed to set delivery partner role. Please try again.');
+            toast.error(
+              'Failed to set delivery partner role. Please try again.'
+            );
             return;
           }
 
           // Show success message and reload to refresh the session
           toast.success('Delivery partner account created successfully!');
-          
+
           // Use setTimeout to give the toast time to show, then reload
           setTimeout(() => {
             window.location.href = '/delivery/dashboard';
           }, 1000);
         }
       } else if (result?.error) {
-        console.error("Sign in error:", result.error);
-        toast.error("Failed to sign in. Please try again.");
+        console.error('Sign in error:', result.error);
+        toast.error('Failed to sign in. Please try again.');
       }
     } catch (error) {
-      console.error("Sign in error:", error);
-      toast.error("Failed to sign in. Please try again.");
+      console.error('Sign in error:', error);
+      toast.error('Failed to sign in. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-primary-dark-green p-4">
-      <Card className="w-full max-w-md restaurant-card">
+    <div className="bg-primary-dark-green flex min-h-screen items-center justify-center p-4">
+      <Card className="restaurant-card w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           {/* Aasta Logo */}
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center bg-accent-leaf-green">
-              <span className="text-brand font-bold text-3xl text-primary-dark-green">A</span>
+          <div className="mb-6 flex justify-center">
+            <div className="bg-accent-leaf-green flex h-20 w-20 items-center justify-center rounded-2xl">
+              <span className="text-brand text-primary-dark-green text-3xl font-bold">
+                A
+              </span>
             </div>
           </div>
-          
-          <CardTitle className="text-brand text-3xl font-bold text-primary-dark-green">
+
+          <CardTitle className="text-brand text-primary-dark-green text-3xl font-bold">
             Delivery Partner
           </CardTitle>
-          <CardDescription className="text-heading text-lg text-primary-dark-green">
+          <CardDescription className="text-heading text-primary-dark-green text-lg">
             Earn with Aasta's premium night delivery service
           </CardDescription>
-          
+
           {/* Delivery Icon */}
           <div className="flex justify-center py-4">
-            <div className="p-3 bg-bright-yellow rounded-xl">
-              <Bike className="w-8 h-8 text-primary-dark-green" />
+            <div className="bg-bright-yellow rounded-xl p-3">
+              <Bike className="text-primary-dark-green h-8 w-8" />
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           <Button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full h-12 bg-accent-leaf-green hover:bg-accent-leaf-green/90 text-primary-dark-green border-2 border-primary-dark-green rounded-xl font-semibold text-base touchable"
+            className="bg-accent-leaf-green hover:bg-accent-leaf-green/90 text-primary-dark-green border-primary-dark-green touchable h-12 w-full rounded-xl border-2 text-base font-semibold"
           >
             {isLoading ? (
               <>
@@ -176,12 +186,12 @@ export default function DeliverySignInPage() {
               </>
             )}
           </Button>
-          
-          <div className="bg-bright-yellow/20 rounded-xl p-4 space-y-2">
-            <h3 className="text-heading font-semibold text-primary-dark-green">
+
+          <div className="bg-bright-yellow/20 space-y-2 rounded-xl p-4">
+            <h3 className="text-heading text-primary-dark-green font-semibold">
               Why deliver with Aasta?
             </h3>
-            <ul className="text-sm text-primary-dark-green space-y-1">
+            <ul className="text-primary-dark-green space-y-1 text-sm">
               <li>• Higher earnings during night hours</li>
               <li>• Premium delivery charges</li>
               <li>• Flexible working hours (9 PM - 12 AM)</li>
@@ -189,7 +199,7 @@ export default function DeliverySignInPage() {
               <li>• Telegram integration for easy updates</li>
             </ul>
           </div>
-          
+
           <div className="text-center">
             <p className="text-xs text-gray-600">
               Delivery Partner Portal • Night Shift: 9 PM - 12 AM
@@ -199,4 +209,4 @@ export default function DeliverySignInPage() {
       </Card>
     </div>
   );
-} 
+}

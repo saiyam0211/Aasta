@@ -10,9 +10,9 @@ class AnalyticsService {
         action: 'order_placed',
         page: 'Order Details',
         data: {
-          orderId
-        }
-      }
+          orderId,
+        },
+      },
     });
   }
 
@@ -21,12 +21,12 @@ class AnalyticsService {
     // Since PerformanceMetrics doesn't have orderId field, we'll update based on today's date
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     await prisma.performanceMetrics.updateMany({
-      where: { 
-        date: today 
+      where: {
+        date: today,
       },
-      data: { completedOrders: { increment: 1 } }
+      data: { completedOrders: { increment: 1 } },
     });
   }
 
@@ -49,8 +49,8 @@ class AnalyticsService {
         userId,
         action,
         data,
-        sessionId: 'N/A'
-      }
+        sessionId: 'N/A',
+      },
     });
   }
 }

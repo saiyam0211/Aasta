@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { 
-  ArrowLeft, 
-  Clock, 
-  MapPin, 
-  Phone, 
-  CheckCircle, 
-  ChefHat, 
-  Package, 
-  Truck, 
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  ArrowLeft,
+  Clock,
+  MapPin,
+  Phone,
+  CheckCircle,
+  ChefHat,
+  Package,
+  Truck,
   Star,
-  RefreshCw
-} from "lucide-react";
-import CustomerLayout from "@/components/layouts/customer-layout";
-import { toast } from "sonner";
+  RefreshCw,
+} from 'lucide-react';
+import CustomerLayout from '@/components/layouts/customer-layout';
+import { toast } from 'sonner';
 
 interface OrderItem {
   id: string;
@@ -64,12 +64,42 @@ interface Order {
 }
 
 const statusSteps = [
-  { key: 'PLACED', label: 'Order Placed', icon: Clock, description: 'Your order has been placed successfully' },
-  { key: 'CONFIRMED', label: 'Confirmed', icon: CheckCircle, description: 'Restaurant confirmed your order' },
-  { key: 'PREPARING', label: 'Preparing', icon: ChefHat, description: 'Your food is being prepared' },
-  { key: 'READY_FOR_PICKUP', label: 'Ready for Pickup', icon: Package, description: 'Food is ready for delivery partner' },
-  { key: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', icon: Truck, description: 'Your order is on the way' },
-  { key: 'DELIVERED', label: 'Delivered', icon: CheckCircle, description: 'Order delivered successfully' }
+  {
+    key: 'PLACED',
+    label: 'Order Placed',
+    icon: Clock,
+    description: 'Your order has been placed successfully',
+  },
+  {
+    key: 'CONFIRMED',
+    label: 'Confirmed',
+    icon: CheckCircle,
+    description: 'Restaurant confirmed your order',
+  },
+  {
+    key: 'PREPARING',
+    label: 'Preparing',
+    icon: ChefHat,
+    description: 'Your food is being prepared',
+  },
+  {
+    key: 'READY_FOR_PICKUP',
+    label: 'Ready for Pickup',
+    icon: Package,
+    description: 'Food is ready for delivery partner',
+  },
+  {
+    key: 'OUT_FOR_DELIVERY',
+    label: 'Out for Delivery',
+    icon: Truck,
+    description: 'Your order is on the way',
+  },
+  {
+    key: 'DELIVERED',
+    label: 'Delivered',
+    icon: CheckCircle,
+    description: 'Order delivered successfully',
+  },
 ];
 
 export default function OrderTrackingPage() {
@@ -91,15 +121,15 @@ export default function OrderTrackingPage() {
       setIsLoading(true);
       const response = await fetch(`/api/orders/${orderNumber}`);
       const data = await response.json();
-      
+
       if (data.success) {
         setOrder(data.order);
       } else {
-        toast.error(data.error || "Failed to fetch order details");
+        toast.error(data.error || 'Failed to fetch order details');
       }
     } catch (error) {
-      console.error("Failed to fetch order details:", error);
-      toast.error("Failed to fetch order details");
+      console.error('Failed to fetch order details:', error);
+      toast.error('Failed to fetch order details');
     } finally {
       setIsLoading(false);
     }
@@ -107,25 +137,34 @@ export default function OrderTrackingPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "PLACED": return "bg-blue-100 text-blue-800";
-      case "CONFIRMED": return "bg-green-100 text-green-800";
-      case "PREPARING": return "bg-yellow-100 text-yellow-800";
-      case "READY_FOR_PICKUP": return "bg-purple-100 text-purple-800";
-      case "OUT_FOR_DELIVERY": return "bg-orange-100 text-orange-800";
-      case "DELIVERED": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+      case 'PLACED':
+        return 'bg-blue-100 text-blue-800';
+      case 'CONFIRMED':
+        return 'bg-green-100 text-green-800';
+      case 'PREPARING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'READY_FOR_PICKUP':
+        return 'bg-purple-100 text-purple-800';
+      case 'OUT_FOR_DELIVERY':
+        return 'bg-orange-100 text-orange-800';
+      case 'DELIVERED':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getCurrentStep = (status: string) => {
-    return statusSteps.findIndex(step => step.key === status);
+    return statusSteps.findIndex((step) => step.key === status);
   };
 
   const getTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    
+    const diffInMinutes = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60)
+    );
+
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
@@ -134,11 +173,11 @@ export default function OrderTrackingPage() {
   if (isLoading) {
     return (
       <CustomerLayout>
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="mx-auto max-w-4xl px-4 py-6">
           <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
-            <div className="h-48 bg-gray-200 rounded"></div>
+            <div className="h-8 w-1/3 rounded bg-gray-200"></div>
+            <div className="h-64 rounded bg-gray-200"></div>
+            <div className="h-48 rounded bg-gray-200"></div>
           </div>
         </div>
       </CustomerLayout>
@@ -148,13 +187,16 @@ export default function OrderTrackingPage() {
   if (!order) {
     return (
       <CustomerLayout>
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="mx-auto max-w-4xl px-4 py-6">
           <Card>
-            <CardContent className="text-center py-16">
-              <h3 className="text-xl font-semibold mb-2">Order not found</h3>
-              <p className="text-gray-500 mb-6">The order you're looking for doesn't exist or you don't have access to it.</p>
-              <Button onClick={() => router.push("/customer/orders")}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
+            <CardContent className="py-16 text-center">
+              <h3 className="mb-2 text-xl font-semibold">Order not found</h3>
+              <p className="mb-6 text-gray-500">
+                The order you're looking for doesn't exist or you don't have
+                access to it.
+              </p>
+              <Button onClick={() => router.push('/customer/orders')}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Orders
               </Button>
             </CardContent>
@@ -168,22 +210,22 @@ export default function OrderTrackingPage() {
 
   return (
     <CustomerLayout>
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="mx-auto max-w-4xl px-4 py-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
-              onClick={() => router.push("/customer/orders")}
+              onClick={() => router.push('/customer/orders')}
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
             <div>
               <h1 className="text-3xl font-bold" style={{ color: '#002a01' }}>
                 Order #{order.orderNumber}
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="mt-1 text-gray-600">
                 Placed {getTimeAgo(order.createdAt)} • {order.restaurant.name}
               </p>
             </div>
@@ -192,22 +234,22 @@ export default function OrderTrackingPage() {
             <Badge className={`${getStatusColor(order.status)} px-4 py-2`}>
               {order.status.replace('_', ' ')}
             </Badge>
-            <Button 
+            <Button
               onClick={fetchOrderDetails}
               className="flex items-center gap-2"
               style={{
                 backgroundColor: '#d1f86a',
                 color: '#002a01',
-                border: '1px solid #002a01'
+                border: '1px solid #002a01',
               }}
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="h-4 w-4" />
               Refresh
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Order Status Timeline */}
           <div className="lg:col-span-2">
             <Card>
@@ -223,31 +265,43 @@ export default function OrderTrackingPage() {
 
                     return (
                       <div key={step.key} className="flex items-start gap-4">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                          isCompleted 
-                            ? 'bg-green-100 text-green-600' 
-                            : isCurrent 
-                              ? 'bg-orange-100 text-orange-600' 
-                              : 'bg-gray-100 text-gray-400'
-                        }`}>
-                          <StepIcon className="w-5 h-5" />
+                        <div
+                          className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${
+                            isCompleted
+                              ? 'bg-green-100 text-green-600'
+                              : isCurrent
+                                ? 'bg-orange-100 text-orange-600'
+                                : 'bg-gray-100 text-gray-400'
+                          }`}
+                        >
+                          <StepIcon className="h-5 w-5" />
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <h3 className={`font-semibold ${
-                              isCompleted ? 'text-green-600' : isCurrent ? 'text-orange-600' : 'text-gray-400'
-                            }`}>
+                            <h3
+                              className={`font-semibold ${
+                                isCompleted
+                                  ? 'text-green-600'
+                                  : isCurrent
+                                    ? 'text-orange-600'
+                                    : 'text-gray-400'
+                              }`}
+                            >
                               {step.label}
                             </h3>
                             {isCurrent && (
-                              <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                              <span className="rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-800">
                                 Current
                               </span>
                             )}
                           </div>
-                          <p className={`text-sm mt-1 ${
-                            isCompleted || isCurrent ? 'text-gray-600' : 'text-gray-400'
-                          }`}>
+                          <p
+                            className={`mt-1 text-sm ${
+                              isCompleted || isCurrent
+                                ? 'text-gray-600'
+                                : 'text-gray-400'
+                            }`}
+                          >
                             {step.description}
                           </p>
                         </div>
@@ -257,32 +311,41 @@ export default function OrderTrackingPage() {
                 </div>
 
                 {/* Estimated Delivery Time */}
-                {order.estimatedDeliveryTime && order.status !== 'DELIVERED' && (
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <div className="flex items-center gap-2 text-blue-800">
-                      <Clock className="w-5 h-5" />
-                      <span className="font-semibold">Estimated Delivery</span>
+                {order.estimatedDeliveryTime &&
+                  order.status !== 'DELIVERED' && (
+                    <div className="mt-6 rounded-lg bg-blue-50 p-4">
+                      <div className="flex items-center gap-2 text-blue-800">
+                        <Clock className="h-5 w-5" />
+                        <span className="font-semibold">
+                          Estimated Delivery
+                        </span>
+                      </div>
+                      <p className="mt-1 text-blue-700">
+                        {new Date(
+                          order.estimatedDeliveryTime
+                        ).toLocaleTimeString()}
+                      </p>
                     </div>
-                    <p className="text-blue-700 mt-1">
-                      {new Date(order.estimatedDeliveryTime).toLocaleTimeString()}
-                    </p>
-                  </div>
-                )}
+                  )}
 
                 {/* Verification Code */}
-                {order.status === 'OUT_FOR_DELIVERY' && order.verificationCode && (
-                  <div className="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                    <h4 className="font-semibold text-purple-800 mb-2">🔒 Verification Code</h4>
-                    <p className="text-purple-700 text-sm mb-2">
-                      Share this code with the delivery partner to confirm delivery:
-                    </p>
-                    <div className="bg-purple-100 p-3 rounded text-center">
-                      <span className="text-2xl font-bold text-purple-800 tracking-wider">
-                        {order.verificationCode}
-                      </span>
+                {order.status === 'OUT_FOR_DELIVERY' &&
+                  order.verificationCode && (
+                    <div className="mt-6 rounded-lg border border-purple-200 bg-purple-50 p-4">
+                      <h4 className="mb-2 font-semibold text-purple-800">
+                        🔒 Verification Code
+                      </h4>
+                      <p className="mb-2 text-sm text-purple-700">
+                        Share this code with the delivery partner to confirm
+                        delivery:
+                      </p>
+                      <div className="rounded bg-purple-100 p-3 text-center">
+                        <span className="text-2xl font-bold tracking-wider text-purple-800">
+                          {order.verificationCode}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </CardContent>
             </Card>
           </div>
@@ -298,15 +361,19 @@ export default function OrderTrackingPage() {
                 <CardContent>
                   <div className="space-y-3">
                     <div>
-                      <p className="font-semibold">{order.deliveryPartner.user.name}</p>
+                      <p className="font-semibold">
+                        {order.deliveryPartner.user.name}
+                      </p>
                       <p className="text-sm text-gray-600">Delivery Partner</p>
                     </div>
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() => window.open(`tel:${order.deliveryPartner?.user.phone}`)}
+                      onClick={() =>
+                        window.open(`tel:${order.deliveryPartner?.user.phone}`)
+                      }
                     >
-                      <Phone className="w-4 h-4 mr-2" />
+                      <Phone className="mr-2 h-4 w-4" />
                       Call Partner
                     </Button>
                   </div>
@@ -323,14 +390,16 @@ export default function OrderTrackingPage() {
                 <div className="space-y-3">
                   <div>
                     <p className="font-semibold">{order.restaurant.name}</p>
-                    <p className="text-sm text-gray-600">{order.restaurant.address}</p>
+                    <p className="text-sm text-gray-600">
+                      {order.restaurant.address}
+                    </p>
                   </div>
                   <Button
                     variant="outline"
                     className="w-full"
                     onClick={() => window.open(`tel:${order.restaurant.phone}`)}
                   >
-                    <Phone className="w-4 h-4 mr-2" />
+                    <Phone className="mr-2 h-4 w-4" />
                     Call Restaurant
                   </Button>
                 </div>
@@ -344,11 +413,9 @@ export default function OrderTrackingPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 mt-1 text-gray-400" />
+                  <MapPin className="mt-1 h-4 w-4 text-gray-400" />
                   <div>
-                    <p className="text-sm">
-                      {order.deliveryAddress}
-                    </p>
+                    <p className="text-sm">{order.deliveryAddress}</p>
                   </div>
                 </div>
               </CardContent>
@@ -363,7 +430,9 @@ export default function OrderTrackingPage() {
                 <div className="space-y-3">
                   {order.items.map((item) => (
                     <div key={item.id} className="flex justify-between text-sm">
-                      <span>{item.quantity}x {item.menuItem.name}</span>
+                      <span>
+                        {item.quantity}x {item.menuItem.name}
+                      </span>
                       <span>₹{(item.quantity * item.price).toFixed(2)}</span>
                     </div>
                   ))}
@@ -383,19 +452,21 @@ export default function OrderTrackingPage() {
                   <hr />
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
-                    <span style={{ color: '#002a01' }}>₹{order.total.toFixed(2)}</span>
+                    <span style={{ color: '#002a01' }}>
+                      ₹{order.total.toFixed(2)}
+                    </span>
                   </div>
                 </div>
 
                 {order.status === 'DELIVERED' && (
-                  <Button 
-                    className="w-full mt-4"
+                  <Button
+                    className="mt-4 w-full"
                     variant="outline"
                     onClick={() => {
                       // Add rating functionality here
                     }}
                   >
-                    <Star className="w-4 h-4 mr-2" />
+                    <Star className="mr-2 h-4 w-4" />
                     Rate Order
                   </Button>
                 )}

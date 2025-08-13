@@ -1,5 +1,8 @@
 import { render, screen } from '@testing-library/react';
-import { PWAInstallBanner, OfflineIndicator } from '@/components/PWAInstallBanner';
+import {
+  PWAInstallBanner,
+  OfflineIndicator,
+} from '@/components/PWAInstallBanner';
 
 // Mock the PWA hook
 jest.mock('@/hooks/usePWA', () => ({
@@ -17,7 +20,7 @@ jest.mock('@/hooks/usePWA', () => ({
 describe('PWAInstallBanner', () => {
   it('renders install banner when installable', () => {
     render(<PWAInstallBanner />);
-    
+
     expect(screen.getByText('Install App')).toBeInTheDocument();
     expect(screen.getByText('Install')).toBeInTheDocument();
     expect(screen.getByText('Later')).toBeInTheDocument();

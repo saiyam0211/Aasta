@@ -48,14 +48,16 @@ class PaymentService {
 
   constructor() {
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      throw new Error('Razorpay credentials not found in environment variables');
+      throw new Error(
+        'Razorpay credentials not found in environment variables'
+      );
     }
 
     this.razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
       key_secret: process.env.RAZORPAY_KEY_SECRET,
     });
-    
+
     this.keySecret = process.env.RAZORPAY_KEY_SECRET;
   }
 
@@ -93,8 +95,9 @@ class PaymentService {
    */
   verifyPayment(verificationData: PaymentVerificationData): boolean {
     try {
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = verificationData;
-      
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+        verificationData;
+
       const body = razorpay_order_id + '|' + razorpay_payment_id;
       const expectedSignature = crypto
         .createHmac('sha256', this.keySecret)
@@ -129,7 +132,10 @@ class PaymentService {
         refundOptions.amount = Math.round(amount * 100); // Convert to paise
       }
 
-      const refund = await this.razorpay.payments.refund(paymentId, refundOptions);
+      const refund = await this.razorpay.payments.refund(
+        paymentId,
+        refundOptions
+      );
       return refund as RefundResponse;
     } catch (error) {
       console.error('Error processing refund:', error);
@@ -196,10 +202,14 @@ class PaymentService {
     const paymentGatewayFeePercent = 0.024; // 2.4% Razorpay fee
     const deliveryFeePercent = 0.15; // 15% delivery fee
 
-    const platformFee = Math.round(orderAmount * platformFeePercent * 100) / 100;
-    const paymentGatewayFee = Math.round(orderAmount * paymentGatewayFeePercent * 100) / 100;
-    const deliveryFee = Math.round(orderAmount * deliveryFeePercent * 100) / 100;
-    const restaurantAmount = Math.round((orderAmount - platformFee - paymentGatewayFee) * 100) / 100;
+    const platformFee =
+      Math.round(orderAmount * platformFeePercent * 100) / 100;
+    const paymentGatewayFee =
+      Math.round(orderAmount * paymentGatewayFeePercent * 100) / 100;
+    const deliveryFee =
+      Math.round(orderAmount * deliveryFeePercent * 100) / 100;
+    const restaurantAmount =
+      Math.round((orderAmount - platformFee - paymentGatewayFee) * 100) / 100;
 
     return {
       platformFee,
@@ -219,8 +229,4 @@ class PaymentService {
 }
 
 export default PaymentService;
-export type { 
-  PaymentVerificationData, 
-  RazorpayOrder, 
-  RefundResponse 
-};
+export type { PaymentVerificationData, RazorpayOrder, RefundResponse };

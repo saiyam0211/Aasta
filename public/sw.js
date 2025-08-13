@@ -4,7 +4,7 @@ const urlsToCache = [
   '/manifest.json',
   '/offline.html',
   '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/icons/icon-512x512.png',
 ];
 
 self.addEventListener('install', (event) => {
@@ -20,14 +20,16 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   if (request.url.includes('/api/')) {
-    event.respondWith(
-      fetch(request).catch(() => caches.match(request))
-    );
+    event.respondWith(fetch(request).catch(() => caches.match(request)));
   } else {
     event.respondWith(
-      caches.match(request)
-        .then(response => response || fetch(request))
-        .catch(() => request.destination === 'document' && caches.match('/offline.html'))
+      caches
+        .match(request)
+        .then((response) => response || fetch(request))
+        .catch(
+          () =>
+            request.destination === 'document' && caches.match('/offline.html')
+        )
     );
   }
 });
@@ -46,14 +48,16 @@ self.addEventListener('push', (event) => {
   } catch (error) {
     notificationData = {
       title: 'Aasta - Night Delivery',
-      body: event.data ? event.data.text() : ''
+      body: event.data ? event.data.text() : '',
     };
   }
 
   // Ignore push events where there's no title or body
   if (
     (!notificationData.title || notificationData.title === 'undefined') &&
-    (!notificationData.body || notificationData.body === 'undefined' || notificationData.body === '')
+    (!notificationData.body ||
+      notificationData.body === 'undefined' ||
+      notificationData.body === '')
   ) {
     return;
   }
@@ -65,7 +69,7 @@ self.addEventListener('push', (event) => {
     data: notificationData.data || {},
     actions: notificationData.actions || [],
     requireInteraction: notificationData.requireInteraction || false,
-    vibrate: notificationData.vibrate || [200, 100, 200]
+    vibrate: notificationData.vibrate || [200, 100, 200],
   };
 
   event.waitUntil(
@@ -82,8 +86,9 @@ self.addEventListener('notificationclick', (event) => {
   const urlToOpen = event.notification.data?.url || '/';
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then(clientList => {
+    clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
         for (const client of clientList) {
           if (client.url.includes(self.location.origin)) {
             return client.focus();
@@ -105,7 +110,7 @@ async function syncOrders() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(order)
+          body: JSON.stringify(order),
         });
 
         if (response.ok) {

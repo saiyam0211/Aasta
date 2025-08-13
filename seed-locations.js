@@ -8,27 +8,77 @@ async function seedLocations() {
   console.log('Seeding default locations...');
 
   const defaultLocations = [
-    { name: 'Koramangala', city: 'Bengaluru', state: 'Karnataka', country: 'India' },
-    { name: 'Indiranagar', city: 'Bengaluru', state: 'Karnataka', country: 'India' },
-    { name: 'Whitefield', city: 'Bengaluru', state: 'Karnataka', country: 'India' },
-    { name: 'HSR Layout', city: 'Bengaluru', state: 'Karnataka', country: 'India' },
-    { name: 'Marathahalli', city: 'Bengaluru', state: 'Karnataka', country: 'India' },
-    { name: 'BTM Layout', city: 'Bengaluru', state: 'Karnataka', country: 'India' },
-    { name: 'Electronic City', city: 'Bengaluru', state: 'Karnataka', country: 'India' },
-    { name: 'JP Nagar', city: 'Bengaluru', state: 'Karnataka', country: 'India' },
-    { name: 'Jayanagar', city: 'Bengaluru', state: 'Karnataka', country: 'India' },
-    { name: 'Bannerghatta Road', city: 'Bengaluru', state: 'Karnataka', country: 'India' }
+    {
+      name: 'Koramangala',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      country: 'India',
+    },
+    {
+      name: 'Indiranagar',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      country: 'India',
+    },
+    {
+      name: 'Whitefield',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      country: 'India',
+    },
+    {
+      name: 'HSR Layout',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      country: 'India',
+    },
+    {
+      name: 'Marathahalli',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      country: 'India',
+    },
+    {
+      name: 'BTM Layout',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      country: 'India',
+    },
+    {
+      name: 'Electronic City',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      country: 'India',
+    },
+    {
+      name: 'JP Nagar',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      country: 'India',
+    },
+    {
+      name: 'Jayanagar',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      country: 'India',
+    },
+    {
+      name: 'Bannerghatta Road',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      country: 'India',
+    },
   ];
 
   try {
     for (const location of defaultLocations) {
       const existingLocation = await prisma.location.findUnique({
-        where: { name: location.name }
+        where: { name: location.name },
       });
 
       if (!existingLocation) {
         await prisma.location.create({
-          data: location
+          data: location,
         });
         console.log(`✅ Created location: ${location.name}`);
       } else {

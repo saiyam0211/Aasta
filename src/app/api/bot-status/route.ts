@@ -4,12 +4,12 @@ import { getTelegramBot } from '@/lib/telegram-bot-integration';
 export async function GET(request: NextRequest) {
   try {
     const bot = getTelegramBot();
-    
+
     if (!bot) {
       return NextResponse.json({
         status: 'not_initialized',
         message: 'Telegram bot is not initialized',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -22,16 +22,16 @@ export async function GET(request: NextRequest) {
         botInfo: {
           id: botInfo.id,
           username: botInfo.username,
-          firstName: botInfo.first_name
+          firstName: botInfo.first_name,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       return NextResponse.json({
         status: 'error',
         message: 'Bot instance exists but failed to get info',
         error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   } catch (error) {
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       status: 'error',
       message: 'Failed to check bot status',
       error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
-} 
+}

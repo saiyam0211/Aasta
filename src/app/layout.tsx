@@ -1,23 +1,30 @@
-import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
-import "./globals.css";
-import { Providers } from "@/components/providers";
-import { TelegramBotInitializer } from "@/components/telegram-bot-initializer";
-import Script from "next/script";
+import type { Metadata, Viewport } from 'next';
+import localFont from 'next/font/local';
+import './globals.css';
+import { Providers } from '@/components/providers';
+import { TelegramBotInitializer } from '@/components/telegram-bot-initializer';
+import Script from 'next/script';
 
 // Import bot initialization (server-side only)
 import '@/lib/telegram-bot-init';
 
 const brandFont = localFont({
-  src: [{ path: "../../public/fonts/Tanjambore_bysaiyam-Regular.ttf", weight: "400", style: "normal" }],
-  variable: "--font-brand",
-  display: "swap",
+  src: [
+    {
+      path: '../../public/fonts/Tanjambore_bysaiyam-Regular.ttf',
+      weight: '400',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-brand',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "Aasta - Night Delivery",
-  description: "Premium food delivery service operating from 9 PM to 12 AM, offering restaurant-quality meals at discounted prices.",
-  manifest: "/manifest.json",
+  title: 'Aasta - Night Delivery',
+  description:
+    'Premium food delivery service operating from 9 PM to 12 AM, offering restaurant-quality meals at discounted prices.',
+  manifest: '/manifest.json',
   icons: {
     icon: [
       { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
@@ -41,10 +48,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  width: "device-width",
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#002a01",
+  themeColor: '#002a01',
 };
 
 export default function RootLayout({

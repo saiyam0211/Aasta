@@ -6,4 +6,4 @@ if (typeof window === 'undefined') {
   forceInitializeBot().catch(console.error);
 }
 
-export { forceInitializeBot }; 
+export { forceInitializeBot };

@@ -29,10 +29,13 @@ export async function PUT(
     });
 
     if (!existingPartner) {
-      return NextResponse.json({ 
-        success: false,
-        error: 'Delivery partner not found' 
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Delivery partner not found',
+        },
+        { status: 404 }
+      );
     }
 
     // If assignedRestaurants is being updated, we need to maintain bidirectional relationship
@@ -40,34 +43,40 @@ export async function PUT(
       // Get current assigned restaurants to know what changed
       const currentAssignedRestaurants = existingPartner.assignedRestaurants;
       const newAssignedRestaurants = data.assignedRestaurants;
-      
+
       // Find restaurants to remove and add
-      const restaurantsToRemove = currentAssignedRestaurants.filter((r: string) => !newAssignedRestaurants.includes(r));
-      const restaurantsToAdd = newAssignedRestaurants.filter((r: string) => !currentAssignedRestaurants.includes(r));
-      
+      const restaurantsToRemove = currentAssignedRestaurants.filter(
+        (r: string) => !newAssignedRestaurants.includes(r)
+      );
+      const restaurantsToAdd = newAssignedRestaurants.filter(
+        (r: string) => !currentAssignedRestaurants.includes(r)
+      );
+
       // Remove this partner from restaurants that are no longer assigned
       for (const restaurantId of restaurantsToRemove) {
         const restaurant = await prisma.restaurant.findUnique({
-          where: { id: restaurantId }
+          where: { id: restaurantId },
         });
-        
+
         if (restaurant) {
-          const updatedPartners = restaurant.assignedDeliveryPartners.filter(p => p !== id);
+          const updatedPartners = restaurant.assignedDeliveryPartners.filter(
+            (p) => p !== id
+          );
           await prisma.restaurant.update({
             where: { id: restaurantId },
             data: {
-              assignedDeliveryPartners: updatedPartners
-            }
+              assignedDeliveryPartners: updatedPartners,
+            },
           });
         }
       }
-      
+
       // Add this partner to newly assigned restaurants
       for (const restaurantId of restaurantsToAdd) {
         const restaurant = await prisma.restaurant.findUnique({
-          where: { id: restaurantId }
+          where: { id: restaurantId },
         });
-        
+
         if (restaurant) {
           const updatedPartners = [...restaurant.assignedDeliveryPartners];
           if (!updatedPartners.includes(id)) {
@@ -76,13 +85,13 @@ export async function PUT(
           await prisma.restaurant.update({
             where: { id: restaurantId },
             data: {
-              assignedDeliveryPartners: updatedPartners
-            }
+              assignedDeliveryPartners: updatedPartners,
+            },
           });
         }
       }
     }
-    
+
     // Update the delivery partner
     const updatedPartner = await prisma.deliveryPartner.update({
       where: { id },
@@ -103,18 +112,20 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       message: 'Delivery partner updated successfully',
-      data: updatedPartner
+      data: updatedPartner,
     });
-
   } catch (error) {
     console.error('Error updating delivery partner:', error);
-    return NextResponse.json({ 
-      success: false,
-      error: 'Internal server error' 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -143,22 +154,27 @@ export async function GET(
     });
 
     if (!partner) {
-      return NextResponse.json({ 
-        success: false,
-        error: 'Delivery partner not found' 
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Delivery partner not found',
+        },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      data: partner
+      data: partner,
     });
-
   } catch (error) {
     console.error('Error fetching delivery partner:', error);
-    return NextResponse.json({ 
-      success: false,
-      error: 'Internal server error' 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+      },
+      { status: 500 }
+    );
   }
 }

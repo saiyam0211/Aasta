@@ -21,19 +21,23 @@ interface EditDetailsModalProps {
   isLoading?: boolean;
 }
 
-const EditDetailsModal: React.FC<EditDetailsModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  restaurant, 
-  onSave, 
-  isLoading = false 
+const EditDetailsModal: React.FC<EditDetailsModalProps> = ({
+  isOpen,
+  onClose,
+  restaurant,
+  onSave,
+  isLoading = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [restaurantPrice, setRestaurantPrice] = useState(
-    restaurant?.restaurantPricePercentage ? restaurant.restaurantPricePercentage * 100 : 40
+    restaurant?.restaurantPricePercentage
+      ? restaurant.restaurantPricePercentage * 100
+      : 40
   );
   const [aastaPrice, setAastaPrice] = useState(
-    restaurant?.aastaPricePercentage ? restaurant.aastaPricePercentage * 100 : 10
+    restaurant?.aastaPricePercentage
+      ? restaurant.aastaPricePercentage * 100
+      : 10
   );
   const [minOrderAmount, setMinOrderAmount] = useState(
     restaurant?.minimumOrderAmount || 200
@@ -55,7 +59,9 @@ const EditDetailsModal: React.FC<EditDetailsModalProps> = ({
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Invalid file type. Only JPEG, PNG, and WebP images are allowed.');
+      toast.error(
+        'Invalid file type. Only JPEG, PNG, and WebP images are allowed.'
+      );
       return;
     }
 
@@ -67,7 +73,7 @@ const EditDetailsModal: React.FC<EditDetailsModalProps> = ({
     }
 
     setSelectedImage(file);
-    
+
     // Create preview URL
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
@@ -122,7 +128,7 @@ const EditDetailsModal: React.FC<EditDetailsModalProps> = ({
     }
 
     let imageUrl = restaurant?.imageUrl;
-    
+
     // Upload image if one was selected
     if (selectedImage) {
       const uploadedImageUrl = await uploadRestaurantImage();
@@ -150,31 +156,34 @@ const EditDetailsModal: React.FC<EditDetailsModalProps> = ({
         <DialogHeader>
           <DialogTitle>Edit Restaurant Details</DialogTitle>
           <DialogDescription>
-            Configure pricing percentages and operational settings for {restaurant?.name}
+            Configure pricing percentages and operational settings for{' '}
+            {restaurant?.name}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6 py-4">
           {/* Restaurant Image Upload Section */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-sm text-[#002a01]">Restaurant Image</h4>
-            
+            <h4 className="text-sm font-semibold text-[#002a01]">
+              Restaurant Image
+            </h4>
+
             <div className="space-y-3">
               {/* Current Image Display */}
               {(previewUrl || restaurant?.imageUrl) && (
-                <div className="relative w-full h-32 border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                <div className="relative h-32 w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
                   <img
                     src={previewUrl || restaurant?.imageUrl || ''}
                     alt="Restaurant"
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                   {previewUrl && (
                     <button
                       type="button"
                       onClick={handleRemoveImage}
-                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white transition-colors hover:bg-red-600"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="h-4 w-4" />
                     </button>
                   )}
                 </div>
@@ -196,10 +205,14 @@ const EditDetailsModal: React.FC<EditDetailsModalProps> = ({
                   className="w-full"
                   disabled={isUploadingImage}
                 >
-                  <Upload className="w-4 h-4 mr-2" />
-                  {previewUrl ? 'Change Image' : (restaurant?.imageUrl ? 'Replace Image' : 'Upload Image')}
+                  <Upload className="mr-2 h-4 w-4" />
+                  {previewUrl
+                    ? 'Change Image'
+                    : restaurant?.imageUrl
+                      ? 'Replace Image'
+                      : 'Upload Image'}
                 </Button>
-                <p className="text-xs text-gray-500 mt-1 text-center">
+                <p className="mt-1 text-center text-xs text-gray-500">
                   Supported formats: JPEG, PNG, WebP. Max size: 5MB
                 </p>
               </div>
@@ -208,16 +221,20 @@ const EditDetailsModal: React.FC<EditDetailsModalProps> = ({
 
           {/* Pricing Section */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-sm text-[#002a01]">Pricing Configuration</h4>
+            <h4 className="text-sm font-semibold text-[#002a01]">
+              Pricing Configuration
+            </h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="restaurant-price">Restaurant Earnings (%)</Label>
-                <Input 
+                <Label htmlFor="restaurant-price">
+                  Restaurant Earnings (%)
+                </Label>
+                <Input
                   id="restaurant-price"
-                  type="number" 
+                  type="number"
                   min="0"
                   max="100"
-                  value={restaurantPrice} 
+                  value={restaurantPrice}
                   onChange={(e) => setRestaurantPrice(Number(e.target.value))}
                   className="text-center"
                 />
@@ -227,12 +244,12 @@ const EditDetailsModal: React.FC<EditDetailsModalProps> = ({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="aasta-price">Aasta Earnings (%)</Label>
-                <Input 
+                <Input
                   id="aasta-price"
-                  type="number" 
+                  type="number"
                   min="0"
                   max="100"
-                  value={aastaPrice} 
+                  value={aastaPrice}
                   onChange={(e) => setAastaPrice(Number(e.target.value))}
                   className="text-center"
                 />
@@ -241,13 +258,20 @@ const EditDetailsModal: React.FC<EditDetailsModalProps> = ({
                 </p>
               </div>
             </div>
-            
+
             {/* Pricing Example */}
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs font-medium text-gray-700 mb-2">Example for ₹200 item:</p>
-              <div className="text-xs text-gray-600 space-y-1">
-                <div>• Restaurant will earn: ₹{(200 * restaurantPrice / 100).toFixed(0)}</div>
-                <div>• Aasta will earn: ₹{(200 * aastaPrice / 100).toFixed(0)}</div>
+            <div className="rounded-lg bg-gray-50 p-3">
+              <p className="mb-2 text-xs font-medium text-gray-700">
+                Example for ₹200 item:
+              </p>
+              <div className="space-y-1 text-xs text-gray-600">
+                <div>
+                  • Restaurant will earn: ₹
+                  {((200 * restaurantPrice) / 100).toFixed(0)}
+                </div>
+                <div>
+                  • Aasta will earn: ₹{((200 * aastaPrice) / 100).toFixed(0)}
+                </div>
                 <div>• Customer pays: ₹200</div>
               </div>
             </div>
@@ -255,37 +279,39 @@ const EditDetailsModal: React.FC<EditDetailsModalProps> = ({
 
           {/* Operational Settings */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-sm text-[#002a01]">Operational Settings</h4>
+            <h4 className="text-sm font-semibold text-[#002a01]">
+              Operational Settings
+            </h4>
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="min-order">Minimum Order Amount (₹)</Label>
-                <Input 
+                <Input
                   id="min-order"
-                  type="number" 
+                  type="number"
                   min="0"
-                  value={minOrderAmount} 
+                  value={minOrderAmount}
                   onChange={(e) => setMinOrderAmount(Number(e.target.value))}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="prep-time">Avg Prep Time (min)</Label>
-                  <Input 
+                  <Input
                     id="prep-time"
-                    type="number" 
+                    type="number"
                     min="1"
-                    value={prepTime} 
+                    value={prepTime}
                     onChange={(e) => setPrepTime(Number(e.target.value))}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="delivery-radius">Delivery Radius (km)</Label>
-                  <Input 
+                  <Input
                     id="delivery-radius"
-                    type="number" 
+                    type="number"
                     min="1"
                     step="0.5"
-                    value={deliveryRadius} 
+                    value={deliveryRadius}
                     onChange={(e) => setDeliveryRadius(Number(e.target.value))}
                   />
                 </div>
@@ -295,19 +321,19 @@ const EditDetailsModal: React.FC<EditDetailsModalProps> = ({
         </div>
 
         <DialogFooter>
-          <Button 
-            variant="outline" 
-            onClick={onClose}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleSave} 
-            className="bg-[#d1f86a] hover:bg-[#d1f86a]/90 text-[#002a01]"
+          <Button
+            onClick={handleSave}
+            className="bg-[#d1f86a] text-[#002a01] hover:bg-[#d1f86a]/90"
             disabled={isLoading || isUploadingImage}
           >
-            {isUploadingImage ? 'Uploading Image...' : (isLoading ? 'Saving...' : 'Save Changes')}
+            {isUploadingImage
+              ? 'Uploading Image...'
+              : isLoading
+                ? 'Saving...'
+                : 'Save Changes'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -316,4 +342,3 @@ const EditDetailsModal: React.FC<EditDetailsModalProps> = ({
 };
 
 export default EditDetailsModal;
-

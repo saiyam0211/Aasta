@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -20,7 +20,10 @@ export async function GET() {
     });
 
     if (!user?.restaurant) {
-      return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Restaurant not found' },
+        { status: 404 }
+      );
     }
 
     const restaurantId = user.restaurant.id;
@@ -34,7 +37,7 @@ export async function GET() {
     // Get this week's date range
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay());
-    
+
     // Get this month's date range
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
@@ -81,10 +84,13 @@ export async function GET() {
     // Calculate earnings
     const calculateEarnings = (orders: any[]) => {
       return orders.reduce((total, order) => {
-        const orderEarnings = order.orderItems.reduce((orderTotal: number, item: any) => {
-          const earnings = Number(item.restaurantTotalEarnings) || 0;
-          return orderTotal + earnings;
-        }, 0);
+        const orderEarnings = order.orderItems.reduce(
+          (orderTotal: number, item: any) => {
+            const earnings = Number(item.restaurantTotalEarnings) || 0;
+            return orderTotal + earnings;
+          },
+          0
+        );
         return total + orderEarnings;
       }, 0);
     };
@@ -102,7 +108,6 @@ export async function GET() {
         totalOrders: todayOrders.length,
       },
     });
-
   } catch (error) {
     console.error('Error fetching restaurant earnings:', error);
     return NextResponse.json(

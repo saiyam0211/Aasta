@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
@@ -23,9 +23,9 @@ export async function GET() {
             name: true,
             email: true,
             phone: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     if (!deliveryPartner) {
@@ -37,7 +37,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      data: deliveryPartner
+      data: deliveryPartner,
     });
   } catch (error) {
     console.error('Error fetching delivery partner data:', error);

@@ -48,7 +48,7 @@ class LocationService {
 
   // Find nearby restaurants within delivery radius
   async findNearbyRestaurants(
-    userLocation: Location, 
+    userLocation: Location,
     radius: number = 5, // km
     filters?: {
       cuisineTypes?: string[];
@@ -59,7 +59,7 @@ class LocationService {
   ): Promise<Restaurant[]> {
     try {
       const cacheKey = `restaurants_${userLocation.latitude}_${userLocation.longitude}_${radius}`;
-      
+
       // Check cache first
       const cached = this.getFromCache(cacheKey);
       if (cached) return cached;
@@ -87,7 +87,7 @@ class LocationService {
       });
 
       // Transform to expected format and calculate distances
-      const restaurants: Restaurant[] = dbRestaurants.map(restaurant => ({
+      const restaurants: Restaurant[] = dbRestaurants.map((restaurant) => ({
         id: restaurant.id,
         name: restaurant.name,
         latitude: restaurant.latitude,
@@ -104,89 +104,92 @@ class LocationService {
       }));
 
       // Fallback mock data if no restaurants in database
-      const mockRestaurants: Restaurant[] = restaurants.length > 0 ? restaurants : [
-        {
-          id: '1',
-          name: 'Midnight Bites',
-          latitude: userLocation.latitude + 0.01,
-          longitude: userLocation.longitude + 0.01,
-          address: '123 Food Street, Koramangala, Bengaluru',
-          phone: '+91-9876543210',
-          cuisineTypes: ['North Indian', 'Mughlai'],
-          averagePreparationTime: 25,
-          minimumOrderAmount: 200,
-          deliveryRadius: 5,
-          rating: 4.5,
-          status: 'ACTIVE',
-          operatingHours: {
-            monday: { open: '21:00', close: '00:00', isOpen: true },
-            tuesday: { open: '21:00', close: '00:00', isOpen: true },
-            // ... other days
-          }
-        },
-        {
-          id: '2',
-          name: 'Night Owl Pizza',
-          latitude: userLocation.latitude + 0.02,
-          longitude: userLocation.longitude - 0.01,
-          address: '456 Pizza Lane, Whitefield, Bengaluru',
-          phone: '+91-9876543211',
-          cuisineTypes: ['Italian', 'Fast Food'],
-          averagePreparationTime: 30,
-          minimumOrderAmount: 150,
-          deliveryRadius: 4,
-          rating: 4.3,
-          status: 'ACTIVE',
-          operatingHours: {
-            monday: { open: '21:00', close: '00:00', isOpen: true },
-            tuesday: { open: '21:00', close: '00:00', isOpen: true },
-            // ... other days
-          }
-        },
-        {
-          id: '3',
-          name: 'Late Night Curry House',
-          latitude: userLocation.latitude - 0.01,
-          longitude: userLocation.longitude + 0.02,
-          address: '789 Spice Street, Indiranagar, Bengaluru',
-          phone: '+91-9876543212',
-          cuisineTypes: ['South Indian', 'Continental'],
-          averagePreparationTime: 20,
-          minimumOrderAmount: 180,
-          deliveryRadius: 6,
-          rating: 4.7,
-          status: 'ACTIVE',
-          operatingHours: {
-            monday: { open: '21:00', close: '00:00', isOpen: true },
-            tuesday: { open: '21:00', close: '00:00', isOpen: true },
-            // ... other days
-          }
-        }
-      ];
+      const mockRestaurants: Restaurant[] =
+        restaurants.length > 0
+          ? restaurants
+          : [
+              {
+                id: '1',
+                name: 'Midnight Bites',
+                latitude: userLocation.latitude + 0.01,
+                longitude: userLocation.longitude + 0.01,
+                address: '123 Food Street, Koramangala, Bengaluru',
+                phone: '+91-9876543210',
+                cuisineTypes: ['North Indian', 'Mughlai'],
+                averagePreparationTime: 25,
+                minimumOrderAmount: 200,
+                deliveryRadius: 5,
+                rating: 4.5,
+                status: 'ACTIVE',
+                operatingHours: {
+                  monday: { open: '21:00', close: '00:00', isOpen: true },
+                  tuesday: { open: '21:00', close: '00:00', isOpen: true },
+                  // ... other days
+                },
+              },
+              {
+                id: '2',
+                name: 'Night Owl Pizza',
+                latitude: userLocation.latitude + 0.02,
+                longitude: userLocation.longitude - 0.01,
+                address: '456 Pizza Lane, Whitefield, Bengaluru',
+                phone: '+91-9876543211',
+                cuisineTypes: ['Italian', 'Fast Food'],
+                averagePreparationTime: 30,
+                minimumOrderAmount: 150,
+                deliveryRadius: 4,
+                rating: 4.3,
+                status: 'ACTIVE',
+                operatingHours: {
+                  monday: { open: '21:00', close: '00:00', isOpen: true },
+                  tuesday: { open: '21:00', close: '00:00', isOpen: true },
+                  // ... other days
+                },
+              },
+              {
+                id: '3',
+                name: 'Late Night Curry House',
+                latitude: userLocation.latitude - 0.01,
+                longitude: userLocation.longitude + 0.02,
+                address: '789 Spice Street, Indiranagar, Bengaluru',
+                phone: '+91-9876543212',
+                cuisineTypes: ['South Indian', 'Continental'],
+                averagePreparationTime: 20,
+                minimumOrderAmount: 180,
+                deliveryRadius: 6,
+                rating: 4.7,
+                status: 'ACTIVE',
+                operatingHours: {
+                  monday: { open: '21:00', close: '00:00', isOpen: true },
+                  tuesday: { open: '21:00', close: '00:00', isOpen: true },
+                  // ... other days
+                },
+              },
+            ];
 
       // Filter restaurants based on criteria
-      let filteredRestaurants = mockRestaurants.filter(restaurant => {
+      let filteredRestaurants = mockRestaurants.filter((restaurant) => {
         const distance = this.calculateDistance(userLocation, {
           latitude: restaurant.latitude,
-          longitude: restaurant.longitude
+          longitude: restaurant.longitude,
         });
-        
+
         return distance <= radius && this.isRestaurantOperational(restaurant);
       });
 
       // Apply additional filters
       if (filters) {
         if (filters.cuisineTypes && filters.cuisineTypes.length > 0) {
-          filteredRestaurants = filteredRestaurants.filter(restaurant =>
-            restaurant.cuisineTypes.some(cuisine => 
+          filteredRestaurants = filteredRestaurants.filter((restaurant) =>
+            restaurant.cuisineTypes.some((cuisine) =>
               filters.cuisineTypes!.includes(cuisine)
             )
           );
         }
 
         if (filters.rating) {
-          filteredRestaurants = filteredRestaurants.filter(restaurant =>
-            restaurant.rating >= filters.rating!
+          filteredRestaurants = filteredRestaurants.filter(
+            (restaurant) => restaurant.rating >= filters.rating!
           );
         }
       }
@@ -195,11 +198,11 @@ class LocationService {
       filteredRestaurants.sort((a, b) => {
         const distanceA = this.calculateDistance(userLocation, {
           latitude: a.latitude,
-          longitude: a.longitude
+          longitude: a.longitude,
         });
         const distanceB = this.calculateDistance(userLocation, {
           latitude: b.latitude,
-          longitude: b.longitude
+          longitude: b.longitude,
         });
         return distanceA - distanceB;
       });
@@ -219,35 +222,40 @@ class LocationService {
     const R = 6371; // Earth's radius in kilometers
     const dLat = this.deg2rad(point2.latitude - point1.latitude);
     const dLon = this.deg2rad(point2.longitude - point1.longitude);
-    
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(this.deg2rad(point1.latitude)) * Math.cos(this.deg2rad(point2.latitude)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.deg2rad(point1.latitude)) *
+        Math.cos(this.deg2rad(point2.latitude)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
-    
+
     return Math.round(distance * 100) / 100; // Round to 2 decimal places
   }
 
   // Get estimated delivery time with traffic
   async getETA(
-    restaurantLocation: Location, 
+    restaurantLocation: Location,
     deliveryLocation: Location,
     preparationTime: number = 20
   ): Promise<number> {
     try {
       const cacheKey = `eta_${restaurantLocation.latitude}_${restaurantLocation.longitude}_${deliveryLocation.latitude}_${deliveryLocation.longitude}`;
-      
+
       const cached = this.getFromCache(cacheKey);
       if (cached) return cached + preparationTime;
 
       // For now, use simple calculation - will be replaced with Google Directions API
-      const distance = this.calculateDistance(restaurantLocation, deliveryLocation);
+      const distance = this.calculateDistance(
+        restaurantLocation,
+        deliveryLocation
+      );
       const averageSpeed = 25; // km/h average speed in city
       const travelTime = (distance / averageSpeed) * 60; // Convert to minutes
-      
+
       // Add traffic buffer (20% extra time during night hours)
       const trafficBuffer = travelTime * 0.2;
       const totalTravelTime = Math.round(travelTime + trafficBuffer);
@@ -275,7 +283,10 @@ class LocationService {
   }
 
   // Reverse geocode coordinates to address
-  async reverseGeocode(lat: number, lng: number): Promise<LocationWithAddress | null> {
+  async reverseGeocode(
+    lat: number,
+    lng: number
+  ): Promise<LocationWithAddress | null> {
     try {
       const { googleMapsService } = await import('./google-maps');
       return await googleMapsService.reverseGeocode(lat, lng);
@@ -289,7 +300,7 @@ class LocationService {
   async getPlaceSuggestions(input: string): Promise<LocationWithAddress[]> {
     try {
       if (input.length < 3) return [];
-      
+
       const { googleMapsService } = await import('./google-maps');
       return await googleMapsService.getPlacePredictions(input);
     } catch (error) {
@@ -324,9 +335,9 @@ class LocationService {
           {
             instruction: `Head towards destination (${distance.toFixed(1)} km)`,
             distance: distance,
-            duration: duration
-          }
-        ]
+            duration: duration,
+          },
+        ],
       };
 
       this.setCache(cacheKey, routeInfo);
@@ -338,7 +349,7 @@ class LocationService {
       return {
         distance: distance,
         duration: Math.round((distance / 20) * 60), // Conservative estimate
-        steps: []
+        steps: [],
       };
     }
   }
@@ -347,7 +358,7 @@ class LocationService {
   private isRestaurantOperational(restaurant: Restaurant): boolean {
     const now = new Date();
     const currentHour = now.getHours();
-    
+
     // Night delivery operates from 9 PM to 12 AM (21:00 to 00:00)
     return currentHour >= 21 || currentHour < 1;
   }
@@ -368,7 +379,7 @@ class LocationService {
   private setCache(key: string, data: any): void {
     this.cache.set(key, {
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -387,4 +398,4 @@ class LocationService {
 export const locationService = new LocationService();
 
 // Export types
-export type { Location, LocationWithAddress, Restaurant, RouteInfo }; 
+export type { Location, LocationWithAddress, Restaurant, RouteInfo };

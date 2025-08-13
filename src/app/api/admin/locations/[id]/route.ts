@@ -11,7 +11,7 @@ export async function GET(
   const params = await context.params;
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized. Admin access required.' },
@@ -28,15 +28,15 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            status: true
-          }
+            status: true,
+          },
         },
         _count: {
           select: {
-            restaurants: true
-          }
-        }
-      }
+            restaurants: true,
+          },
+        },
+      },
     });
 
     if (!location) {
@@ -50,8 +50,8 @@ export async function GET(
       success: true,
       location: {
         ...location,
-        restaurantCount: location._count.restaurants
-      }
+        restaurantCount: location._count.restaurants,
+      },
     });
   } catch (error) {
     console.error('Error fetching location:', error);
@@ -70,7 +70,7 @@ export async function PUT(
   const params = await context.params;
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized. Admin access required.' },
@@ -86,14 +86,17 @@ export async function PUT(
     // Validate required fields
     if (!name || !city || !state || !country) {
       return NextResponse.json(
-        { success: false, error: 'Name, city, state, and country are required' },
+        {
+          success: false,
+          error: 'Name, city, state, and country are required',
+        },
         { status: 400 }
       );
     }
 
     // Check if location exists
     const existingLocation = await prisma.location.findUnique({
-      where: { id: locationId }
+      where: { id: locationId },
     });
 
     if (!existingLocation) {
@@ -107,8 +110,8 @@ export async function PUT(
     const duplicateLocation = await prisma.location.findFirst({
       where: {
         name: name.trim(),
-        id: { not: locationId }
-      }
+        id: { not: locationId },
+      },
     });
 
     if (duplicateLocation) {
@@ -125,14 +128,14 @@ export async function PUT(
         city: city.trim(),
         state: state.trim(),
         country: country.trim(),
-        isActive: isActive !== undefined ? isActive : existingLocation.isActive
-      }
+        isActive: isActive !== undefined ? isActive : existingLocation.isActive,
+      },
     });
 
     return NextResponse.json({
       success: true,
       location: updatedLocation,
-      message: 'Location updated successfully'
+      message: 'Location updated successfully',
     });
   } catch (error) {
     console.error('Error updating location:', error);
@@ -151,7 +154,7 @@ export async function DELETE(
   const params = await context.params;
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized. Admin access required.' },
@@ -167,10 +170,10 @@ export async function DELETE(
       include: {
         _count: {
           select: {
-            restaurants: true
-          }
-        }
-      }
+            restaurants: true,
+          },
+        },
+      },
     });
 
     if (!existingLocation) {
@@ -184,15 +187,15 @@ export async function DELETE(
     const activeRestaurants = await prisma.restaurant.count({
       where: {
         locationId: locationId,
-        status: 'ACTIVE'
-      }
+        status: 'ACTIVE',
+      },
     });
 
     if (activeRestaurants > 0) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Cannot delete location. ${activeRestaurants} active restaurant(s) are using this location. Please deactivate or reassign restaurants first.` 
+        {
+          success: false,
+          error: `Cannot delete location. ${activeRestaurants} active restaurant(s) are using this location. Please deactivate or reassign restaurants first.`,
         },
         { status: 400 }
       );
@@ -201,13 +204,13 @@ export async function DELETE(
     // Soft delete by setting isActive to false
     const deletedLocation = await prisma.location.update({
       where: { id: locationId },
-      data: { isActive: false }
+      data: { isActive: false },
     });
 
     return NextResponse.json({
       success: true,
       location: deletedLocation,
-      message: 'Location deactivated successfully'
+      message: 'Location deactivated successfully',
     });
   } catch (error) {
     console.error('Error deleting location:', error);

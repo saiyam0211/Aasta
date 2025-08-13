@@ -39,9 +39,7 @@ describe('OrderService', () => {
       const orderData = {
         customerId: 'customer1',
         restaurantId: 'restaurant1',
-        items: [
-          { menuItemId: 'item1', quantity: 2, price: 12.99 }
-        ],
+        items: [{ menuItemId: 'item1', quantity: 2, price: 12.99 }],
         deliveryAddress: {
           street: '123 Main St',
           city: 'Test City',
@@ -68,8 +66,9 @@ describe('OrderService', () => {
         items: [],
       };
 
-      await expect(orderService.createOrder(invalidOrderData as any))
-        .rejects.toThrow('Invalid order data');
+      await expect(
+        orderService.createOrder(invalidOrderData as any)
+      ).rejects.toThrow('Invalid order data');
     });
   });
 
@@ -127,8 +126,9 @@ describe('OrderService', () => {
       const { prisma } = require('@/lib/prisma');
       prisma.deliveryPartner.findMany.mockResolvedValue([]);
 
-      await expect(orderService.assignDeliveryPartner(orderId))
-        .rejects.toThrow('No available delivery partners');
+      await expect(orderService.assignDeliveryPartner(orderId)).rejects.toThrow(
+        'No available delivery partners'
+      );
     });
   });
 });

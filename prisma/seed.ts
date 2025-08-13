@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seeding...')
+  console.log('🌱 Starting database seeding...');
 
   // Create sample users
   const customer1 = await prisma.user.upsert({
@@ -16,10 +16,10 @@ async function main() {
       customer: {
         create: {
           favoriteRestaurants: [],
-        }
-      }
+        },
+      },
     },
-  })
+  });
 
   const restaurantOwner1 = await prisma.user.upsert({
     where: { email: 'restaurant1@test.com' },
@@ -29,7 +29,7 @@ async function main() {
       name: 'Restaurant Owner 1',
       role: 'RESTAURANT_OWNER',
     },
-  })
+  });
 
   const restaurantOwner2 = await prisma.user.upsert({
     where: { email: 'restaurant2@test.com' },
@@ -39,7 +39,7 @@ async function main() {
       name: 'Restaurant Owner 2',
       role: 'RESTAURANT_OWNER',
     },
-  })
+  });
 
   const deliveryPartner1 = await prisma.user.upsert({
     where: { email: 'delivery@test.com' },
@@ -56,10 +56,10 @@ async function main() {
           totalEarnings: 0,
           rating: 4.5,
           completedDeliveries: 0,
-        }
-      }
+        },
+      },
     },
-  })
+  });
 
   // Create admin user
   const adminUser = await prisma.user.upsert({
@@ -70,7 +70,7 @@ async function main() {
       name: 'Admin User',
       role: 'ADMIN',
     },
-  })
+  });
 
   // Create sample locations
   const koramangala = await prisma.location.upsert({
@@ -83,7 +83,7 @@ async function main() {
       country: 'India',
       isActive: true,
     },
-  })
+  });
 
   const whitefield = await prisma.location.upsert({
     where: { name: 'Whitefield' },
@@ -95,7 +95,7 @@ async function main() {
       country: 'India',
       isActive: true,
     },
-  })
+  });
 
   // Create sample restaurants
   const restaurant1 = await prisma.restaurant.upsert({
@@ -106,12 +106,13 @@ async function main() {
       ownerName: 'Rajesh Kumar',
       ownerId: restaurantOwner1.id,
       latitude: 28.6139,
-      longitude: 77.2090,
+      longitude: 77.209,
       address: '123 Food Street, Koramangala, Bengaluru - 560034',
       phone: '+91-9876543210',
       email: 'orders@midnightbites.com',
       locationId: koramangala.id,
-      imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400',
+      imageUrl:
+        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400',
       cuisineTypes: ['North Indian', 'Mughlai', 'Biryani'],
       averagePreparationTime: 25,
       minimumOrderAmount: 200,
@@ -131,7 +132,7 @@ async function main() {
       },
       assignedDeliveryPartners: [],
     },
-  })
+  });
 
   const restaurant2 = await prisma.restaurant.upsert({
     where: { ownerId: restaurantOwner2.id },
@@ -146,7 +147,8 @@ async function main() {
       phone: '+91-9876543211',
       email: 'orders@nightowlpizza.com',
       locationId: whitefield.id,
-      imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400',
+      imageUrl:
+        'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400',
       cuisineTypes: ['Italian', 'Fast Food', 'Pizza'],
       averagePreparationTime: 30,
       minimumOrderAmount: 150,
@@ -166,7 +168,7 @@ async function main() {
       },
       assignedDeliveryPartners: [],
     },
-  })
+  });
 
   // Create sample menu items for restaurant 1
   const menuItems1 = [
@@ -177,7 +179,8 @@ async function main() {
       originalPrice: 380,
       category: 'Main Course',
       preparationTime: 20,
-      imageUrl: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=300',
+      imageUrl:
+        'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=300',
       dietaryTags: ['Non-Vegetarian', 'Contains Dairy'],
       spiceLevel: 'Medium',
       available: true,
@@ -189,7 +192,8 @@ async function main() {
       price: 280,
       category: 'Main Course',
       preparationTime: 18,
-      imageUrl: 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=300',
+      imageUrl:
+        'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=300',
       dietaryTags: ['Vegetarian', 'Contains Dairy'],
       spiceLevel: 'Medium',
       available: true,
@@ -197,11 +201,13 @@ async function main() {
     },
     {
       name: 'Chicken Biryani',
-      description: 'Aromatic basmati rice cooked with succulent chicken and exotic spices',
+      description:
+        'Aromatic basmati rice cooked with succulent chicken and exotic spices',
       price: 350,
       category: 'Biryani',
       preparationTime: 25,
-      imageUrl: 'https://images.unsplash.com/photo-1563379091339-03246963d293?w=300',
+      imageUrl:
+        'https://images.unsplash.com/photo-1563379091339-03246963d293?w=300',
       dietaryTags: ['Non-Vegetarian'],
       spiceLevel: 'Medium',
       available: true,
@@ -213,7 +219,8 @@ async function main() {
       price: 220,
       category: 'Dal & Curry',
       preparationTime: 15,
-      imageUrl: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=300',
+      imageUrl:
+        'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=300',
       dietaryTags: ['Vegetarian', 'Contains Dairy'],
       spiceLevel: 'Mild',
       available: true,
@@ -225,13 +232,14 @@ async function main() {
       price: 60,
       category: 'Breads',
       preparationTime: 10,
-      imageUrl: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=300',
+      imageUrl:
+        'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=300',
       dietaryTags: ['Vegetarian'],
       spiceLevel: 'Mild',
       available: true,
       featured: false,
     },
-  ]
+  ];
 
   for (const item of menuItems1) {
     await prisma.menuItem.create({
@@ -239,7 +247,7 @@ async function main() {
         ...item,
         restaurantId: restaurant1.id,
       },
-    })
+    });
   }
 
   // Create sample menu items for restaurant 2
@@ -250,7 +258,8 @@ async function main() {
       price: 250,
       category: 'Pizza',
       preparationTime: 15,
-      imageUrl: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=300',
+      imageUrl:
+        'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=300',
       dietaryTags: ['Vegetarian'],
       spiceLevel: 'Mild',
       available: true,
@@ -262,7 +271,8 @@ async function main() {
       price: 320,
       category: 'Pizza',
       preparationTime: 18,
-      imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300',
+      imageUrl:
+        'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300',
       dietaryTags: ['Non-Vegetarian'],
       spiceLevel: 'Medium',
       available: true,
@@ -274,7 +284,8 @@ async function main() {
       price: 280,
       category: 'Pasta',
       preparationTime: 20,
-      imageUrl: 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=300',
+      imageUrl:
+        'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=300',
       dietaryTags: ['Non-Vegetarian', 'Contains Dairy'],
       spiceLevel: 'Mild',
       available: true,
@@ -286,7 +297,8 @@ async function main() {
       price: 180,
       category: 'Salads',
       preparationTime: 10,
-      imageUrl: 'https://images.unsplash.com/photo-1546793665-c74683f339c1?w=300',
+      imageUrl:
+        'https://images.unsplash.com/photo-1546793665-c74683f339c1?w=300',
       dietaryTags: ['Vegetarian'],
       spiceLevel: 'Mild',
       available: true,
@@ -298,13 +310,14 @@ async function main() {
       price: 120,
       category: 'Starters',
       preparationTime: 8,
-      imageUrl: 'https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?w=300',
+      imageUrl:
+        'https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?w=300',
       dietaryTags: ['Vegetarian'],
       spiceLevel: 'Mild',
       available: true,
       featured: false,
     },
-  ]
+  ];
 
   for (const item of menuItems2) {
     await prisma.menuItem.create({
@@ -312,13 +325,13 @@ async function main() {
         ...item,
         restaurantId: restaurant2.id,
       },
-    })
+    });
   }
 
   // Find the customer record to create address
   const customerRecord = await prisma.customer.findUnique({
-    where: { userId: customer1.id }
-  })
+    where: { userId: customer1.id },
+  });
 
   if (customerRecord) {
     await prisma.address.create({
@@ -335,23 +348,25 @@ async function main() {
         instructions: 'Ring the bell twice',
         isDefault: true,
       },
-    })
+    });
   }
 
-  console.log('✅ Database seeding completed successfully!')
-  console.log('📊 Created:')
-  console.log('- 5 Users (1 Customer, 2 Restaurant Owners, 1 Delivery Partner, 1 Admin)')
-  console.log('- 2 Restaurants with complete profiles')
-  console.log('- 10 Menu Items across different categories')
-  console.log('- 1 Customer Address')
+  console.log('✅ Database seeding completed successfully!');
+  console.log('📊 Created:');
+  console.log(
+    '- 5 Users (1 Customer, 2 Restaurant Owners, 1 Delivery Partner, 1 Admin)'
+  );
+  console.log('- 2 Restaurants with complete profiles');
+  console.log('- 10 Menu Items across different categories');
+  console.log('- 1 Customer Address');
 }
 
 main()
   .then(async () => {
-    await prisma.$disconnect()
+    await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error('❌ Error during seeding:', e)
-    await prisma.$disconnect()
-    process.exit(1)
-  })
+    console.error('❌ Error during seeding:', e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });

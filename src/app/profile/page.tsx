@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
@@ -6,14 +6,38 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import CustomerLayout from '@/components/layouts/customer-layout';
 import { useLocationStore } from '@/hooks/useLocation';
-import { MapPin, Home, Building, Plus, Edit, Trash, Phone, User, Mail, Loader2, Save } from 'lucide-react';
+import {
+  MapPin,
+  Home,
+  Building,
+  Plus,
+  Edit,
+  Trash,
+  Phone,
+  User,
+  Mail,
+  Loader2,
+  Save,
+} from 'lucide-react';
 
 // Address Interface
 interface Address {
@@ -34,7 +58,12 @@ export default function UserProfile() {
   const [userName, setUserName] = useState('');
   const [phone, setPhone] = useState('');
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [newAddress, setNewAddress] = useState({ street: '', city: '', state: '', zipCode: '' });
+  const [newAddress, setNewAddress] = useState({
+    street: '',
+    city: '',
+    state: '',
+    zipCode: '',
+  });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -72,11 +101,14 @@ export default function UserProfile() {
 
   // Check for duplicate address
   const isDuplicateAddress = (newAddr: any) => {
-    return addresses.some(addr => 
-      addr.street.toLowerCase().trim() === newAddr.street.toLowerCase().trim() &&
-      addr.city.toLowerCase().trim() === newAddr.city.toLowerCase().trim() &&
-      addr.state.toLowerCase().trim() === newAddr.state.toLowerCase().trim() &&
-      addr.zipCode === newAddr.zipCode
+    return addresses.some(
+      (addr) =>
+        addr.street.toLowerCase().trim() ===
+          newAddr.street.toLowerCase().trim() &&
+        addr.city.toLowerCase().trim() === newAddr.city.toLowerCase().trim() &&
+        addr.state.toLowerCase().trim() ===
+          newAddr.state.toLowerCase().trim() &&
+        addr.zipCode === newAddr.zipCode
     );
   };
 
@@ -86,7 +118,12 @@ export default function UserProfile() {
       setSuccess('');
 
       // Validate required fields
-      if (!newAddress.street || !newAddress.city || !newAddress.state || !newAddress.zipCode) {
+      if (
+        !newAddress.street ||
+        !newAddress.city ||
+        !newAddress.state ||
+        !newAddress.zipCode
+      ) {
         setError('All fields are required.');
         return;
       }
@@ -100,9 +137,11 @@ export default function UserProfile() {
         });
         const data = await res.json();
         if (data.success) {
-          setAddresses(addresses.map(addr => 
-            addr.id === editingId ? data.address : addr
-          ));
+          setAddresses(
+            addresses.map((addr) =>
+              addr.id === editingId ? data.address : addr
+            )
+          );
           setNewAddress({ street: '', city: '', state: '', zipCode: '' });
           setEditingId(null);
           setSuccess('Address updated successfully!');
@@ -112,7 +151,9 @@ export default function UserProfile() {
       } else {
         // Check for duplicate before adding
         if (isDuplicateAddress(newAddress)) {
-          setError('This address already exists. Please add a different address.');
+          setError(
+            'This address already exists. Please add a different address.'
+          );
           return;
         }
 
@@ -142,12 +183,12 @@ export default function UserProfile() {
       street: address.street,
       city: address.city,
       state: address.state,
-      zipCode: address.zipCode
+      zipCode: address.zipCode,
     });
     setEditingId(address.id);
     setError('');
     setSuccess('');
-    
+
     // Scroll to the edit form
     setTimeout(() => {
       const editForm = document.getElementById('address-form');
@@ -177,7 +218,7 @@ export default function UserProfile() {
       });
       const data = await res.json();
       if (data.success) {
-        setAddresses(addresses.filter(address => address.id !== id));
+        setAddresses(addresses.filter((address) => address.id !== id));
         setSuccess('Address deleted successfully!');
         // If we were editing this address, cancel the edit
         if (editingId === id) {
@@ -200,65 +241,85 @@ export default function UserProfile() {
 
   return (
     <CustomerLayout>
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <h1 className="text-2xl font-semibold mb-6">User Profile</h1>
+      <div className="mx-auto max-w-4xl px-6 py-8">
+        <h1 className="mb-6 text-2xl font-semibold">User Profile</h1>
         <div className="mb-6">
           <div className="mb-4">
             <label className="block text-sm font-medium">Name</label>
-            <Input value={userName} onChange={(e) => setUserName(e.target.value)} />
+            <Input
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+            />
           </div>
           <div className="mb-4">
             <label className="block text-sm font-medium">Phone Number</label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
-          <Button onClick={saveProfile} className="btn-primary">Save Profile</Button>
+          <Button onClick={saveProfile} className="btn-primary">
+            Save Profile
+          </Button>
         </div>
         <div>
-          <h2 className="text-xl font-semibold mb-4">Saved Addresses</h2>
-          
+          <h2 className="mb-4 text-xl font-semibold">Saved Addresses</h2>
+
           {/* Success/Error Messages */}
-          {success && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">{success}</div>}
-          {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
-          
+          {success && (
+            <div className="mb-4 rounded border border-green-400 bg-green-100 px-4 py-3 text-green-700">
+              {success}
+            </div>
+          )}
+          {error && (
+            <div className="mb-4 rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700">
+              {error}
+            </div>
+          )}
+
           {/* Address List */}
           {addresses.length === 0 ? (
-            <div className="text-gray-500 mb-6">
+            <div className="mb-6 text-gray-500">
               <p>No addresses saved yet. Add your first address below.</p>
             </div>
           ) : (
             addresses.map((address) => (
               <Card key={address.id} className="mb-4">
                 <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
+                  <div className="flex items-start justify-between">
                     <div className="flex-grow">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="mb-2 flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-gray-500" />
-                        <span className="font-medium">{address.type || 'Home'}</span>
+                        <span className="font-medium">
+                          {address.type || 'Home'}
+                        </span>
                         {address.isDefault && (
-                          <Badge variant="secondary" className="text-xs">Default</Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            Default
+                          </Badge>
                         )}
                       </div>
                       <p className="text-gray-700">
-                        {address.street}<br />
+                        {address.street}
+                        <br />
                         {address.city}, {address.state} {address.zipCode}
                       </p>
                       {address.landmark && (
-                        <p className="text-sm text-gray-500 mt-1">Landmark: {address.landmark}</p>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Landmark: {address.landmark}
+                        </p>
                       )}
                     </div>
-                    <div className="flex gap-2 ml-4">
-                      <Button 
-                        onClick={() => editAddress(address)} 
-                        size="sm" 
+                    <div className="ml-4 flex gap-2">
+                      <Button
+                        onClick={() => editAddress(address)}
+                        size="sm"
                         variant="outline"
                         className="flex items-center gap-1"
                       >
                         <Edit className="h-3 w-3" />
                         Edit
                       </Button>
-                      <Button 
-                        onClick={() => deleteAddress(address.id)} 
-                        size="sm" 
+                      <Button
+                        onClick={() => deleteAddress(address.id)}
+                        size="sm"
                         variant="destructive"
                         className="flex items-center gap-1"
                       >
@@ -271,75 +332,89 @@ export default function UserProfile() {
               </Card>
             ))
           )}
-          
+
           {/* Add/Edit Address Form */}
           <Card id="address-form" className="mt-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                {editingId ? <Edit className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                {editingId ? (
+                  <Edit className="h-5 w-5" />
+                ) : (
+                  <Plus className="h-5 w-5" />
+                )}
                 {editingId ? 'Edit Address' : 'Add New Address'}
               </CardTitle>
               {editingId && (
                 <CardDescription>
-                  You are editing an existing address. Click cancel to stop editing.
+                  You are editing an existing address. Click cancel to stop
+                  editing.
                 </CardDescription>
               )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="street">Street Address</Label>
-                <Input 
+                <Input
                   id="street"
-                  placeholder="123 Main Street" 
-                  value={newAddress.street} 
-                  onChange={(e) => handleAddressChange('street', e.target.value)} 
+                  placeholder="123 Main Street"
+                  value={newAddress.street}
+                  onChange={(e) =>
+                    handleAddressChange('street', e.target.value)
+                  }
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="city">City</Label>
-                  <Input 
+                  <Input
                     id="city"
-                    placeholder="New York" 
-                    value={newAddress.city} 
-                    onChange={(e) => handleAddressChange('city', e.target.value)} 
+                    placeholder="New York"
+                    value={newAddress.city}
+                    onChange={(e) =>
+                      handleAddressChange('city', e.target.value)
+                    }
                   />
                 </div>
                 <div>
                   <Label htmlFor="state">State</Label>
-                  <Input 
+                  <Input
                     id="state"
-                    placeholder="NY" 
-                    value={newAddress.state} 
-                    onChange={(e) => handleAddressChange('state', e.target.value)} 
+                    placeholder="NY"
+                    value={newAddress.state}
+                    onChange={(e) =>
+                      handleAddressChange('state', e.target.value)
+                    }
                   />
                 </div>
               </div>
               <div>
                 <Label htmlFor="zipCode">ZIP Code</Label>
-                <Input 
+                <Input
                   id="zipCode"
-                  placeholder="10001" 
-                  value={newAddress.zipCode} 
-                  onChange={(e) => handleAddressChange('zipCode', e.target.value)} 
+                  placeholder="10001"
+                  value={newAddress.zipCode}
+                  onChange={(e) =>
+                    handleAddressChange('zipCode', e.target.value)
+                  }
                 />
               </div>
               <div className="flex gap-2">
-                <Button 
-                  onClick={addOrUpdateAddress} 
+                <Button
+                  onClick={addOrUpdateAddress}
                   className="flex items-center gap-2"
                 >
                   {editingId ? (
-                    <><Save className="h-4 w-4" /> Update Address</>
+                    <>
+                      <Save className="h-4 w-4" /> Update Address
+                    </>
                   ) : (
-                    <><Plus className="h-4 w-4" /> Add Address</>
+                    <>
+                      <Plus className="h-4 w-4" /> Add Address
+                    </>
                   )}
                 </Button>
                 {editingId && (
-                  <Button 
-                    onClick={cancelEdit} 
-                    variant="outline"
-                  >
+                  <Button onClick={cancelEdit} variant="outline">
                     Cancel
                   </Button>
                 )}

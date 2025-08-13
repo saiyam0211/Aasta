@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   try {
     // Check operations authentication
     const operationsSession = request.headers.get('x-operations-auth');
-    
+
     if (!operationsSession) {
       // Try NextAuth session as fallback
       const session = await getServerSession(authOptions);
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
     // Get stats from notification broadcaster
     const stats = notificationBroadcaster.getStats();
-    
+
     return NextResponse.json({
       success: true,
       stats: {
@@ -26,8 +26,8 @@ export async function GET(request: Request) {
         pwaClients: stats.pwaClients,
         regularClients: stats.regularClients,
         activeClients: stats.activeClients || 0,
-        lastUpdate: stats.lastUpdate || new Date().toISOString()
-      }
+        lastUpdate: stats.lastUpdate || new Date().toISOString(),
+      },
     });
   } catch (error) {
     console.error('❌ Error fetching notification stats:', error);

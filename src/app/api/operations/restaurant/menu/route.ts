@@ -10,29 +10,28 @@ export async function GET() {
       include: {
         restaurant: {
           select: {
-            name: true
-          }
-        }
+            name: true,
+          },
+        },
       },
       orderBy: {
-        name: 'asc'
-      }
+        name: 'asc',
+      },
     });
 
-    const formattedItems = menuItems.map(item => ({
+    const formattedItems = menuItems.map((item) => ({
       id: item.id,
       name: item.name,
       price: item.price,
       description: item.description,
       category: item.category,
-      restaurant: item.restaurant?.name
+      restaurant: item.restaurant?.name,
     }));
 
     return NextResponse.json({
       success: true,
-      data: formattedItems
+      data: formattedItems,
     });
-
   } catch (error) {
     console.error('Error fetching menu items:', error);
     return NextResponse.json(
@@ -45,7 +44,8 @@ export async function GET() {
 // POST new menu item
 export async function POST(request: Request) {
   try {
-    const { name, price, description, category, restaurantId } = await request.json();
+    const { name, price, description, category, restaurantId } =
+      await request.json();
 
     // For now, we'll use the first restaurant if no restaurantId is provided
     let targetRestaurantId = restaurantId;
@@ -67,15 +67,14 @@ export async function POST(request: Request) {
         description,
         category,
         restaurantId: targetRestaurantId,
-        available: true
-      }
+        available: true,
+      },
     });
 
     return NextResponse.json({
       success: true,
-      data: menuItem
+      data: menuItem,
     });
-
   } catch (error) {
     console.error('Error creating menu item:', error);
     return NextResponse.json(
@@ -99,14 +98,13 @@ export async function DELETE(request: Request) {
     }
 
     await prisma.menuItem.delete({
-      where: { id }
+      where: { id },
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Menu item deleted successfully'
+      message: 'Menu item deleted successfully',
     });
-
   } catch (error) {
     console.error('Error deleting menu item:', error);
     return NextResponse.json(

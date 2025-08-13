@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
@@ -9,33 +9,33 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
     const { orderNumber } = await params;
-    
+
     // First, find the customer record for this user
     const customer = await prisma.customer.findUnique({
-      where: { userId: session.user.id }
+      where: { userId: session.user.id },
     });
-    
+
     if (!customer) {
       return NextResponse.json(
-        { success: false, error: "Customer not found" },
+        { success: false, error: 'Customer not found' },
         { status: 404 }
       );
     }
-    
+
     // Fetch order with all related data
     const order = await prisma.order.findFirst({
       where: {
         orderNumber,
-        customerId: customer.id // Use customer.id instead of session.user.id
+        customerId: customer.id, // Use customer.id instead of session.user.id
       },
       include: {
         orderItems: {
@@ -43,26 +43,26 @@ export async function GET(
             menuItem: {
               select: {
                 name: true,
-                imageUrl: true
-              }
-            }
-          }
+                imageUrl: true,
+              },
+            },
+          },
         },
         restaurant: {
           select: {
             id: true,
             name: true,
             phone: true,
-            address: true
-          }
+            address: true,
+          },
         },
-        deliveryAddress: true
-      }
+        deliveryAddress: true,
+      },
     });
 
     if (!order) {
       return NextResponse.json(
-        { success: false, error: "Order not found" },
+        { success: false, error: 'Order not found' },
         { status: 404 }
       );
     }
@@ -78,10 +78,15 @@ export async function GET(
       taxes: order.taxes,
       deliveryFee: order.deliveryFee,
       deliveryAddress: `${order.deliveryAddress.street}, ${order.deliveryAddress.city}, ${order.deliveryAddress.state} ${order.deliveryAddress.zipCode}`,
-      estimatedDeliveryTime: order.estimatedDeliveryTime || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      estimatedDeliveryTime:
+        order.estimatedDeliveryTime ||
+        new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       createdAt: order.createdAt.toISOString(),
-      verificationCode: order.status === 'OUT_FOR_DELIVERY' ? order.verificationCode : undefined,
-      items: order.orderItems.map(item => ({
+      verificationCode:
+        order.status === 'OUT_FOR_DELIVERY'
+          ? order.verificationCode
+          : undefined,
+      items: order.orderItems.map((item) => ({
         id: item.id,
         menuItemId: item.menuItemId,
         quantity: item.quantity,
@@ -89,20 +94,20 @@ export async function GET(
         itemName: item.menuItem.name,
         menuItem: {
           name: item.menuItem.name,
-          imageUrl: item.menuItem.imageUrl
-        }
+          imageUrl: item.menuItem.imageUrl,
+        },
       })),
-      restaurant: order.restaurant
+      restaurant: order.restaurant,
     };
 
-    return NextResponse.json({ 
-      success: true, 
-      order: transformedOrder
+    return NextResponse.json({
+      success: true,
+      order: transformedOrder,
     });
   } catch (error) {
-    console.error("Failed to fetch order:", error);
+    console.error('Failed to fetch order:', error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch order" },
+      { success: false, error: 'Failed to fetch order' },
       { status: 500 }
     );
   }
@@ -120,10 +125,10 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
@@ -133,10 +138,17 @@ export async function PATCH(
     const { orderNumber } = await params;
 
     // Validate status
-    const validStatuses = ['PLACED', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY', 'DELIVERED'];
+    const validStatuses = [
+      'PLACED',
+      'CONFIRMED',
+      'PREPARING',
+      'READY_FOR_PICKUP',
+      'OUT_FOR_DELIVERY',
+      'DELIVERED',
+    ];
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
-        { success: false, error: "Invalid order status" },
+        { success: false, error: 'Invalid order status' },
         { status: 400 }
       );
     }
@@ -144,21 +156,25 @@ export async function PATCH(
     // Check user permissions
     const order = await prisma.order.findFirst({
       where: { orderNumber },
-      include: { restaurant: true }
+      include: { restaurant: true },
     });
 
     if (!order) {
       return NextResponse.json(
-        { success: false, error: "Order not found" },
+        { success: false, error: 'Order not found' },
         { status: 404 }
       );
     }
 
     // Only restaurant owners or delivery partners can update order status
     const userRole = session.user.role;
-    if (userRole !== 'RESTAURANT_OWNER' && userRole !== 'DELIVERY_PARTNER' && userRole !== 'ADMIN') {
+    if (
+      userRole !== 'RESTAURANT_OWNER' &&
+      userRole !== 'DELIVERY_PARTNER' &&
+      userRole !== 'ADMIN'
+    ) {
       return NextResponse.json(
-        { success: false, error: "Insufficient permissions" },
+        { success: false, error: 'Insufficient permissions' },
         { status: 403 }
       );
     }
@@ -166,25 +182,25 @@ export async function PATCH(
     // Update order status
     const updatedOrder = await prisma.order.update({
       where: { orderNumber },
-      data: { 
+      data: {
         status,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         orderItems: {
           include: {
-            menuItem: true
-          }
+            menuItem: true,
+          },
         },
-        restaurant: true
-      }
+        restaurant: true,
+      },
     });
 
     return NextResponse.json({ success: true, order: updatedOrder });
   } catch (error) {
-    console.error("Failed to update order:", error);
+    console.error('Failed to update order:', error);
     return NextResponse.json(
-      { success: false, error: "Failed to update order" },
+      { success: false, error: 'Failed to update order' },
       { status: 500 }
     );
   }

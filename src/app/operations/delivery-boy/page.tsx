@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function DeliveryOperationsPage() {
   const router = useRouter();
@@ -25,12 +25,14 @@ export default function DeliveryOperationsPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#002a01] to-[#004a02]">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#002a01] to-[#004a02]">
       <div className="text-center">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-[#d1f86a]">
-          <span className="text-brand font-bold text-xl text-[#002a01]">D</span>
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#d1f86a]">
+          <span className="text-brand text-xl font-bold text-[#002a01]">D</span>
         </div>
-        <h1 className="text-brand text-2xl font-bold mb-4 text-white">Delivery Operations</h1>
+        <h1 className="text-brand mb-4 text-2xl font-bold text-white">
+          Delivery Operations
+        </h1>
         <p className="text-white">Redirecting...</p>
       </div>
     </div>

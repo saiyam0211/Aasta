@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 interface CardProps {
   children: React.ReactNode;
@@ -6,7 +6,7 @@ interface CardProps {
 }
 
 export const Card: React.FC<CardProps> = ({ children, className }) => (
-  <div className={`bg-white shadow rounded-lg ${className}`} role="alert">
+  <div className={`rounded-lg bg-white shadow ${className}`} role="alert">
     {children}
   </div>
 );
@@ -16,7 +16,10 @@ interface CardContentProps {
   className?: string;
 }
 
-export const CardContent: React.FC<CardContentProps> = ({ children, className }) => (
+export const CardContent: React.FC<CardContentProps> = ({
+  children,
+  className,
+}) => (
   <div className={`p-4 ${className}`} role="alert">
     {children}
   </div>
@@ -27,7 +30,10 @@ interface CardHeaderProps {
   className?: string;
 }
 
-export const CardHeader: React.FC<CardHeaderProps> = ({ children, className }) => (
+export const CardHeader: React.FC<CardHeaderProps> = ({
+  children,
+  className,
+}) => (
   <div className={`border-b p-4 ${className}`} role="alert">
     {children}
   </div>
@@ -38,7 +44,10 @@ interface CardTitleProps {
   className?: string;
 }
 
-export const CardTitle: React.FC<CardTitleProps> = ({ children, className }) => (
+export const CardTitle: React.FC<CardTitleProps> = ({
+  children,
+  className,
+}) => (
   <h2 className={`text-xl font-semibold ${className}`} role="alert">
     {children}
   </h2>
@@ -49,7 +58,10 @@ interface CardDescriptionProps {
   className?: string;
 }
 
-export const CardDescription: React.FC<CardDescriptionProps> = ({ children, className }) => (
+export const CardDescription: React.FC<CardDescriptionProps> = ({
+  children,
+  className,
+}) => (
   <p className={`text-gray-500 ${className}`} role="alert">
     {children}
   </p>
@@ -63,7 +75,13 @@ interface ButtonProps {
   onClick?: () => void;
 }
 
-export const Button: React.FC<ButtonProps> = ({ children, className, variant = 'default', size = 'md', onClick }) => (
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  className,
+  variant = 'default',
+  size = 'md',
+  onClick,
+}) => (
   <button
     className={`${variant} ${size} ${className} transition-colors focus:outline-none`}
     onClick={onClick}
@@ -79,7 +97,10 @@ interface BadgeProps {
 }
 
 export const Badge: React.FC<BadgeProps> = ({ children, className }) => (
-  <span className={`text-white text-xs font-medium bg-yellow-500 rounded-full px-2 py-1 ${className}`} role="alert">
+  <span
+    className={`rounded-full bg-yellow-500 px-2 py-1 text-xs font-medium text-white ${className}`}
+    role="alert"
+  >
     {children}
   </span>
 );
@@ -90,8 +111,16 @@ interface LabelProps {
   htmlFor?: string;
 }
 
-export const Label: React.FC<LabelProps> = ({ children, className, htmlFor }) => (
-  <label htmlFor={htmlFor} className={`block text-sm font-medium text-gray-700 ${className}`} role="alert">
+export const Label: React.FC<LabelProps> = ({
+  children,
+  className,
+  htmlFor,
+}) => (
+  <label
+    htmlFor={htmlFor}
+    className={`block text-sm font-medium text-gray-700 ${className}`}
+    role="alert"
+  >
     {children}
   </label>
 );
@@ -107,7 +136,16 @@ interface InputProps {
   disabled?: boolean;
 }
 
-export const Input: React.FC<InputProps> = ({ className, type = 'text', id, placeholder, value, onChange, required, disabled }) => (
+export const Input: React.FC<InputProps> = ({
+  className,
+  type = 'text',
+  id,
+  placeholder,
+  value,
+  onChange,
+  required,
+  disabled,
+}) => (
   <input
     type={type}
     id={id}
@@ -116,7 +154,7 @@ export const Input: React.FC<InputProps> = ({ className, type = 'text', id, plac
     onChange={onChange}
     required={required}
     disabled={disabled}
-    className={`${className} shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md`}
+    className={`${className} block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm`}
     role="alert"
   />
 );
@@ -127,7 +165,10 @@ interface AlertProps {
 }
 
 export const Alert: React.FC<AlertProps> = ({ children, className }) => (
-  <div className={`flex items-center p-4 text-sm border-l-4 ${className}`} role="alert">
+  <div
+    className={`flex items-center border-l-4 p-4 text-sm ${className}`}
+    role="alert"
+  >
     {children}
   </div>
 );
@@ -137,9 +178,11 @@ interface AlertDescriptionProps {
   className?: string;
 }
 
-export const AlertDescription: React.FC<AlertDescriptionProps> = ({ children, className }) => (
+export const AlertDescription: React.FC<AlertDescriptionProps> = ({
+  children,
+  className,
+}) => (
   <div className={`ml-3 ${className}`} role="alert">
     {children}
   </div>
 );
-

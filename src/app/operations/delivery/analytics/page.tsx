@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import OperationsLayout from "@/components/layouts/operations-layout";
-import { Card, CardContent } from "@/components/ui/card";
+import OperationsLayout from '@/components/layouts/operations-layout';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function Performance() {
   return (

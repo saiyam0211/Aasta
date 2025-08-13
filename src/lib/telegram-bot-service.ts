@@ -17,13 +17,13 @@ export class TelegramBotService {
     this.bot.onText(/\/earnings/, this.handleEarningsCommand);
     this.bot.onText(/\/status/, this.handleStatusCommand);
     this.bot.onText(/\/toggle/, this.handleToggleStatusCommand);
-    
+
     // Handle contact sharing
     this.bot.on('contact', this.handleContact);
-    
+
     // Handle callback queries for inline buttons (order accept/decline)
     this.bot.on('callback_query', this.handleCallbackQuery);
-    
+
     // Handle any text message to show persistent menu
     this.bot.on('message', this.handleTextMessage);
   }
@@ -32,11 +32,17 @@ export class TelegramBotService {
     try {
       // Set bot commands for the persistent menu
       await this.bot.setMyCommands([
-        { command: 'menu', description: '📱 Main Menu - Toggle status, view orders & earnings' },
+        {
+          command: 'menu',
+          description: '📱 Main Menu - Toggle status, view orders & earnings',
+        },
         { command: 'status', description: '📊 View current status' },
-        { command: 'toggle', description: '🔄 Toggle between Available/Offline' },
+        {
+          command: 'toggle',
+          description: '🔄 Toggle between Available/Offline',
+        },
         { command: 'orders', description: '📦 View active orders' },
-        { command: 'earnings', description: '💰 View earnings summary' }
+        { command: 'earnings', description: '💰 View earnings summary' },
       ]);
       console.log('Persistent menu commands set successfully');
     } catch (error) {
@@ -46,16 +52,16 @@ export class TelegramBotService {
 
   private handleStartCommand = async (msg: TelegramBot.Message) => {
     const chatId = msg.chat.id;
-    
+
     try {
       // Check if user is already registered
       const existingPartner = await prisma.deliveryPartner.findFirst({
-        where: { 
-          telegramChatId: chatId.toString() 
+        where: {
+          telegramChatId: chatId.toString(),
         },
         include: {
-          user: { select: { name: true } }
-        }
+          user: { select: { name: true } },
+        },
       });
 
       if (existingPartner) {
@@ -70,8 +76,11 @@ export class TelegramBotService {
 /earnings - View earnings
 
 You'll receive notifications here when new orders are assigned to you!`;
-        
-        await this.sendMainMenu(chatId, `🚚 Welcome back, ${existingPartner.user?.name || 'Partner'}!`);
+
+        await this.sendMainMenu(
+          chatId,
+          `🚚 Welcome back, ${existingPartner.user?.name || 'Partner'}!`
+        );
       } else {
         // New user - needs to register
         const welcomeMessage = `🚚 Welcome to Aasta Delivery!
@@ -81,22 +90,24 @@ To complete your registration, please:
 2. Make sure your admin has added you as a delivery partner
 
 Once registered, you'll receive order notifications here!`;
-        
+
         // Send welcome message with phone sharing button
         await this.bot.sendMessage(chatId, welcomeMessage, {
           reply_markup: {
-            keyboard: [[
-              {
-                text: '📱 Share Phone Number',
-                request_contact: true
-              }
-            ]],
+            keyboard: [
+              [
+                {
+                  text: '📱 Share Phone Number',
+                  request_contact: true,
+                },
+              ],
+            ],
             one_time_keyboard: true,
-            resize_keyboard: true
-          }
+            resize_keyboard: true,
+          },
         });
       }
-      
+
       console.log(`User started bot: Chat ID ${chatId}`);
     } catch (error) {
       console.error('Error handling start command:', error);
@@ -105,31 +116,44 @@ Once registered, you'll receive order notifications here!`;
 
   private handleOrdersCommand = async (msg: TelegramBot.Message) => {
     const chatId = msg.chat.id;
-    
+
     try {
       // Get active orders for this delivery partner
       const partner = await prisma.deliveryPartner.findFirst({
-        where: { telegramChatId: chatId.toString() }
+        where: { telegramChatId: chatId.toString() },
       });
 
       if (!partner) {
-        await this.bot.sendMessage(chatId, '❌ You are not registered as a delivery partner.');
+        await this.bot.sendMessage(
+          chatId,
+          '❌ You are not registered as a delivery partner.'
+        );
         return;
       }
 
       const activeOrders = await prisma.order.findMany({
         where: {
           deliveryPartnerId: partner.id,
-          status: { in: ['CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'] }
+          status: {
+            in: [
+              'CONFIRMED',
+              'PREPARING',
+              'READY_FOR_PICKUP',
+              'OUT_FOR_DELIVERY',
+            ],
+          },
         },
         include: {
-          restaurant: { select: { name: true } }
+          restaurant: { select: { name: true } },
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       });
 
       if (activeOrders.length === 0) {
-        await this.bot.sendMessage(chatId, '📋 No active orders at the moment.');
+        await this.bot.sendMessage(
+          chatId,
+          '📋 No active orders at the moment.'
+        );
       } else {
         let message = '📋 Your Active Orders:\n\n';
         activeOrders.forEach((order, index) => {
@@ -142,11 +166,17 @@ Once registered, you'll receive order notifications here!`;
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
-      await this.bot.sendMessage(chatId, '❌ Failed to fetch orders. Please try again.');
+      await this.bot.sendMessage(
+        chatId,
+        '❌ Failed to fetch orders. Please try again.'
+      );
     }
   };
 
-  private handleAcceptCommand = (msg: TelegramBot.Message, match: RegExpExecArray | null) => {
+  private handleAcceptCommand = (
+    msg: TelegramBot.Message,
+    match: RegExpExecArray | null
+  ) => {
     const chatId = msg.chat.id;
     const orderId = match ? match[1] : null;
     if (orderId) {
@@ -156,7 +186,10 @@ Once registered, you'll receive order notifications here!`;
     }
   };
 
-  private handleRejectCommand = (msg: TelegramBot.Message, match: RegExpExecArray | null) => {
+  private handleRejectCommand = (
+    msg: TelegramBot.Message,
+    match: RegExpExecArray | null
+  ) => {
     const chatId = msg.chat.id;
     const orderId = match ? match[1] : null;
     if (orderId) {
@@ -168,17 +201,20 @@ Once registered, you'll receive order notifications here!`;
 
   private handleStatusCommand = async (msg: TelegramBot.Message) => {
     const chatId = msg.chat.id;
-    
+
     try {
       const partner = await prisma.deliveryPartner.findFirst({
         where: { telegramChatId: chatId.toString() },
         include: {
-          user: { select: { name: true } }
-        }
+          user: { select: { name: true } },
+        },
       });
 
       if (!partner) {
-        await this.bot.sendMessage(chatId, '❌ You are not registered as a delivery partner.');
+        await this.bot.sendMessage(
+          chatId,
+          '❌ You are not registered as a delivery partner.'
+        );
         return;
       }
 
@@ -193,20 +229,26 @@ Once registered, you'll receive order notifications here!`;
       await this.bot.sendMessage(chatId, statusMessage);
     } catch (error) {
       console.error('Error fetching status:', error);
-      await this.bot.sendMessage(chatId, '❌ Failed to fetch status. Please try again.');
+      await this.bot.sendMessage(
+        chatId,
+        '❌ Failed to fetch status. Please try again.'
+      );
     }
   };
 
   private handleEarningsCommand = async (msg: TelegramBot.Message) => {
     const chatId = msg.chat.id;
-    
+
     try {
       const partner = await prisma.deliveryPartner.findFirst({
-        where: { telegramChatId: chatId.toString() }
+        where: { telegramChatId: chatId.toString() },
       });
 
       if (!partner) {
-        await this.bot.sendMessage(chatId, '❌ You are not registered as a delivery partner.');
+        await this.bot.sendMessage(
+          chatId,
+          '❌ You are not registered as a delivery partner.'
+        );
         return;
       }
 
@@ -220,7 +262,10 @@ Once registered, you'll receive order notifications here!`;
       await this.bot.sendMessage(chatId, earningsMessage);
     } catch (error) {
       console.error('Error fetching earnings:', error);
-      await this.bot.sendMessage(chatId, '❌ Failed to fetch earnings. Please try again.');
+      await this.bot.sendMessage(
+        chatId,
+        '❌ Failed to fetch earnings. Please try again.'
+      );
     }
   };
 
@@ -240,15 +285,17 @@ Once registered, you'll receive order notifications here!`;
           '+91' + normalizedPhone.substring(2), // Convert 918901825390 to +918901825390
           normalizedPhone.substring(2), // Remove country code: 918901825390 to 8901825390
         ];
-        
+
         // Find the delivery partner by phone number (try different formats)
         let deliveryPartner = null;
         for (const phoneVariation of phoneVariations) {
           deliveryPartner = await prisma.deliveryPartner.findFirst({
-            where: { telegramPhone: phoneVariation }
+            where: { telegramPhone: phoneVariation },
           });
           if (deliveryPartner) {
-            console.log(`Telegram contact registered: ${contact.phone_number} matched with format: ${phoneVariation}`);
+            console.log(
+              `Telegram contact registered: ${contact.phone_number} matched with format: ${phoneVariation}`
+            );
             break;
           }
         }
@@ -257,46 +304,70 @@ Once registered, you'll receive order notifications here!`;
           // Update with chat ID
           await prisma.deliveryPartner.update({
             where: { id: deliveryPartner.id },
-            data: { telegramChatId: chatId.toString() }
+            data: { telegramChatId: chatId.toString() },
           });
-          
-          await this.sendMainMenu(chatId, '✅ Your phone number has been registered successfully! You will now receive order notifications here.');
+
+          await this.sendMainMenu(
+            chatId,
+            '✅ Your phone number has been registered successfully! You will now receive order notifications here.'
+          );
           // Remove the phone sharing keyboard by sending main menu
-          console.log(`Telegram chat ID registered: ${chatId} for phone: ${contact.phone_number}`);
+          console.log(
+            `Telegram chat ID registered: ${chatId} for phone: ${contact.phone_number}`
+          );
         } else {
-          await this.bot.sendMessage(chatId, '❌ Phone number not found. Please contact your admin to add you as a delivery partner first.');
+          await this.bot.sendMessage(
+            chatId,
+            '❌ Phone number not found. Please contact your admin to add you as a delivery partner first.'
+          );
         }
       } catch (error) {
         console.error('Failed to register contact:', error);
-        await this.bot.sendMessage(chatId, '❌ Failed to register your phone number. Please try again or contact support.');
+        await this.bot.sendMessage(
+          chatId,
+          '❌ Failed to register your phone number. Please try again or contact support.'
+        );
       }
     } else {
-      await this.bot.sendMessage(chatId, 'Please share your contact information to register.');
+      await this.bot.sendMessage(
+        chatId,
+        'Please share your contact information to register.'
+      );
     }
   };
 
   private handleToggleStatusCommand = async (msg: TelegramBot.Message) => {
     const chatId = msg.chat.id;
-    
+
     try {
       const partner = await prisma.deliveryPartner.findFirst({
-        where: { telegramChatId: chatId.toString() }
+        where: { telegramChatId: chatId.toString() },
       });
       if (!partner) {
-        await this.bot.sendMessage(chatId, '❌ You are not registered as a delivery partner.');
+        await this.bot.sendMessage(
+          chatId,
+          '❌ You are not registered as a delivery partner.'
+        );
         return;
       }
 
-      const newStatus = partner.status === 'AVAILABLE' ? 'OFFLINE' : 'AVAILABLE';
+      const newStatus =
+        partner.status === 'AVAILABLE' ? 'OFFLINE' : 'AVAILABLE';
       await prisma.deliveryPartner.update({
         where: { id: partner.id },
-        data: { status: newStatus }
+        data: { status: newStatus },
       });
 
-      await this.bot.sendMessage(chatId, `🚦 Your status has been changed to ${newStatus}.`);
+      await this.bot.sendMessage(
+        chatId,
+        `🚦 Your status has been changed to ${newStatus}.`
+      );
     } catch (error) {
       console.error('Error toggling status:', error);
-      await this.bot.sendMessage(chatId, '❌ Failed to toggle status. Please try again.');
+      await this.bot.sendMessage(
+        chatId,
+        '❌ Failed to toggle status. Please try again.'
+      );
     }
   };
 
@@ -308,11 +379,14 @@ Once registered, you'll receive order notifications here!`;
     if (text && !text.startsWith('/') && !msg.contact) {
       // Check if user is registered
       const partner = await prisma.deliveryPartner.findFirst({
-        where: { telegramChatId: chatId.toString() }
+        where: { telegramChatId: chatId.toString() },
       });
-      
+
       if (!partner) {
-        await this.bot.sendMessage(chatId, '❌ You are not registered as a delivery partner.');
+        await this.bot.sendMessage(
+          chatId,
+          '❌ You are not registered as a delivery partner.'
+        );
         return;
       }
 
@@ -334,7 +408,10 @@ Once registered, you'll receive order notifications here!`;
           await this.handleStatusCommand(msg);
           break;
         default:
-          await this.bot.sendMessage(chatId, 'Please tap 📱 Menu button below or type /menu for available options.');
+          await this.bot.sendMessage(
+            chatId,
+            'Please tap 📱 Menu button below or type /menu for available options.'
+          );
       }
     }
   };
@@ -344,8 +421,8 @@ Once registered, you'll receive order notifications here!`;
       inline_keyboard: [
         [{ text: '📦 View Active Orders', callback_data: 'view_orders' }],
         [{ text: '💰 View Earnings', callback_data: 'view_earnings' }],
-        [{ text: '🔄 Toggle Status', callback_data: 'toggle_status' }]
-      ]
+        [{ text: '🔄 Toggle Status', callback_data: 'toggle_status' }],
+      ],
     };
 
     const text = "Here's your menu:";
@@ -354,11 +431,11 @@ Once registered, you'll receive order notifications here!`;
       await this.bot.editMessageText(text, {
         chat_id: chatId,
         message_id: messageId,
-        reply_markup: replyMarkup
+        reply_markup: replyMarkup,
       });
     } else {
       await this.bot.sendMessage(chatId, text, {
-        reply_markup: replyMarkup
+        reply_markup: replyMarkup,
       });
     }
   };
@@ -366,17 +443,21 @@ Once registered, you'll receive order notifications here!`;
   private handleToggleStatus = async (chatId: number, messageId?: number) => {
     try {
       const partner = await prisma.deliveryPartner.findFirst({
-        where: { telegramChatId: chatId.toString() }
+        where: { telegramChatId: chatId.toString() },
       });
       if (!partner) {
-        await this.bot.sendMessage(chatId, '❌ You are not registered as a delivery partner.');
+        await this.bot.sendMessage(
+          chatId,
+          '❌ You are not registered as a delivery partner.'
+        );
         return;
       }
 
-      const newStatus = partner.status === 'AVAILABLE' ? 'OFFLINE' : 'AVAILABLE';
+      const newStatus =
+        partner.status === 'AVAILABLE' ? 'OFFLINE' : 'AVAILABLE';
       await prisma.deliveryPartner.update({
         where: { id: partner.id },
-        data: { status: newStatus }
+        data: { status: newStatus },
       });
 
       const statusEmoji = newStatus === 'AVAILABLE' ? '🟢' : '🔴';
@@ -389,31 +470,42 @@ Once registered, you'll receive order notifications here!`;
           parse_mode: 'Markdown',
           reply_markup: {
             inline_keyboard: [
-              [{ text: '🔙 Back to Menu', callback_data: 'back_to_menu' }]
-            ]
-          }
+              [{ text: '🔙 Back to Menu', callback_data: 'back_to_menu' }],
+            ],
+          },
         });
       } else {
-        await this.bot.sendMessage(chatId, confirmMessage, { parse_mode: 'Markdown' });
+        await this.bot.sendMessage(chatId, confirmMessage, {
+          parse_mode: 'Markdown',
+        });
       }
     } catch (error) {
       console.error('Error toggling status:', error);
-      await this.bot.sendMessage(chatId, '❌ Failed to toggle status. Please try again.');
+      await this.bot.sendMessage(
+        chatId,
+        '❌ Failed to toggle status. Please try again.'
+      );
     }
   };
 
   private handleViewEarnings = async (chatId: number, messageId?: number) => {
     try {
       const partner = await prisma.deliveryPartner.findFirst({
-        where: { telegramChatId: chatId.toString() }
+        where: { telegramChatId: chatId.toString() },
       });
       if (!partner) {
-        await this.bot.sendMessage(chatId, '❌ You are not registered as a delivery partner.');
+        await this.bot.sendMessage(
+          chatId,
+          '❌ You are not registered as a delivery partner.'
+        );
         return;
       }
 
-      const averageEarning = partner.completedDeliveries > 0 ? (partner.totalEarnings / partner.completedDeliveries).toFixed(2) : '0';
-      
+      const averageEarning =
+        partner.completedDeliveries > 0
+          ? (partner.totalEarnings / partner.completedDeliveries).toFixed(2)
+          : '0';
+
       const earningsMessage = `💰 *EARNINGS SUMMARY*\n\n📅 *Today:* ₹${partner.todayEarnings}\n🏦 *Total:* ₹${partner.totalEarnings}\n📦 *Completed Deliveries:* ${partner.completedDeliveries}\n📈 *Average per delivery:* ₹${averageEarning}\n\n⭐ *Your Rating:* ${partner.rating}/5`;
 
       if (messageId) {
@@ -423,47 +515,70 @@ Once registered, you'll receive order notifications here!`;
           parse_mode: 'Markdown',
           reply_markup: {
             inline_keyboard: [
-              [{ text: '🔙 Back to Menu', callback_data: 'back_to_menu' }]
-            ]
-          }
+              [{ text: '🔙 Back to Menu', callback_data: 'back_to_menu' }],
+            ],
+          },
         });
       } else {
-        await this.bot.sendMessage(chatId, earningsMessage, { parse_mode: 'Markdown' });
+        await this.bot.sendMessage(chatId, earningsMessage, {
+          parse_mode: 'Markdown',
+        });
       }
     } catch (error) {
       console.error('Error fetching earnings:', error);
-      await this.bot.sendMessage(chatId, '❌ Failed to fetch earnings. Please try again.');
+      await this.bot.sendMessage(
+        chatId,
+        '❌ Failed to fetch earnings. Please try again.'
+      );
     }
   };
 
   private handleViewOrders = async (chatId: number, messageId?: number) => {
     try {
       const partner = await prisma.deliveryPartner.findFirst({
-        where: { telegramChatId: chatId.toString() }
+        where: { telegramChatId: chatId.toString() },
       });
       if (!partner) {
-        await this.bot.sendMessage(chatId, '❌ You are not registered as a delivery partner.');
+        await this.bot.sendMessage(
+          chatId,
+          '❌ You are not registered as a delivery partner.'
+        );
         return;
       }
 
       const activeOrders = await prisma.order.findMany({
         where: {
           deliveryPartnerId: partner.id,
-          status: { in: ['CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'] }
+          status: {
+            in: [
+              'CONFIRMED',
+              'PREPARING',
+              'READY_FOR_PICKUP',
+              'OUT_FOR_DELIVERY',
+            ],
+          },
         },
         include: {
-          restaurant: { select: { name: true } }
+          restaurant: { select: { name: true } },
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       });
 
       let ordersMessage = '';
       if (activeOrders.length === 0) {
-        ordersMessage = '📋 *ACTIVE ORDERS*\n\n🆓 No active orders at the moment.\n\nYou\'re all caught up! 🎉';
+        ordersMessage =
+          "📋 *ACTIVE ORDERS*\n\n🆓 No active orders at the moment.\n\nYou're all caught up! 🎉";
       } else {
         ordersMessage = `📋 *ACTIVE ORDERS* (${activeOrders.length})\n\n`;
         activeOrders.forEach((order, index) => {
-          const statusEmoji = order.status === 'CONFIRMED' ? '✅' : order.status === 'PREPARING' ? '👨‍🍳' : order.status === 'READY_FOR_PICKUP' ? '📦' : '🚚';
+          const statusEmoji =
+            order.status === 'CONFIRMED'
+              ? '✅'
+              : order.status === 'PREPARING'
+                ? '👨‍🍳'
+                : order.status === 'READY_FOR_PICKUP'
+                  ? '📦'
+                  : '🚚';
           ordersMessage += `${index + 1}. ${statusEmoji} *Order #${order.orderNumber}*\n`;
           ordersMessage += `   🏪 ${order.restaurant.name}\n`;
           ordersMessage += `   📋 Status: ${order.status}\n`;
@@ -478,50 +593,70 @@ Once registered, you'll receive order notifications here!`;
           parse_mode: 'Markdown',
           reply_markup: {
             inline_keyboard: [
-              [{ text: '🔙 Back to Menu', callback_data: 'back_to_menu' }]
-            ]
-          }
+              [{ text: '🔙 Back to Menu', callback_data: 'back_to_menu' }],
+            ],
+          },
         });
       } else {
-        await this.bot.sendMessage(chatId, ordersMessage, { parse_mode: 'Markdown' });
+        await this.bot.sendMessage(chatId, ordersMessage, {
+          parse_mode: 'Markdown',
+        });
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
-      await this.bot.sendMessage(chatId, '❌ Failed to fetch orders. Please try again.');
+      await this.bot.sendMessage(
+        chatId,
+        '❌ Failed to fetch orders. Please try again.'
+      );
     }
   };
 
   private handleMenuCommand = async (msg: TelegramBot.Message) => {
     const chatId = msg.chat.id;
-    
+
     try {
       const partner = await prisma.deliveryPartner.findFirst({
         where: { telegramChatId: chatId.toString() },
         include: {
-          user: { select: { name: true } }
-        }
+          user: { select: { name: true } },
+        },
       });
 
       if (!partner) {
-        await this.bot.sendMessage(chatId, '❌ You are not registered as a delivery partner.');
+        await this.bot.sendMessage(
+          chatId,
+          '❌ You are not registered as a delivery partner.'
+        );
         return;
       }
 
       // Get total orders count
       const totalOrders = await prisma.order.count({
-        where: { deliveryPartnerId: partner.id }
+        where: { deliveryPartnerId: partner.id },
       });
 
       // Get active orders count
       const activeOrders = await prisma.order.count({
         where: {
           deliveryPartnerId: partner.id,
-          status: { in: ['CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'] }
-        }
+          status: {
+            in: [
+              'CONFIRMED',
+              'PREPARING',
+              'READY_FOR_PICKUP',
+              'OUT_FOR_DELIVERY',
+            ],
+          },
+        },
       });
 
-      const statusEmoji = partner.status === 'AVAILABLE' ? '🟢' : partner.status === 'BUSY' ? '🟡' : '🔴';
-      
+      const statusEmoji =
+        partner.status === 'AVAILABLE'
+          ? '🟢'
+          : partner.status === 'BUSY'
+            ? '🟡'
+            : '🔴';
+
       const menuMessage = `📱 *DELIVERY PARTNER MENU*
 
 👤 *${partner.user?.name || 'Partner'}*
@@ -541,39 +676,50 @@ ${statusEmoji} Status: *${partner.status}*
         reply_markup: {
           inline_keyboard: [
             [
-              { text: partner.status === 'AVAILABLE' ? '🔴 Go Offline' : '🟢 Go Available', callback_data: 'toggle_status' }
+              {
+                text:
+                  partner.status === 'AVAILABLE'
+                    ? '🔴 Go Offline'
+                    : '🟢 Go Available',
+                callback_data: 'toggle_status',
+              },
             ],
             [
               { text: '📦 View Orders', callback_data: 'view_orders' },
-              { text: '💰 View Earnings', callback_data: 'view_earnings' }
+              { text: '💰 View Earnings', callback_data: 'view_earnings' },
             ],
-            [
-              { text: '📊 Detailed Status', callback_data: 'detailed_status' }
-            ]
-          ]
-        }
+            [{ text: '📊 Detailed Status', callback_data: 'detailed_status' }],
+          ],
+        },
       });
     } catch (error) {
       console.error('Error showing menu:', error);
-      await this.bot.sendMessage(chatId, '❌ Failed to load menu. Please try again.');
+      await this.bot.sendMessage(
+        chatId,
+        '❌ Failed to load menu. Please try again.'
+      );
     }
   };
 
   private sendMainMenu = async (chatId: number, welcomeText: string) => {
     const replyMarkup = {
-      keyboard: [
-        [{ text: '📱 Menu' }]
-      ],
+      keyboard: [[{ text: '📱 Menu' }]],
       resize_keyboard: true,
-      persistent: true
+      persistent: true,
     };
 
-    await this.bot.sendMessage(chatId, `${welcomeText}\n\nTap 📱 Menu button below or type /menu anytime to access all features:`, {
-      reply_markup: replyMarkup
-    });
+    await this.bot.sendMessage(
+      chatId,
+      `${welcomeText}\n\nTap 📱 Menu button below or type /menu anytime to access all features:`,
+      {
+        reply_markup: replyMarkup,
+      }
+    );
   };
 
-  private handleCallbackQuery = async (callbackQuery: TelegramBot.CallbackQuery) => {
+  private handleCallbackQuery = async (
+    callbackQuery: TelegramBot.CallbackQuery
+  ) => {
     const chatId = callbackQuery.message?.chat.id;
     const messageId = callbackQuery.message?.message_id;
     const data = callbackQuery.data || '';
@@ -587,8 +733,10 @@ ${statusEmoji} Status: *${partner.status}*
     try {
       if (data.startsWith('accept_')) {
         const orderId = data.split('_')[1];
-        console.log(`Order ${orderId} accepted by partner with chat ID ${chatId}.`);
-        
+        console.log(
+          `Order ${orderId} accepted by partner with chat ID ${chatId}.`
+        );
+
         // Check if order is still available (not already accepted by someone else)
         const order = await prisma.order.findUnique({
           where: { id: orderId },
@@ -596,17 +744,17 @@ ${statusEmoji} Status: *${partner.status}*
             restaurant: {
               select: {
                 name: true,
-                assignedDeliveryPartners: true
-              }
-            }
-          }
+                assignedDeliveryPartners: true,
+              },
+            },
+          },
         });
 
         if (!order) {
-          await this.bot.editMessageText(
-            `❌ Order not found.`,
-            { chat_id: chatId, message_id: messageId }
-          );
+          await this.bot.editMessageText(`❌ Order not found.`, {
+            chat_id: chatId,
+            message_id: messageId,
+          });
           await this.bot.answerCallbackQuery(callbackQuery.id);
           return;
         }
@@ -623,14 +771,14 @@ ${statusEmoji} Status: *${partner.status}*
 
         // Get the accepting partner
         const acceptingPartner = await prisma.deliveryPartner.findFirst({
-          where: { telegramChatId: chatId?.toString() }
+          where: { telegramChatId: chatId?.toString() },
         });
 
         if (!acceptingPartner) {
-          await this.bot.editMessageText(
-            `❌ Partner not found.`,
-            { chat_id: chatId, message_id: messageId }
-          );
+          await this.bot.editMessageText(`❌ Partner not found.`, {
+            chat_id: chatId,
+            message_id: messageId,
+          });
           await this.bot.answerCallbackQuery(callbackQuery.id);
           return;
         }
@@ -638,16 +786,16 @@ ${statusEmoji} Status: *${partner.status}*
         // Assign order to this partner
         await prisma.order.update({
           where: { id: orderId },
-          data: { 
+          data: {
             deliveryPartnerId: acceptingPartner.id,
-            status: 'CONFIRMED' 
-          }
+            status: 'CONFIRMED',
+          },
         });
 
         // Update partner status to BUSY
         await prisma.deliveryPartner.update({
           where: { id: acceptingPartner.id },
-          data: { status: 'BUSY' }
+          data: { status: 'BUSY' },
         });
 
         // Cancel notifications for all OTHER partners assigned to this restaurant
@@ -656,9 +804,9 @@ ${statusEmoji} Status: *${partner.status}*
             AND: [
               { id: { in: order.restaurant.assignedDeliveryPartners } },
               { telegramChatId: { not: null } },
-              { id: { not: acceptingPartner.id } } // Exclude the accepting partner
-            ]
-          }
+              { id: { not: acceptingPartner.id } }, // Exclude the accepting partner
+            ],
+          },
         });
 
         // Send cancellation messages to other partners
@@ -670,7 +818,10 @@ ${statusEmoji} Status: *${partner.status}*
                 `⚠️ Order #${order.orderNumber} has been accepted by another delivery partner and is no longer available.`
               );
             } catch (error) {
-              console.error(`Failed to send cancellation to partner ${partner.id}:`, error);
+              console.error(
+                `Failed to send cancellation to partner ${partner.id}:`,
+                error
+              );
             }
           }
         }
@@ -684,38 +835,38 @@ ${statusEmoji} Status: *${partner.status}*
                 name: true,
                 address: true,
                 latitude: true,
-                longitude: true
-              }
+                longitude: true,
+              },
             },
             deliveryAddress: true,
             customer: {
               include: {
                 user: {
                   select: {
-                    name: true
-                  }
-                }
-              }
+                    name: true,
+                  },
+                },
+              },
             },
             orderItems: {
               include: {
                 menuItem: {
                   select: {
-                    name: true
-                  }
-                }
-              }
-            }
-          }
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
         if (fullOrder) {
           const restaurantMapsLink = `https://www.google.com/maps/search/?api=1&query=${fullOrder.restaurant.latitude},${fullOrder.restaurant.longitude}`;
           const customerMapsLink = `https://www.google.com/maps/search/?api=1&query=${fullOrder.deliveryAddress.latitude || 0},${fullOrder.deliveryAddress.longitude || 0}`;
-          
-          const orderItemsList = fullOrder.orderItems.map(item => 
-            `• ${item.quantity}x ${item.menuItem.name}`
-          ).join('\n');
+
+          const orderItemsList = fullOrder.orderItems
+            .map((item) => `• ${item.quantity}x ${item.menuItem.name}`)
+            .join('\n');
 
           const acceptanceMessage = `✅ *ORDER ACCEPTED!*
 
@@ -748,14 +899,19 @@ ${fullOrder.deliveryAddress.street}, ${fullOrder.deliveryAddress.city}
 
           // Confirm acceptance to the accepting partner with detailed info and Mark as Delivered button
           await this.bot.editMessageText(acceptanceMessage, {
-            chat_id: chatId, 
+            chat_id: chatId,
             message_id: messageId,
             parse_mode: 'Markdown',
             reply_markup: {
               inline_keyboard: [
-                [{ text: "🛑 Mark as Delivered", callback_data: `deliver_${orderId}` }]
-              ]
-            }
+                [
+                  {
+                    text: '🛑 Mark as Delivered',
+                    callback_data: `deliver_${orderId}`,
+                  },
+                ],
+              ],
+            },
           });
         } else {
           // Fallback message if order details can't be retrieved
@@ -768,80 +924,91 @@ ${fullOrder.deliveryAddress.street}, ${fullOrder.deliveryAddress.city}
 3. Confirm pickup and start delivery
 
 Use /orders to view order details.`,
-            { 
-              chat_id: chatId, 
+            {
+              chat_id: chatId,
               message_id: messageId,
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: "🛑 Mark as Delivered", callback_data: `deliver_${orderId}` }]
-                ]
-              }
+                  [
+                    {
+                      text: '🛑 Mark as Delivered',
+                      callback_data: `deliver_${orderId}`,
+                    },
+                  ],
+                ],
+              },
             }
           );
         }
 
-        console.log(`Order ${order.orderNumber} assigned to partner ${acceptingPartner.id}, cancellation sent to ${otherPartners.length} other partners`);
-
+        console.log(
+          `Order ${order.orderNumber} assigned to partner ${acceptingPartner.id}, cancellation sent to ${otherPartners.length} other partners`
+        );
       } else if (data.startsWith('deliver_')) {
         const orderId = data.split('_')[1];
-        console.log(`Order ${orderId} marked as delivered by partner with chat ID ${chatId}.`);
-        
+        console.log(
+          `Order ${orderId} marked as delivered by partner with chat ID ${chatId}.`
+        );
+
         // Get the order first to access deliveryFee
         const orderToDeliver = await prisma.order.findUnique({
-          where: { id: orderId }
+          where: { id: orderId },
         });
-        
+
         if (!orderToDeliver) {
-          await this.bot.editMessageText(
-            `❌ Order not found.`,
-            { chat_id: chatId, message_id: messageId }
-          );
+          await this.bot.editMessageText(`❌ Order not found.`, {
+            chat_id: chatId,
+            message_id: messageId,
+          });
           await this.bot.answerCallbackQuery(callbackQuery.id);
           return;
         }
-        
+
         // Mark the order as delivered
         await prisma.order.update({
           where: { id: orderId },
-          data: { status: 'DELIVERED' }
+          data: { status: 'DELIVERED' },
         });
-        
+
         // Update the delivery partner's status to AVAILABLE and add delivery fee to earnings
         const partner = await prisma.deliveryPartner.findFirst({
-          where: { telegramChatId: chatId?.toString() }
+          where: { telegramChatId: chatId?.toString() },
         });
-        
+
         if (partner) {
           await prisma.deliveryPartner.update({
             where: { id: partner.id },
-            data: { 
+            data: {
               status: 'AVAILABLE',
               todayEarnings: { increment: orderToDeliver.deliveryFee },
               totalEarnings: { increment: orderToDeliver.deliveryFee },
-              completedDeliveries: { increment: 1 }
-            }
+              completedDeliveries: { increment: 1 },
+            },
           });
         }
-        
+
         await this.bot.editMessageText(
           `✅ Order marked as delivered! You earned ₹${orderToDeliver.deliveryFee} from this delivery. Your status is now AVAILABLE.`,
           { chat_id: chatId, message_id: messageId }
         );
 
-        console.log(`Order ${orderId} marked as delivered by partner ${partner?.id}, earnings updated with ₹${orderToDeliver.deliveryFee}.`);
-
+        console.log(
+          `Order ${orderId} marked as delivered by partner ${partner?.id}, earnings updated with ₹${orderToDeliver.deliveryFee}.`
+        );
       } else if (data.startsWith('decline_')) {
         const orderId = data.split('_')[1];
-        console.log(`Order ${orderId} declined by partner with chat ID ${chatId}.`);
-        
+        console.log(
+          `Order ${orderId} declined by partner with chat ID ${chatId}.`
+        );
+
         // Update the order to mark it as declined by the delivery partner
         await prisma.order.update({
           where: { id: orderId },
-          data: { 
-            cancelReason: 'DELIVERY_PARTNER_DECLINED'
-          }
+          data: {
+            cancelReason: 'DELIVERY_PARTNER_DECLINED',
+          },
         });
-        
+
         await this.bot.editMessageText(
           `❌ Order declined. The order remains available for other delivery partners.`,
           { chat_id: chatId, message_id: messageId }
@@ -862,18 +1029,21 @@ Use /orders to view order details.`,
         // Go back to main menu
         const partner = await prisma.deliveryPartner.findFirst({
           where: { telegramChatId: chatId.toString() },
-          include: { user: { select: { name: true } } }
+          include: { user: { select: { name: true } } },
         });
         if (partner) {
-          await this.handleMenuCommand({ chat: { id: chatId } } as TelegramBot.Message);
+          await this.handleMenuCommand({
+            chat: { id: chatId },
+          } as TelegramBot.Message);
         }
       }
-      
-      await this.bot.answerCallbackQuery(callbackQuery.id);
 
+      await this.bot.answerCallbackQuery(callbackQuery.id);
     } catch (error) {
       console.error('Failed to handle callback query:', error);
-      await this.bot.answerCallbackQuery(callbackQuery.id, { text: 'An error occurred. Please try again.' });
+      await this.bot.answerCallbackQuery(callbackQuery.id, {
+        text: 'An error occurred. Please try again.',
+      });
     }
   };
 
@@ -898,12 +1068,14 @@ Use /orders to view order details.`,
       const deliveryPartner = await prisma.deliveryPartner.findFirst({
         where: {
           telegramPhone: phoneNumber,
-          telegramChatId: { not: null }
-        }
+          telegramChatId: { not: null },
+        },
       });
 
       if (!deliveryPartner?.telegramChatId) {
-        console.log(`No chat ID found for phone number ${phoneNumber}. Partner needs to start the bot first.`);
+        console.log(
+          `No chat ID found for phone number ${phoneNumber}. Partner needs to start the bot first.`
+        );
         return;
       }
 
@@ -932,57 +1104,82 @@ ${customerAddress}
 
 Please choose your response:`;
 
-      await this.bot.sendMessage(parseInt(deliveryPartner.telegramChatId), message, {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "✅ Accept Order", callback_data: `accept_${orderId}` }],
-            [{ text: "❌ Decline Order", callback_data: `decline_${orderId}` }]
-          ]
+      await this.bot.sendMessage(
+        parseInt(deliveryPartner.telegramChatId),
+        message,
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '✅ Accept Order', callback_data: `accept_${orderId}` }],
+              [
+                {
+                  text: '❌ Decline Order',
+                  callback_data: `decline_${orderId}`,
+                },
+              ],
+            ],
+          },
         }
-      });
+      );
 
-      console.log(`Enhanced order notification sent for order ${orderNumber} to partner ${deliveryPartner.id}`);
+      console.log(
+        `Enhanced order notification sent for order ${orderNumber} to partner ${deliveryPartner.id}`
+      );
     } catch (error) {
-      console.error(`Failed to send order notification to phone ${phoneNumber}:`, error);
+      console.error(
+        `Failed to send order notification to phone ${phoneNumber}:`,
+        error
+      );
     }
   }
 
-  public async sendMessageByPhone(phoneNumber: string, message: string): Promise<any> {
+  public async sendMessageByPhone(
+    phoneNumber: string,
+    message: string
+  ): Promise<any> {
     try {
       // Find delivery partner by phone number and get their chat ID
       const deliveryPartner = await prisma.deliveryPartner.findFirst({
         where: {
           telegramPhone: phoneNumber,
-          telegramChatId: { not: null }
-        }
+          telegramChatId: { not: null },
+        },
       });
 
       if (deliveryPartner?.telegramChatId) {
-        await this.bot.sendMessage(parseInt(deliveryPartner.telegramChatId), message);
+        await this.bot.sendMessage(
+          parseInt(deliveryPartner.telegramChatId),
+          message
+        );
         console.log(`Telegram message sent successfully to ${phoneNumber}`);
       } else {
-        console.log(`No chat ID found for phone number ${phoneNumber}. Partner needs to start the bot first.`);
+        console.log(
+          `No chat ID found for phone number ${phoneNumber}. Partner needs to start the bot first.`
+        );
       }
     } catch (error) {
       console.error(`Failed to send message to phone ${phoneNumber}:`, error);
     }
   }
 
-  public async sendOrderNotification(orderId: string, details: string): Promise<void> {
+  public async sendOrderNotification(
+    orderId: string,
+    details: string
+  ): Promise<void> {
     try {
       // Find delivery partner for the order
       const partner = await prisma.deliveryPartner.findFirst({
         where: {
           orders: {
             some: {
-              id: orderId
-            }
-          }
+              id: orderId,
+            },
+          },
         },
         include: {
-          user: true
-        }
+          user: true,
+        },
       });
 
       if (partner && partner.telegramPhone) {
@@ -996,7 +1193,10 @@ Please choose your response:`;
     }
   }
 
-  public async sendBatchNotification(batchId: string, details: string): Promise<void> {
+  public async sendBatchNotification(
+    batchId: string,
+    details: string
+  ): Promise<void> {
     try {
       // Find partners for the batch
       const batch = await prisma.deliveryBatch.findUnique({
@@ -1004,15 +1204,18 @@ Please choose your response:`;
         include: {
           deliveryPartner: {
             select: {
-              telegramPhone: true
-            }
-          }
-        }
+              telegramPhone: true,
+            },
+          },
+        },
       });
 
       if (batch && batch.deliveryPartner.telegramPhone) {
         const message = `Batch Delivery Details:\n\n${details}`;
-        await this.sendMessageByPhone(batch.deliveryPartner.telegramPhone, message);
+        await this.sendMessageByPhone(
+          batch.deliveryPartner.telegramPhone,
+          message
+        );
       } else {
         console.error('No Telegram chat ID found for this batch.');
       }

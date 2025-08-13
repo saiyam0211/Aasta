@@ -20,11 +20,11 @@ export async function GET(request: NextRequest) {
         customer: {
           include: {
             addresses: {
-              orderBy: { isDefault: 'desc' }
-            }
-          }
-        }
-      }
+              orderBy: { isDefault: 'desc' },
+            },
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -42,8 +42,8 @@ export async function GET(request: NextRequest) {
         email: user.email,
         phone: user.phone,
         image: user.image,
-        addresses: user.customer?.addresses || []
-      }
+        addresses: user.customer?.addresses || [],
+      },
     });
   } catch (error) {
     console.error('Profile fetch error:', error);
@@ -71,8 +71,8 @@ export async function PUT(request: NextRequest) {
       where: { id: session.user.id },
       data: {
         name: name || session.user.name,
-        phone: phone || session.user.phone
-      }
+        phone: phone || session.user.phone,
+      },
     });
 
     return NextResponse.json({
@@ -82,8 +82,8 @@ export async function PUT(request: NextRequest) {
         name: updatedUser.name,
         email: updatedUser.email,
         phone: updatedUser.phone,
-        image: updatedUser.image
-      }
+        image: updatedUser.image,
+      },
     });
   } catch (error) {
     console.error('Profile update error:', error);

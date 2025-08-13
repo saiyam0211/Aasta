@@ -8,7 +8,12 @@ interface NotificationData {
   body: string;
   data?: any;
   userId: string;
-  type: 'ORDER_UPDATE' | 'DELIVERY_ALERT' | 'PROMOTION' | 'SYSTEM_ANNOUNCEMENT' | 'RESTAURANT_NOTIFICATION';
+  type:
+    | 'ORDER_UPDATE'
+    | 'DELIVERY_ALERT'
+    | 'PROMOTION'
+    | 'SYSTEM_ANNOUNCEMENT'
+    | 'RESTAURANT_NOTIFICATION';
 }
 
 class NotificationService {
@@ -17,8 +22,8 @@ class NotificationService {
     service: 'gmail', // Example service
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    }
+      pass: process.env.EMAIL_PASS,
+    },
   });
 
   // Web-push setup
@@ -37,18 +42,18 @@ class NotificationService {
       include: {
         customer: {
           include: {
-            user: true
-          }
+            user: true,
+          },
         },
-        restaurant: true
-      }
+        restaurant: true,
+      },
     });
 
     if (order) {
       // Send notifications here
       const payload = JSON.stringify({
         title: 'Order Update',
-        body: `Your order status is now: ${status}`
+        body: `Your order status is now: ${status}`,
       });
 
       // Socket.io
@@ -68,14 +73,14 @@ class NotificationService {
     const partner = await prisma.deliveryPartner.findUnique({
       where: { id: deliveryPartnerId },
       include: {
-        user: true
-      }
+        user: true,
+      },
     });
 
     if (partner) {
       const payload = JSON.stringify({
         title: 'Delivery Alert',
-        body: message
+        body: message,
       });
 
       // Socket.io
@@ -93,7 +98,7 @@ class NotificationService {
         from: process.env.EMAIL_USER,
         to,
         subject,
-        text
+        text,
       });
     } catch (error) {
       console.error('Email error:', error);
@@ -105,8 +110,8 @@ class NotificationService {
     const subscriptions = await prisma.pushSubscription.findMany({
       where: {
         userId,
-        active: true
-      }
+        active: true,
+      },
     });
 
     for (const subscription of subscriptions) {
@@ -114,8 +119,8 @@ class NotificationService {
         endpoint: subscription.endpoint,
         keys: {
           auth: subscription.auth,
-          p256dh: subscription.p256dh
-        }
+          p256dh: subscription.p256dh,
+        },
       };
 
       try {

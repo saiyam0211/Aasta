@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     // First, test basic query
     console.log('Attempting to fetch delivery partners...');
-    
+
     // Get all delivery partners with their user data - simplified version
     const deliveryPartners = await prisma.deliveryPartner.findMany({
       include: {
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     console.log(`Found ${deliveryPartners.length} delivery partners`);
 
     // Transform the data to match the expected format - simplified
-    const transformedPartners = deliveryPartners.map(partner => ({
+    const transformedPartners = deliveryPartners.map((partner) => ({
       id: partner.id,
       userId: partner.userId,
       user: partner.user,
@@ -53,19 +53,21 @@ export async function GET(request: NextRequest) {
 
     console.log('Transformed partners:', transformedPartners.length);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      data: transformedPartners 
+      data: transformedPartners,
     });
-
   } catch (error) {
     console.error('Error fetching delivery partners:', error);
     console.error('Error details:', JSON.stringify(error, null, 2));
-    return NextResponse.json({ 
-      success: false,
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -102,34 +104,43 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      return NextResponse.json({ 
-        success: true,
-        message: 'Delivery partner created successfully',
-        data: deliveryPartner
-      }, { status: 201 });
+      return NextResponse.json(
+        {
+          success: true,
+          message: 'Delivery partner created successfully',
+          data: deliveryPartner,
+        },
+        { status: 201 }
+      );
     } else {
       // New scenario - create user and delivery partner together
       // Validate required fields for new user creation
       const requiredFields = ['name', 'email', 'telegramPhone'];
       for (const field of requiredFields) {
         if (!data[field]) {
-          return NextResponse.json({ 
-            success: false,
-            error: `Missing required field: ${field}` 
-          }, { status: 400 });
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Missing required field: ${field}`,
+            },
+            { status: 400 }
+          );
         }
       }
 
       // Check if user already exists
       const existingUser = await prisma.user.findUnique({
-        where: { email: data.email }
+        where: { email: data.email },
       });
 
       if (existingUser) {
-        return NextResponse.json({ 
-          success: false,
-          error: 'User with this email already exists' 
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'User with this email already exists',
+          },
+          { status: 400 }
+        );
       }
 
       // Create user and delivery partner in a transaction
@@ -170,18 +181,23 @@ export async function POST(request: NextRequest) {
         return deliveryPartner;
       });
 
-      return NextResponse.json({ 
-        success: true,
-        message: 'Delivery partner created successfully',
-        data: result
-      }, { status: 201 });
+      return NextResponse.json(
+        {
+          success: true,
+          message: 'Delivery partner created successfully',
+          data: result,
+        },
+        { status: 201 }
+      );
     }
-
   } catch (error) {
     console.error('Error creating delivery partner:', error);
-    return NextResponse.json({ 
-      success: false,
-      error: error instanceof Error ? error.message : 'Internal server error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+      },
+      { status: 500 }
+    );
   }
 }

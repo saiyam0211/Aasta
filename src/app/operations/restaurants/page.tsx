@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function RestaurantsRedirect() {
   const router = useRouter();
@@ -12,9 +12,9 @@ export default function RestaurantsRedirect() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="text-center">
-        <div className="w-8 h-8 border-2 border-[#002a01] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[#002a01] border-t-transparent"></div>
         <p className="text-gray-600">Redirecting to restaurant management...</p>
       </div>
     </div>

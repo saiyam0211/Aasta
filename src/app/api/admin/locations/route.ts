@@ -7,7 +7,7 @@ import { authOptions } from '@/lib/auth';
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized. Admin access required.' },
@@ -23,22 +23,19 @@ export async function GET(req: NextRequest) {
       include: {
         _count: {
           select: {
-            restaurants: true
-          }
-        }
+            restaurants: true,
+          },
+        },
       },
-      orderBy: [
-        { isActive: 'desc' },
-        { name: 'asc' }
-      ]
+      orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
     });
 
     return NextResponse.json({
       success: true,
-      locations: locations.map(location => ({
+      locations: locations.map((location) => ({
         ...location,
-        restaurantCount: location._count.restaurants
-      }))
+        restaurantCount: location._count.restaurants,
+      })),
     });
   } catch (error) {
     console.error('Error fetching locations:', error);
@@ -53,7 +50,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized. Admin access required.' },
@@ -67,14 +64,17 @@ export async function POST(req: NextRequest) {
     // Validate required fields
     if (!name || !city || !state || !country) {
       return NextResponse.json(
-        { success: false, error: 'Name, city, state, and country are required' },
+        {
+          success: false,
+          error: 'Name, city, state, and country are required',
+        },
         { status: 400 }
       );
     }
 
     // Check if location with same name already exists
     const existingLocation = await prisma.location.findUnique({
-      where: { name: name.trim() }
+      where: { name: name.trim() },
     });
 
     if (existingLocation) {
@@ -90,14 +90,14 @@ export async function POST(req: NextRequest) {
         city: city.trim(),
         state: state.trim(),
         country: country.trim(),
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     return NextResponse.json({
       success: true,
       location,
-      message: 'Location created successfully'
+      message: 'Location created successfully',
     });
   } catch (error) {
     console.error('Error creating location:', error);

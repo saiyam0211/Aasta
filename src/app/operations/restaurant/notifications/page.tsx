@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,11 @@ export default function Notifications() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [stats, setStats] = useState({ totalClients: 0, pwaClients: 0, regularClients: 0 });
+  const [stats, setStats] = useState({
+    totalClients: 0,
+    pwaClients: 0,
+    regularClients: 0,
+  });
   const [statsLoading, setStatsLoading] = useState(true);
 
   // Fetch current stats
@@ -21,17 +25,20 @@ export default function Notifications() {
     try {
       // Set a simple operations session for testing
       if (!localStorage.getItem('operations-session')) {
-        localStorage.setItem('operations-session', JSON.stringify({
-          email: 'operations@aasta.food',
-          timestamp: Date.now()
-        }));
+        localStorage.setItem(
+          'operations-session',
+          JSON.stringify({
+            email: 'operations@aasta.food',
+            timestamp: Date.now(),
+          })
+        );
       }
 
       const operationsSession = localStorage.getItem('operations-session');
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
-      
+
       if (operationsSession) {
         headers['x-operations-auth'] = operationsSession;
       }
@@ -45,12 +52,15 @@ export default function Notifications() {
       });
 
       console.log('📊 Stats response status:', response.status);
-      console.log('📊 Stats response headers:', Object.fromEntries(response.headers.entries()));
+      console.log(
+        '📊 Stats response headers:',
+        Object.fromEntries(response.headers.entries())
+      );
 
       if (response.ok) {
         const responseText = await response.text();
         console.log('📊 Raw response:', responseText);
-        
+
         if (!responseText.trim()) {
           console.error('📊 Empty response received');
           return;
@@ -63,18 +73,22 @@ export default function Notifications() {
         } catch (parseError) {
           console.error('JSON Parse Error in stats:', parseError);
           console.error('Response text:', responseText);
-          console.error('Response appears to be HTML - API route may not exist or authentication failed');
+          console.error(
+            'Response appears to be HTML - API route may not exist or authentication failed'
+          );
         }
       } else {
         const errorText = await response.text();
-        console.error('Failed to fetch stats:', { 
-          status: response.status, 
+        console.error('Failed to fetch stats:', {
+          status: response.status,
           statusText: response.statusText,
-          error: errorText 
+          error: errorText,
         });
-        
+
         if (response.status === 404) {
-          console.error('❌ API route /api/notification-stats not found - check if route file exists');
+          console.error(
+            '❌ API route /api/notification-stats not found - check if route file exists'
+          );
         } else if (response.status === 401) {
           console.error('❌ Authentication failed - check operations session');
         }
@@ -101,22 +115,25 @@ export default function Notifications() {
 
     try {
       setIsLoading(true);
-      
+
       // Set a simple operations session for testing
       if (!localStorage.getItem('operations-session')) {
-        localStorage.setItem('operations-session', JSON.stringify({
-          email: 'operations@aasta.food',
-          timestamp: Date.now()
-        }));
+        localStorage.setItem(
+          'operations-session',
+          JSON.stringify({
+            email: 'operations@aasta.food',
+            timestamp: Date.now(),
+          })
+        );
       }
-      
+
       // Get operations session from localStorage
       const operationsSession = localStorage.getItem('operations-session');
-      
+
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
-      
+
       // Add operations auth header if available
       if (operationsSession) {
         headers['x-operations-auth'] = operationsSession;
@@ -124,34 +141,39 @@ export default function Notifications() {
 
       console.log('📤 Sending notification with headers:', headers);
       console.log('📤 Notification payload:', { broadcast: true, title, body });
-      
+
       const response = await fetch('/api/send-notification', {
         method: 'PUT', // Use PUT for bulk send
         headers,
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           broadcast: true, // Flag to send to all customers
-          title, 
-          body 
+          title,
+          body,
         }),
       });
 
       console.log('📤 Send notification response status:', response.status);
-      console.log('📤 Send notification response headers:', Object.fromEntries(response.headers.entries()));
-      
+      console.log(
+        '📤 Send notification response headers:',
+        Object.fromEntries(response.headers.entries())
+      );
+
       const responseText = await response.text();
       console.log('📤 Send notification raw response:', responseText);
-      
+
       if (!responseText.trim()) {
         console.error('📤 Empty response received from send notification');
         toast.error('Failed to send notification - empty response');
         return;
       }
-      
+
       try {
         const result = JSON.parse(responseText);
-        
+
         if (response.ok) {
-          toast.success(`Notification sent successfully! Sent to ${result.sent || 0} users, ${result.failed || 0} failed.`);
+          toast.success(
+            `Notification sent successfully! Sent to ${result.sent || 0} users, ${result.failed || 0} failed.`
+          );
           setTitle('');
           setBody('');
           fetchStats(); // Refresh stats
@@ -162,8 +184,10 @@ export default function Notifications() {
       } catch (parseError) {
         console.error('JSON Parse Error in send notification:', parseError);
         console.error('Response text:', responseText);
-        console.error('Response appears to be HTML - API route may not exist or authentication failed');
-        
+        console.error(
+          'Response appears to be HTML - API route may not exist or authentication failed'
+        );
+
         if (response.status === 404) {
           toast.error('API route not found - check server configuration');
         } else if (response.status === 401) {
@@ -182,24 +206,24 @@ export default function Notifications() {
 
   return (
     <OperationsLayout type="restaurant">
-      <div className="max-w-2xl mx-auto">
+      <div className="mx-auto max-w-2xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#002a01] flex items-center gap-3">
-            <Bell className="w-8 h-8" />
+          <h1 className="flex items-center gap-3 text-3xl font-bold text-[#002a01]">
+            <Bell className="h-8 w-8" />
             Send Push Notifications
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="mt-2 text-gray-600">
             Send push notifications to customers who have enabled notifications
           </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Users className="w-5 h-5 text-blue-600" />
+                <div className="rounded-lg bg-blue-100 p-2">
+                  <Users className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Total Clients</p>
@@ -214,8 +238,8 @@ export default function Notifications() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Smartphone className="w-5 h-5 text-green-600" />
+                <div className="rounded-lg bg-green-100 p-2">
+                  <Smartphone className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">PWA Clients</p>
@@ -230,8 +254,8 @@ export default function Notifications() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gray-100 rounded-lg">
-                  <Monitor className="w-5 h-5 text-gray-600" />
+                <div className="rounded-lg bg-gray-100 p-2">
+                  <Monitor className="h-5 w-5 text-gray-600" />
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Regular Clients</p>
@@ -247,23 +271,24 @@ export default function Notifications() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Send className="w-5 h-5" />
+              <Send className="h-5 w-5" />
               Send Notification
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <div className="flex items-center gap-2 text-blue-800 mb-2">
-                <Bell className="w-4 h-4" />
+            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <div className="mb-2 flex items-center gap-2 text-blue-800">
+                <Bell className="h-4 w-4" />
                 <span className="font-medium">Broadcast to All Customers</span>
               </div>
               <p className="text-sm text-blue-700">
-                This notification will be sent to all customers who have enabled push notifications.
+                This notification will be sent to all customers who have enabled
+                push notifications.
               </p>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
                 Notification Title
               </label>
               <Input
@@ -273,9 +298,9 @@ export default function Notifications() {
                 className="w-full"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
                 Message Body
               </label>
               <Textarea
@@ -286,20 +311,20 @@ export default function Notifications() {
                 rows={4}
               />
             </div>
-            
-            <Button 
-              onClick={sendNotificationToAll} 
+
+            <Button
+              onClick={sendNotificationToAll}
               className="w-full bg-[#002a01] hover:bg-[#002a01]/90"
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
                   Sending to All Customers...
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4 mr-2" />
+                  <Send className="mr-2 h-4 w-4" />
                   Send to All Customers
                 </>
               )}

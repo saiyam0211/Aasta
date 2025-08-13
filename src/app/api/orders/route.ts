@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { generateOrderNumber, generateVerificationCode } from '@/lib/order-utils';
+import {
+  generateOrderNumber,
+  generateVerificationCode,
+} from '@/lib/order-utils';
 
 interface CreateOrderRequest {
   restaurantId: string;
@@ -29,7 +32,7 @@ interface CreateOrderRequest {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -45,7 +48,7 @@ export async function POST(request: NextRequest) {
       items,
       paymentMethodId,
       specialInstructions,
-      scheduledDeliveryTime
+      scheduledDeliveryTime,
     } = body;
 
     // Validation
@@ -67,8 +70,8 @@ export async function POST(request: NextRequest) {
     const restaurant = await prisma.restaurant.findFirst({
       where: {
         id: restaurantId,
-        status: 'ACTIVE'
-      }
+        status: 'ACTIVE',
+      },
     });
 
     if (!restaurant) {
@@ -83,19 +86,22 @@ export async function POST(request: NextRequest) {
     const currentHour = now.getHours();
     if (currentHour < 21 && currentHour >= 1) {
       return NextResponse.json(
-        { error: 'Restaurant is currently closed. Operating hours: 9 PM - 12 AM' },
+        {
+          error:
+            'Restaurant is currently closed. Operating hours: 9 PM - 12 AM',
+        },
         { status: 400 }
       );
     }
 
     // Validate menu items and calculate totals
-    const menuItemIds = items.map(item => item.menuItemId);
+    const menuItemIds = items.map((item) => item.menuItemId);
     const menuItems = await prisma.menuItem.findMany({
       where: {
         id: { in: menuItemIds },
         restaurantId: restaurantId,
-        available: true
-      }
+        available: true,
+      },
     });
 
     if (menuItems.length !== items.length) {
@@ -107,8 +113,8 @@ export async function POST(request: NextRequest) {
 
     // Calculate order totals
     let subtotal = 0;
-    const orderItems = items.map(item => {
-      const menuItem = menuItems.find(mi => mi.id === item.menuItemId);
+    const orderItems = items.map((item) => {
+      const menuItem = menuItems.find((mi) => mi.id === item.menuItemId);
       if (!menuItem) {
         throw new Error(`Menu item ${item.menuItemId} not found`);
       }
@@ -122,7 +128,7 @@ export async function POST(request: NextRequest) {
         unitPrice: menuItem.price,
         totalPrice: itemTotal,
         customizations: item.customizations || {},
-        specialInstructions: item.specialInstructions
+        specialInstructions: item.specialInstructions,
       };
     });
 
@@ -145,24 +151,24 @@ export async function POST(request: NextRequest) {
     if (!deliveryAddressId && deliveryAddress) {
       // First find or create the customer record
       let customer = await prisma.customer.findUnique({
-        where: { userId: session.user.id }
+        where: { userId: session.user.id },
       });
-      
+
       if (!customer) {
         customer = await prisma.customer.create({
           data: {
             userId: session.user.id,
-            favoriteRestaurants: []
-          }
+            favoriteRestaurants: [],
+          },
         });
       }
-      
+
       const newAddress = await prisma.address.create({
         data: {
           ...deliveryAddress,
           customerId: customer.id,
-          type: 'OTHER'
-        }
+          type: 'OTHER',
+        },
       });
       finalDeliveryAddressId = newAddress.id;
     }
@@ -173,18 +179,18 @@ export async function POST(request: NextRequest) {
 
     // Find or create customer for order
     let customer = await prisma.customer.findUnique({
-      where: { userId: session.user.id }
+      where: { userId: session.user.id },
     });
-    
+
     if (!customer) {
       customer = await prisma.customer.create({
         data: {
           userId: session.user.id,
-          favoriteRestaurants: []
-        }
+          favoriteRestaurants: [],
+        },
       });
     }
-    
+
     // Create order with transaction
     const order = await prisma.$transaction(async (tx) => {
       // Create the order
@@ -203,28 +209,30 @@ export async function POST(request: NextRequest) {
           estimatedPreparationTime: restaurant.averagePreparationTime,
           specialInstructions,
           verificationCode,
-          estimatedDeliveryTime: new Date(Date.now() + (restaurant.averagePreparationTime + 30) * 60000), // Add 30 min buffer
-        }
+          estimatedDeliveryTime: new Date(
+            Date.now() + (restaurant.averagePreparationTime + 30) * 60000
+          ), // Add 30 min buffer
+        },
       });
 
       // Create order items
       await tx.orderItem.createMany({
-        data: orderItems.map(item => ({
+        data: orderItems.map((item) => ({
           orderId: newOrder.id,
           menuItemId: item.menuItemId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           totalPrice: item.totalPrice,
-          customizations: item.customizations
-        }))
+          customizations: item.customizations,
+        })),
       });
 
       // Update restaurant statistics
       await tx.restaurant.update({
         where: { id: restaurantId },
         data: {
-          totalOrders: { increment: 1 }
-        }
+          totalOrders: { increment: 1 },
+        },
       });
 
       return newOrder;
@@ -239,8 +247,8 @@ export async function POST(request: NextRequest) {
             id: true,
             name: true,
             phone: true,
-            address: true
-          }
+            address: true,
+          },
         },
         deliveryAddress: true,
         orderItems: {
@@ -250,22 +258,24 @@ export async function POST(request: NextRequest) {
                 id: true,
                 name: true,
                 description: true,
-                imageUrl: true
-              }
-            }
-          }
-        }
-      }
+                imageUrl: true,
+              },
+            },
+          },
+        },
+      },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        order: completeOrder,
-        message: 'Order created successfully'
-      }
-    }, { status: 201 });
-
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          order: completeOrder,
+          message: 'Order created successfully',
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating order:', error);
     return NextResponse.json(
@@ -278,7 +288,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -291,18 +301,18 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const status = searchParams.get('status');
     const restaurantId = searchParams.get('restaurantId');
-    
+
     const skip = (page - 1) * limit;
 
     // Build where clause based on user role
     let where: any = {};
-    
+
     if (session.user.role === 'CUSTOMER') {
       // For customers, find their customer record first
       const customer = await prisma.customer.findUnique({
-        where: { userId: session.user.id }
+        where: { userId: session.user.id },
       });
-      
+
       if (!customer) {
         return NextResponse.json({
           success: true,
@@ -314,40 +324,40 @@ export async function GET(request: NextRequest) {
               total: 0,
               totalPages: 0,
               hasNext: false,
-              hasPrev: false
-            }
-          }
+              hasPrev: false,
+            },
+          },
         });
       }
-      
+
       where.customerId = customer.id;
     } else if (session.user.role === 'RESTAURANT_OWNER') {
       // Find restaurant for this user
       const restaurant = await prisma.restaurant.findFirst({
-        where: { ownerId: session.user.id }
+        where: { ownerId: session.user.id },
       });
-      
+
       if (!restaurant) {
         return NextResponse.json(
           { error: 'Restaurant not found' },
           { status: 404 }
         );
       }
-      
+
       where.restaurantId = restaurant.id;
     } else if (session.user.role === 'DELIVERY_PARTNER') {
       // Find delivery partner for this user
       const deliveryPartner = await prisma.deliveryPartner.findUnique({
-        where: { userId: session.user.id }
+        where: { userId: session.user.id },
       });
-      
+
       if (!deliveryPartner) {
         return NextResponse.json(
           { error: 'Delivery partner not found' },
           { status: 404 }
         );
       }
-      
+
       // Delivery partners can see orders assigned to them
       where.deliveryPartnerId = deliveryPartner.id;
     } else if (session.user.role === 'ADMIN') {
@@ -356,10 +366,7 @@ export async function GET(request: NextRequest) {
         where.restaurantId = restaurantId;
       }
     } else {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     if (status) {
@@ -377,18 +384,18 @@ export async function GET(request: NextRequest) {
                   id: true,
                   name: true,
                   email: true,
-                  phone: true
-                }
-              }
-            }
+                  phone: true,
+                },
+              },
+            },
           },
           restaurant: {
             select: {
               id: true,
               name: true,
               phone: true,
-              address: true
-            }
+              address: true,
+            },
           },
           deliveryAddress: true,
           orderItems: {
@@ -398,17 +405,17 @@ export async function GET(request: NextRequest) {
                   id: true,
                   name: true,
                   description: true,
-                  imageUrl: true
-                }
-              }
-            }
-          }
+                  imageUrl: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit
+        take: limit,
       }),
-      prisma.order.count({ where })
+      prisma.order.count({ where }),
     ]);
 
     const totalPages = Math.ceil(totalCount / limit);
@@ -423,11 +430,10 @@ export async function GET(request: NextRequest) {
           total: totalCount,
           totalPages,
           hasNext: page < totalPages,
-          hasPrev: page > 1
-        }
-      }
+          hasPrev: page > 1,
+        },
+      },
     });
-
   } catch (error) {
     console.error('Error fetching orders:', error);
     return NextResponse.json(

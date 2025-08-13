@@ -7,8 +7,8 @@ class SocketClient {
     if (!this.socket) {
       this.socket = io('http://localhost:3000', {
         auth: {
-          token
-        }
+          token,
+        },
       });
 
       this.setupEventHandlers();
@@ -54,4 +54,3 @@ class SocketClient {
 }
 
 export const socketClient = new SocketClient();
-

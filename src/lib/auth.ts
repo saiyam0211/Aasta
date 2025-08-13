@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma';
 const ADMIN_CREDENTIALS = {
   email: 'hi@aasta.food',
   password: '@asta.food',
-  name: 'Aasta Admin'
+  name: 'Aasta Admin',
 };
 
 export const authOptions: NextAuthOptions = {
@@ -21,40 +21,40 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code"
-        }
-      }
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code',
+        },
+      },
     }),
     CredentialsProvider({
       id: 'admin-credentials',
       name: 'Admin Login',
       credentials: {
         email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (
-          credentials?.email === ADMIN_CREDENTIALS.email && 
+          credentials?.email === ADMIN_CREDENTIALS.email &&
           credentials?.password === ADMIN_CREDENTIALS.password
         ) {
           return {
             id: 'admin',
             email: ADMIN_CREDENTIALS.email,
             name: ADMIN_CREDENTIALS.name,
-            role: 'ADMIN'
+            role: 'ADMIN',
           };
         }
         return null;
-      }
+      },
     }),
     CredentialsProvider({
       id: 'restaurant-credentials',
       name: 'Restaurant Login',
       credentials: {
         email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -64,10 +64,10 @@ export const authOptions: NextAuthOptions = {
         try {
           // Find user in database
           const user = await prisma.user.findUnique({
-            where: { 
+            where: {
               email: credentials.email,
-              role: 'RESTAURANT_OWNER'
-            }
+              role: 'RESTAURANT_OWNER',
+            },
           });
 
           if (!user || !user.password) {
@@ -76,7 +76,7 @@ export const authOptions: NextAuthOptions = {
 
           // Verify password
           const isPasswordValid = await bcrypt.compare(
-            credentials.password, 
+            credentials.password,
             user.password
           );
 
@@ -88,13 +88,13 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             email: user.email,
             name: user.name,
-            role: user.role
+            role: user.role,
           };
         } catch (error) {
           console.error('Restaurant auth error:', error);
           return null;
         }
-      }
+      },
     }),
   ],
   session: {
@@ -153,7 +153,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.email = user.email;
         token.name = user.name;
-        
+
         // Handle admin user - don't query database
         if (user.role === 'ADMIN') {
           token.id = 'admin';
@@ -161,12 +161,12 @@ export const authOptions: NextAuthOptions = {
           return token;
         }
       }
-      
+
       // Handle admin token on subsequent requests
       if (token.email === ADMIN_CREDENTIALS.email && token.role === 'ADMIN') {
         return token;
       }
-      
+
       // Always fetch fresh user data from database to ensure role is up-to-date (for non-admin users)
       if (token.email) {
         try {
@@ -183,11 +183,14 @@ export const authOptions: NextAuthOptions = {
             token.role = dbUser.role;
             token.phone = dbUser.phone;
             token.email = dbUser.email;
-            
+
             // Add role-specific data
             if (dbUser.role === 'CUSTOMER' && dbUser.customer) {
               token.customerId = dbUser.customer.id;
-            } else if (dbUser.role === 'DELIVERY_PARTNER' && dbUser.deliveryPartner) {
+            } else if (
+              dbUser.role === 'DELIVERY_PARTNER' &&
+              dbUser.deliveryPartner
+            ) {
               token.deliveryPartnerId = dbUser.deliveryPartner.id;
             } else if (dbUser.role === 'RESTAURANT_OWNER') {
               // For restaurant owners, we'll fetch the restaurant separately to avoid schema issues
@@ -205,7 +208,7 @@ export const authOptions: NextAuthOptions = {
           // Continue with existing token data if database query fails
         }
       }
-      
+
       return token;
     },
     async session({ session, token }) {
@@ -222,27 +225,27 @@ export const authOptions: NextAuthOptions = {
     },
     async redirect({ url, baseUrl }) {
       console.log('Redirect URL:', url, 'Base URL:', baseUrl);
-      
+
       // If the URL is from our domain, allow it
       if (url.startsWith(baseUrl)) {
         return url;
       }
-      
+
       // Check if this is admin sign-in
       if (url.includes('/admin/') || url.includes('admin')) {
         return `${baseUrl}/admin/dashboard`;
       }
-      
+
       // Check if this is a restaurant sign-in by looking at the referrer or URL
       if (url.includes('/restaurant/') || url.includes('restaurant')) {
         return `${baseUrl}/restaurant/dashboard`;
       }
-      
+
       // Check if this is a delivery partner sign-in
       if (url.includes('/delivery/') || url.includes('delivery')) {
         return `${baseUrl}/delivery/dashboard`;
       }
-      
+
       // Default to home page for customers
       return baseUrl;
     },

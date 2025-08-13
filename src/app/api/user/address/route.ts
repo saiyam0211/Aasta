@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-if (!session || !session.user || !session.user.id) {
+    if (!session || !session.user || !session.user.id) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -17,7 +17,7 @@ if (!session || !session.user || !session.user.id) {
     // First find the customer record for this user
     const customer = await prisma.customer.findUnique({
       where: { userId: session.user.id },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!customer) {
@@ -29,12 +29,12 @@ if (!session || !session.user || !session.user.id) {
 
     const addresses = await prisma.address.findMany({
       where: { customerId: customer.id },
-      orderBy: { isDefault: 'desc' }
+      orderBy: { isDefault: 'desc' },
     });
 
     return NextResponse.json({
       success: true,
-      addresses
+      addresses,
     });
   } catch (error) {
     console.error('Address fetch error:', error);
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     // First find the customer record for this user
     const customer = await prisma.customer.findUnique({
       where: { userId: session.user.id },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!customer) {
@@ -69,12 +69,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { street, city, state, zipCode, landmark, instructions, type, latitude, longitude, isDefault } = await request.json();
+    const {
+      street,
+      city,
+      state,
+      zipCode,
+      landmark,
+      instructions,
+      type,
+      latitude,
+      longitude,
+      isDefault,
+    } = await request.json();
 
     // Validate required fields
     if (!street || !city || !state || !zipCode) {
       return NextResponse.json(
-        { success: false, message: 'Street, city, state, and zip code are required' },
+        {
+          success: false,
+          message: 'Street, city, state, and zip code are required',
+        },
         { status: 400 }
       );
     }
@@ -86,8 +100,8 @@ export async function POST(request: NextRequest) {
         street: { equals: street.trim(), mode: 'insensitive' },
         city: { equals: city.trim(), mode: 'insensitive' },
         state: { equals: state.trim(), mode: 'insensitive' },
-        zipCode: zipCode.trim()
-      }
+        zipCode: zipCode.trim(),
+      },
     });
 
     if (existingAddress) {
@@ -101,7 +115,7 @@ export async function POST(request: NextRequest) {
     if (isDefault) {
       await prisma.address.updateMany({
         where: { customerId: customer.id },
-        data: { isDefault: false }
+        data: { isDefault: false },
       });
     }
 
@@ -117,14 +131,17 @@ export async function POST(request: NextRequest) {
         type: type || 'HOME',
         latitude,
         longitude,
-        isDefault: isDefault || false
-      }
+        isDefault: isDefault || false,
+      },
     });
 
-    return NextResponse.json({
-      success: true,
-      address: newAddress
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        address: newAddress,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Add address error:', error);
     return NextResponse.json(

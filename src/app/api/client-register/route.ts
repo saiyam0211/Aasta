@@ -6,7 +6,7 @@ import { notificationBroadcaster } from '@/lib/notification-broadcaster';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized - Please login first' },
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       sessionId,
       isPWA,
       userAgent: userAgent?.substring(0, 50) + '...',
-      pwaDetails
+      pwaDetails,
     });
 
     return NextResponse.json({
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       message: 'Client registered successfully',
       sessionId,
       isPWA,
-      stats: result.stats
+      stats: result.stats,
     });
   } catch (error) {
     console.error('❌ Error registering client:', error);
@@ -57,12 +57,9 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { sessionId } = await request.json();
@@ -79,16 +76,13 @@ export async function PUT(request: NextRequest) {
 
     if (!updated) {
       console.log(`⚠️ Session not found for activity update: ${sessionId}`);
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
       message: 'Activity updated',
-      sessionId
+      sessionId,
     });
   } catch (error) {
     console.error('❌ Error updating client activity:', error);
@@ -116,7 +110,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Client unregistered successfully',
-      sessionId
+      sessionId,
     });
   } catch (error) {
     console.error('❌ Error unregistering client:', error);
@@ -130,7 +124,7 @@ export async function DELETE(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     // Allow public access to basic stats, detailed info requires auth
     const url = new URL(request.url);
     const detailed = url.searchParams.get('detailed') === 'true';
@@ -142,19 +136,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const stats = detailed 
+    const stats = detailed
       ? notificationBroadcaster.getClientDetails()
       : notificationBroadcaster.getStats();
 
     return NextResponse.json({
       success: true,
-      ...stats
+      ...stats,
     });
   } catch (error) {
     console.error('❌ Error getting client stats:', error);
-    return NextResponse.json(
-      { error: 'Failed to get stats' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get stats' }, { status: 500 });
   }
 }

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,7 @@ export default function Notifications() {
         body: JSON.stringify({ userId, title, body }),
       });
       const result = await response.json();
-      
+
       if (result.success) {
         toast.success('Notification sent successfully!');
         // Clear form
@@ -51,13 +51,13 @@ export default function Notifications() {
 
   return (
     <OperationsLayout type="restaurant">
-      <div className="max-w-2xl mx-auto">
+      <div className="mx-auto max-w-2xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#002a01] flex items-center gap-3">
-            <Bell className="w-8 h-8" />
+          <h1 className="flex items-center gap-3 text-3xl font-bold text-[#002a01]">
+            <Bell className="h-8 w-8" />
             Send Push Notifications
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="mt-2 text-gray-600">
             Send push notifications to customers who have enabled notifications
           </p>
         </div>
@@ -65,13 +65,13 @@ export default function Notifications() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Send className="w-5 h-5" />
+              <Send className="h-5 w-5" />
               Send Notification
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
                 User ID
               </label>
               <Input
@@ -81,9 +81,9 @@ export default function Notifications() {
                 className="w-full"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
                 Notification Title
               </label>
               <Input
@@ -93,9 +93,9 @@ export default function Notifications() {
                 className="w-full"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
                 Message Body
               </label>
               <Textarea
@@ -106,20 +106,20 @@ export default function Notifications() {
                 rows={4}
               />
             </div>
-            
-            <Button 
-              onClick={sendNotification} 
+
+            <Button
+              onClick={sendNotification}
               className="w-full bg-[#002a01] hover:bg-[#002a01]/90"
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
                   Sending...
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4 mr-2" />
+                  <Send className="mr-2 h-4 w-4" />
                   Send Notification
                 </>
               )}
@@ -130,4 +130,3 @@ export default function Notifications() {
     </OperationsLayout>
   );
 }
-
