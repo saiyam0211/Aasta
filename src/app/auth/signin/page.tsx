@@ -23,53 +23,14 @@ export default function SignInPage() {
       const callbackPath = '/customer';
       const absoluteCallbackUrl = `https://aastadelivery.vercel.app${callbackPath}`;
 
-      const openExternal = async (url: string) => {
-        await Browser.open({ url, presentationStyle: 'fullscreen' });
-        setIsLoading(false);
-      };
-
       if (Capacitor.isNativePlatform()) {
-        let authorizationUrl: string | null = null;
-
-        // Attempt 1: Use manual redirect fetch to get Google's authorize URL directly
-        try {
-          const resp = await fetch(
-            `/api/auth/signin/google?callbackUrl=${encodeURIComponent(
-              absoluteCallbackUrl
-            )}&prompt=select_account`,
-            { method: 'GET', credentials: 'include', redirect: 'manual' }
-          );
-          const location = resp.headers.get('location');
-          if (location && location.startsWith('https://')) {
-            authorizationUrl = location;
-          }
-        } catch (e) {
-          console.warn('Direct auth URL fetch failed, will fallback:', e);
-        }
-
-        // Attempt 2: Ask NextAuth for a URL without redirecting WebView
-        if (!authorizationUrl) {
-          try {
-            const result = await signIn('google', {
-              callbackUrl: absoluteCallbackUrl,
-              redirect: false,
-            });
-            if (result && typeof result === 'object' && 'url' in result) {
-              authorizationUrl = (result as any).url as string;
-            }
-          } catch (err) {
-            console.error('Failed to prepare NextAuth sign-in URL:', err);
-          }
-        }
-
-        // Fallback: direct provider route on our domain
-        if (!authorizationUrl) {
-          authorizationUrl = `https://aastadelivery.vercel.app/api/auth/signin/google?prompt=select_account&callbackUrl=${encodeURIComponent(
-            absoluteCallbackUrl
-          )}`;
-        }
-
-        await openExternal(authorizationUrl);
+        // Always start OAuth at NextAuth's endpoint in the system browser
+        // so state/CSRF cookies are set in the same browser (Chrome Custom Tab)
+        const nextAuthInitUrl = `https://aastadelivery.vercel.app/api/auth/signin/google?prompt=select_account&callbackUrl=${encodeURIComponent(
+          absoluteCallbackUrl
+        )}`;
+        await Browser.open({ url: nextAuthInitUrl, presentationStyle: 'fullscreen' });
+        setIsLoading(false);
         return;
       }
 
@@ -192,13 +153,13 @@ export default function SignInPage() {
                 Terms of Service
               </a>{' '}
               and{' '}
-              <a
-                href="/privacy"
-                className="underline hover:no-underline"
-                style={{ color: '#002a01' }}
-              >
-                Privacy Policy
-              </a>
+                <a
+                  href="/privacy"
+                  className="underline hover:no-underline"
+                  style={{ color: '#002a01' }}
+                >
+                  Privacy Policy
+                </a>
             </p>
           </div>
 
