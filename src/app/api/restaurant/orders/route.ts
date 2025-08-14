@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
     const orders = await prisma.order.findMany({
       where: {
         restaurantId: restaurant.id,
+        paymentStatus: 'COMPLETED',
         status: {
           in: [
             'PLACED',
@@ -94,6 +95,7 @@ export async function GET(request: NextRequest) {
     const transformedOrders = orders.map((order) => ({
       id: order.id,
       orderNumber: order.orderNumber,
+      orderType: order.orderType,
       status: order.status,
       totalAmount: order.totalAmount,
       subtotal: order.subtotal,

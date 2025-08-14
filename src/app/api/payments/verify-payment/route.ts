@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import PaymentService from '@/lib/payment-service';
-import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,6 +31,7 @@ export async function POST(request: NextRequest) {
     // Find the payment first
     const existingPayment = await prisma.payment.findFirst({
       where: { razorpayOrderId: razorpay_order_id },
+      include: { order: true },
     });
 
     if (!existingPayment) {
@@ -51,18 +51,63 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update order status
-    await prisma.order.update({
+    // Mark order as paid
+    const updatedOrder = await prisma.order.update({
       where: { id: existingPayment.orderId },
       data: {
-        paymentStatus: 'completed',
+        paymentStatus: 'COMPLETED',
+      },
+      include: {
+        restaurant: true,
+        customer: { include: { user: true } },
+        deliveryAddress: true,
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      payment,
-    });
+    // If DELIVERY order, notify available delivery partners now
+    if (updatedOrder.orderType === 'DELIVERY') {
+      try {
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (botToken && updatedOrder.restaurant.assignedDeliveryPartners.length > 0) {
+          const { TelegramBotService } = await import('@/lib/telegram-bot-service');
+          const telegramBot = new TelegramBotService(botToken);
+
+          const partners = await prisma.deliveryPartner.findMany({
+            where: {
+              id: { in: updatedOrder.restaurant.assignedDeliveryPartners },
+              status: 'AVAILABLE',
+              telegramPhone: { not: null },
+            },
+            include: { user: true },
+          });
+
+          for (const partner of partners) {
+            if (partner.telegramPhone) {
+              await telegramBot.sendOrderNotificationWithDetails(
+                partner.telegramPhone,
+                updatedOrder.id,
+                updatedOrder.orderNumber,
+                updatedOrder.restaurant.name,
+                updatedOrder.restaurant.address,
+                updatedOrder.customer.user?.name || 'Customer',
+                updatedOrder.totalAmount,
+                updatedOrder.verificationCode,
+                updatedOrder.restaurant.latitude,
+                updatedOrder.restaurant.longitude,
+                updatedOrder.deliveryAddress.latitude || 0,
+                updatedOrder.deliveryAddress.longitude || 0,
+                `${updatedOrder.deliveryAddress.street}, ${updatedOrder.deliveryAddress.city}`,
+                (await prisma.orderItem.count({ where: { orderId: updatedOrder.id } }))
+              );
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to notify partners after payment:', e);
+      }
+    }
+
+    return NextResponse.json({ success: true, payment });
   } catch (error) {
     console.error('Payment verification failed:', error);
     return NextResponse.json(

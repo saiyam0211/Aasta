@@ -196,10 +196,10 @@ model Address {
   id           String      @id @default(cuid())
   customerId   String
   type         AddressType @default(HOME)
-  street       String
-  city         String
-  state        String
-  zipCode      String
+  street       String?
+  city         String?
+  state        String?
+  zipCode      String?
   latitude     Float?
   longitude    Float?
   landmark     String?
@@ -207,6 +207,11 @@ model Address {
   isDefault    Boolean     @default(false)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+
+  // New fields for richer address capture
+  houseNumber  String?
+  locality     String?
+  contactPhone String?
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   orders   Order[]
@@ -222,6 +227,7 @@ model Order {
   restaurantId              String
   deliveryPartnerId         String?
   deliveryAddressId         String
+  orderType                 OrderType   @default(DELIVERY)
   status                    OrderStatus @default(PLACED)
   subtotal                  Float
   deliveryFee               Float       @default(0)
@@ -559,6 +565,11 @@ enum OrderStatus {
   OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
+}
+
+enum OrderType{
+  DELIVERY
+  PICKUP
 }
 
 enum BatchStatus {

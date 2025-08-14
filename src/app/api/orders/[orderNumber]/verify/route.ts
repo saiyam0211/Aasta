@@ -87,11 +87,11 @@ export async function POST(
       );
     }
 
-    // Update order status to OUT_FOR_DELIVERY
+    // Update order status based on order type
     const updatedOrder = await prisma.order.update({
       where: { orderNumber },
       data: {
-        status: 'OUT_FOR_DELIVERY',
+        status: order.orderType === 'PICKUP' ? 'DELIVERED' : 'OUT_FOR_DELIVERY',
         updatedAt: new Date(),
       },
     });

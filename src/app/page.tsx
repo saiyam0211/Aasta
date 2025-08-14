@@ -283,6 +283,7 @@ export default function HomePage() {
         name: dish.name,
         price: dish.price,
         imageUrl: dish.image,
+        originalPrice: dish.originalPrice,
       },
       quantity,
       subtotal: dish.price * quantity,

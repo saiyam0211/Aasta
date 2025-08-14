@@ -70,6 +70,7 @@ export function HomeProductCardHorizontal({
         name: dish.name,
         price: dish.price,
         imageUrl: dish.image,
+        originalPrice: dish.originalPrice,
       },
       quantity: 1,
       subtotal: dish.price,

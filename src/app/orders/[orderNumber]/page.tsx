@@ -23,6 +23,22 @@ import {
 } from 'lucide-react';
 import CustomerLayout from '@/components/layouts/customer-layout';
 import { toast } from 'sonner';
+import { useSearchParams } from 'next/navigation';
+
+function formatEta(iso: string | null): string | null {
+  if (!iso) return null;
+  const target = new Date(iso);
+  const now = new Date();
+  const mins = Math.max(1, Math.round((target.getTime() - now.getTime()) / 60000));
+  const timeStr = target.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return `${mins} mins • ~${timeStr}`;
+}
+
+function carbonSavedKg(distanceKm?: number | null): number {
+  if (!distanceKm || distanceKm <= 0) return 0;
+  const gramsPerKm = 120; // Approx CO2 for a small petrol car per km
+  return (distanceKm * gramsPerKm) / 1000; // kg
+}
 
 interface OrderItem {
   id: string;
@@ -56,6 +72,9 @@ interface Order {
     phone: string;
     address: string;
   };
+  deliveryDistance?: number; // Added for carbon emission calculation
+  orderType?: string; // Added for order type
+  estimatedPreparationTime?: number; // Added for preparation time
 }
 
 const orderStatusSteps = {
@@ -78,16 +97,23 @@ const orderStatusSteps = {
 export default function OrderTrackingPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [isProcessingRefund, setIsProcessingRefund] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     if (params?.orderNumber) {
       fetchOrder();
     }
   }, [params?.orderNumber]);
+
+  useEffect(() => {
+    const p = searchParams?.get('payment');
+    if (p === 'success') setShowCelebration(true);
+  }, [searchParams]);
 
   const fetchOrder = async () => {
     try {
@@ -224,6 +250,46 @@ export default function OrderTrackingPage() {
   return (
     <CustomerLayout>
       <div className="mx-auto max-w-4xl px-4 py-6">
+        {/* Celebration Popup */}
+        {showCelebration && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="relative w-[80%] max-w-md rounded-3xl bg-white p-6 text-center shadow-2xl">
+              <div className="absolute -top-4 left-1/2 h-2 w-24 -translate-x-1/2 rounded-full bg-[#D2F86A]" />
+              <div className="mb-3 text-3xl">🎉</div>
+              <h3 className="mb-2 text-xl font-bold text-gray-900">Order Confirmed!</h3>
+              {order.deliveryFee > 0 ? (
+                <p className="mb-2 text-sm text-gray-700">
+                  Thanks for your payment. Your food is on its way.
+                </p>
+              ) : (
+                <p className="mb-2 text-sm text-gray-700">
+                  Thanks for your payment. We’ll notify you when it’s ready for pickup.
+                </p>
+              )}
+              {order.deliveryFee > 0 ? (
+                <div className="mb-3 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+                  ETA: {formatEta(order.estimatedDeliveryTime) || 'Soon'}
+                </div>
+              ) : (
+                <div className="mb-3 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+                  Prep time: {Math.max(10, (order as any).estimatedPreparationTime || 20)} mins
+                </div>
+              )}
+               {order.deliveryFee === 0 && order.verificationCode && (
+                <div className="mb-3 rounded-xl border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+                  Show this code at the counter: <span className="font-mono text-lg font-bold">{order.verificationCode}</span>
+                </div>
+              )}
+              {/* Carbon saved */}
+              <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+                You saved ~{carbonSavedKg((order as any).deliveryDistance).toFixed(2)} kg CO₂ by not driving to the restaurant.
+              </div>
+              <Button className="h-10 rounded-xl bg-[#fd6923] text-white" onClick={() => setShowCelebration(false)}>
+                Continue
+              </Button>
+            </div>
+          </div>
+        )}
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>

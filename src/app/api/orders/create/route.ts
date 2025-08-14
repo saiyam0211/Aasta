@@ -212,6 +212,7 @@ export async function POST(request: NextRequest) {
           calculatedDeliveryTime || new Date(Date.now() + 45 * 60 * 1000), // Use calculated time or fallback to 45 minutes
         deliveryDistance: deliveryDistance, // Store calculated distance in km
         estimatedDeliveryDuration: estimatedDeliveryDuration, // Store calculated ETA in minutes
+        orderType: deliveryFee > 0 ? 'DELIVERY' : 'PICKUP',
         verificationCode: verificationCode,
         orderItems: {
           create: cart.items.map((item: any) => {
@@ -251,85 +252,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send notifications to ALL available delivery partners assigned to this restaurant
-    try {
-      if (restaurant.assignedDeliveryPartners.length > 0) {
-        // Find available delivery partners assigned to this restaurant
-        const availablePartners = await prisma.deliveryPartner.findMany({
-          where: {
-            id: { in: restaurant.assignedDeliveryPartners },
-            status: 'AVAILABLE',
-            telegramChatId: { not: null }, // Only partners with Telegram registered
-          },
-          include: {
-            user: true,
-          },
-        });
-
-        if (availablePartners.length > 0) {
-          // Send notification to ALL available partners
-          const botToken = process.env.TELEGRAM_BOT_TOKEN;
-          if (botToken) {
-            const { TelegramBotService } = await import(
-              '@/lib/telegram-bot-service'
-            );
-            const telegramBot = new TelegramBotService(botToken);
-
-            let notificationsSent = 0;
-
-            for (const partner of availablePartners) {
-              if (partner.telegramPhone) {
-                try {
-                  await telegramBot.sendOrderNotificationWithDetails(
-                    partner.telegramPhone,
-                    order.id,
-                    order.orderNumber,
-                    restaurant.name,
-                    restaurant.address,
-                    customer.user?.name || 'Anonymous',
-                    order.totalAmount,
-                    verificationCode,
-                    restaurant.latitude,
-                    restaurant.longitude,
-                    createdDeliveryAddress.latitude || 0,
-                    createdDeliveryAddress.longitude || 0,
-                    `${createdDeliveryAddress.street}, ${createdDeliveryAddress.city}`,
-                    order.orderItems.length
-                  );
-                  notificationsSent++;
-                  console.log(
-                    `Order notification sent to partner ${partner.user?.name}`
-                  );
-                } catch (notificationError) {
-                  console.error(
-                    `Failed to send Telegram notification to partner ${partner.user?.name}:`,
-                    notificationError
-                  );
-                }
-              }
-            }
-
-            console.log(
-              `Order ${order.orderNumber} notifications sent to ${notificationsSent} available delivery partners`
-            );
-          }
-        } else {
-          console.log(
-            `No available delivery partners found for restaurant ${restaurant.name}. Order ${order.orderNumber} will remain unassigned.`
-          );
-        }
-      } else {
-        console.log(
-          `No delivery partners assigned to restaurant ${restaurant.name}. Order ${order.orderNumber} will remain unassigned.`
-        );
-      }
-    } catch (assignmentError) {
-      console.error(
-        'Error sending notifications to delivery partners:',
-        assignmentError
-      );
-      // Don't fail the order creation if assignment fails
-    }
+    // Note: Do not notify delivery partners here. Notifications should be sent only after payment confirmation.
 
     return NextResponse.json({ success: true, order });
   } catch (error) {

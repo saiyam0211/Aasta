@@ -83,9 +83,7 @@ export async function GET(
         new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       createdAt: order.createdAt.toISOString(),
       verificationCode:
-        order.status === 'OUT_FOR_DELIVERY'
-          ? order.verificationCode
-          : undefined,
+        order.verificationCode || undefined,
       items: order.orderItems.map((item) => ({
         id: item.id,
         menuItemId: item.menuItemId,
@@ -98,6 +96,9 @@ export async function GET(
         },
       })),
       restaurant: order.restaurant,
+      deliveryDistance: order.deliveryDistance,
+      estimatedPreparationTime: order.estimatedPreparationTime,
+      orderType: order.orderType,
     };
 
     return NextResponse.json({
