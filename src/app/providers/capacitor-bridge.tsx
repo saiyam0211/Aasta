@@ -19,6 +19,11 @@ export default function CapacitorBridge() {
 			const url = data?.url ?? '';
 			try {
 				const parsed = new URL(url);
+				if (parsed.protocol === 'aasta:') {
+					const to = parsed.searchParams.get('to') || '/customer';
+					window.location.href = `${APP_ORIGIN}${to.startsWith('/') ? to : `/${to}`}`;
+					return;
+				}
 				if (parsed.host === APP_HOST) {
 					window.location.href = url;
 				}
@@ -34,14 +39,19 @@ export default function CapacitorBridge() {
 			try {
 				const parsed = new URL(url);
 				if (parsed.host !== APP_HOST) return;
+				const path = parsed.pathname;
 				const hasCode = parsed.searchParams.has('code');
-				const hasError = parsed.searchParams.has('error');
-				const isCallback = parsed.pathname.startsWith('/api/auth/callback');
-				// Only intercept when coming back from Google (code or error or explicit callback)
-				if (isCallback || hasCode || hasError) {
+				const isCallback = path.startsWith('/api/auth/callback');
+				const isFinalLanding = path === '/' || path === '/customer';
+				const isSigninPage = path.startsWith('/auth/signin');
+				// Intercept only final or callback steps, not the initial provider selection page
+				if ((isCallback || hasCode || isFinalLanding) && !isSigninPage) {
 					try { await Browser.close(); } catch {}
-					// Load the exact URL in WebView so NextAuth can process cookies/session here
-					window.location.href = url;
+					if (isFinalLanding) {
+						window.location.href = `${APP_ORIGIN}/customer`;
+					} else {
+						window.location.href = url;
+					}
 				}
 			} catch {}
 		});
@@ -49,7 +59,6 @@ export default function CapacitorBridge() {
 
 		// When the browser is closed manually, try to land the user in-app
 		const finishedSub = Browser.addListener('browserFinished', () => {
-			// Navigate to customer; if session is set, it will show, else no harm
 			window.location.href = `${APP_ORIGIN}/customer`;
 		});
 		listenerHandles.push(finishedSub);

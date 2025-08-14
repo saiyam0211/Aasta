@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
 
 export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -20,22 +19,41 @@ export default function SignInPage() {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      const callbackPath = '/customer';
+      const finalDestination = '/customer';
+      const callbackPath = `/bridge/native-return?to=${encodeURIComponent(finalDestination)}`;
       const absoluteCallbackUrl = `https://aastadelivery.vercel.app${callbackPath}`;
 
       if (Capacitor.isNativePlatform()) {
-        // Always start OAuth at NextAuth's endpoint in the system browser
-        // so state/CSRF cookies are set in the same browser (Chrome Custom Tab)
-        const nextAuthInitUrl = `https://aastadelivery.vercel.app/api/auth/signin/google?prompt=select_account&callbackUrl=${encodeURIComponent(
-          absoluteCallbackUrl
-        )}`;
-        await Browser.open({ url: nextAuthInitUrl, presentationStyle: 'fullscreen' });
+        // Ask NextAuth for the provider auth URL without redirecting the WebView
+        let providerUrl: string | null = null;
+        try {
+          const result = await signIn('google', {
+            callbackUrl: absoluteCallbackUrl,
+            redirect: false,
+          });
+          if (result && typeof result === 'object' && 'url' in result) {
+            providerUrl = (result as any).url as string;
+          }
+        } catch (err) {
+          console.error('Failed to get provider URL:', err);
+        }
+
+        // Fallback: start via NextAuth endpoint
+        if (!providerUrl) {
+          providerUrl = `https://aastadelivery.vercel.app/api/auth/signin/google?prompt=select_account&callbackUrl=${encodeURIComponent(
+            absoluteCallbackUrl
+          )}`;
+        }
+
+        // Open in Custom Tab (system browser); we'll jump back via custom scheme
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.open({ url: providerUrl, presentationStyle: 'fullscreen' });
         setIsLoading(false);
         return;
       }
 
       // Web fallback: normal NextAuth redirect
-      await signIn('google', { callbackUrl: callbackPath, redirect: true });
+      await signIn('google', { callbackUrl: finalDestination, redirect: true });
     } catch (error) {
       console.error('Sign in error:', error);
       setIsLoading(false);
@@ -153,13 +171,13 @@ export default function SignInPage() {
                 Terms of Service
               </a>{' '}
               and{' '}
-                <a
-                  href="/privacy"
-                  className="underline hover:no-underline"
-                  style={{ color: '#002a01' }}
-                >
-                  Privacy Policy
-                </a>
+              <a
+                href="/privacy"
+                className="underline hover:no-underline"
+                style={{ color: '#002a01' }}
+              >
+                Privacy Policy
+              </a>
             </p>
           </div>
 

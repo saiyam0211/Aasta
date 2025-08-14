@@ -45,6 +45,14 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="aastadelivery.vercel.app" android:pathPrefix="/" />
             </intent-filter>
+
+            <!-- Custom scheme to jump back from Chrome to the app -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="aasta" android:host="callback" />
+            </intent-filter>
         </activity>
 
         <provider
