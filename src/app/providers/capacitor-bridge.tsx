@@ -41,11 +41,11 @@ export default function CapacitorBridge() {
 				if (parsed.host !== APP_HOST) return;
 				const path = parsed.pathname;
 				const hasCode = parsed.searchParams.has('code');
+				const hasError = parsed.searchParams.has('error');
 				const isCallback = path.startsWith('/api/auth/callback');
 				const isFinalLanding = path === '/' || path === '/customer';
-				const isSigninPage = path.startsWith('/auth/signin');
-				// Intercept only final or callback steps, not the initial provider selection page
-				if ((isCallback || hasCode || isFinalLanding) && !isSigninPage) {
+				// Intercept final, callback, or error pages and bring them into WebView
+				if (isCallback || hasCode || hasError || isFinalLanding) {
 					try { await Browser.close(); } catch {}
 					if (isFinalLanding) {
 						window.location.href = `${APP_ORIGIN}/customer`;
