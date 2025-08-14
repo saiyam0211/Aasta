@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "924186564951",
+    "project_id": "devitup-f0e67",
+    "storage_bucket": "devitup-f0e67.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:924186564951:android:c81ecbaac2da4d621b0612",
+        "android_client_info": {
+          "package_name": "food.aasta.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "924186564951-eign0h75mf5cqfi7vfk1lbbr03flv2uo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "food.aasta.app",
+            "certificate_hash": "c75fe5df6cc0fc3878f53a73ff2bf2b2ddf6e978"
+          }
+        },
+        {
+          "client_id": "924186564951-p2djdmaljr2op8nv3luvd6fel96atk3q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANO0a30nrIVWl9cNaGzCfVRYDfPq3yvUI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "924186564951-p2djdmaljr2op8nv3luvd6fel96atk3q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "924186564951-t0uc6uc4maes65drcghftlvpjtikp8rr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "in.devitup"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:924186564951:android:659520f5216191ab1b0612",
+        "android_client_info": {
+          "package_name": "in.devitup"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "924186564951-p2djdmaljr2op8nv3luvd6fel96atk3q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANO0a30nrIVWl9cNaGzCfVRYDfPq3yvUI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "924186564951-p2djdmaljr2op8nv3luvd6fel96atk3q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "924186564951-t0uc6uc4maes65drcghftlvpjtikp8rr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "in.devitup"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

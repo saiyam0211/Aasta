@@ -3,6 +3,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { OAuth2Client } from 'google-auth-library';
 // import { UserRole } from '@prisma/client'; // Will uncomment after Prisma client generation
 
 // Hardcoded admin credentials
@@ -11,6 +12,9 @@ const ADMIN_CREDENTIALS = {
   password: '@asta.food',
   name: 'Aasta Admin',
 };
+
+const GOOGLE_WEB_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!; // Web client used to verify ID tokens
+const googleClient = new OAuth2Client(GOOGLE_WEB_CLIENT_ID);
 
 export const authOptions: NextAuthOptions = {
   // Remove adapter to avoid OAuthAccountNotLinked errors
@@ -26,6 +30,59 @@ export const authOptions: NextAuthOptions = {
           access_type: 'offline',
           response_type: 'code',
         },
+      },
+    }),
+    // Native Android Google sign-in via Capacitor (ID token verification)
+    CredentialsProvider({
+      id: 'native-google',
+      name: 'Native Google',
+      credentials: {
+        idToken: { label: 'idToken', type: 'text' },
+      },
+      async authorize(credentials) {
+        try {
+          const idToken = credentials?.idToken;
+          if (!idToken) return null;
+
+          // Verify ID token
+          const ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: GOOGLE_WEB_CLIENT_ID,
+          });
+          const payload = ticket.getPayload();
+          if (!payload || !payload.email) return null;
+
+          const email = payload.email;
+          const name = payload.name || email.split('@')[0];
+          const image = payload.picture || undefined;
+          const googleId = payload.sub;
+
+          // Find or create user
+          let user = await prisma.user.findUnique({ where: { email } });
+          if (!user) {
+            user = await prisma.user.create({
+              data: {
+                email,
+                name,
+                image,
+                googleId,
+                role: 'CUSTOMER',
+              },
+            });
+            await prisma.customer.create({ data: { userId: user.id, favoriteRestaurants: [] } });
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+            role: user.role,
+          } as any;
+        } catch (e) {
+          console.error('Native Google authorize error:', e);
+          return null;
+        }
       },
     }),
     CredentialsProvider({
@@ -129,7 +186,7 @@ export const authOptions: NextAuthOptions = {
               email: user.email,
               name: user.name,
               image: (user as any).image,
-              googleId: account?.providerAccountId,
+              googleId: (account as any)?.providerAccountId,
               role: 'CUSTOMER', // Default role, can be updated later
             },
           });

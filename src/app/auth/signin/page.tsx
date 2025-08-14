@@ -20,17 +20,25 @@ export default function SignInPage() {
     try {
       setIsLoading(true);
       const finalDestination = '/customer';
-      const callbackPath = `/bridge/native-return?to=${encodeURIComponent(finalDestination)}`;
-      const absoluteCallbackUrl = `https://aastadelivery.vercel.app${callbackPath}`;
 
       if (Capacitor.isNativePlatform()) {
-        // Start OAuth directly at NextAuth endpoint in the system browser (Custom Tab)
-        // so state/PKCE cookies are set in the same browser that handles the callback.
-        const nextAuthInitUrl = `https://aastadelivery.vercel.app/api/auth/signin/google?prompt=select_account&callbackUrl=${encodeURIComponent(
-          absoluteCallbackUrl
-        )}`;
-        const { Browser } = await import('@capacitor/browser');
-        await Browser.open({ url: nextAuthInitUrl, presentationStyle: 'fullscreen' });
+        // Native Google Sign-In (no browser)
+        const { GoogleAuth } = await import('@capacitor/google-auth');
+        await GoogleAuth.initialize({
+          scopes: ['profile', 'email', 'openid'],
+          grantOfflineAccess: true,
+          forceCodeForRefreshToken: false,
+        } as any);
+        const result = await GoogleAuth.signIn();
+        const idToken = (result as any)?.idToken;
+        if (!idToken) throw new Error('No idToken from Google');
+
+        const next = await signIn('native-google', {
+          idToken,
+          redirect: true,
+          callbackUrl: finalDestination,
+        });
+        // next-auth will redirect in WebView
         setIsLoading(false);
         return;
       }
