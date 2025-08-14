@@ -45,7 +45,7 @@ export const authOptions: NextAuthOptions = {
             email: ADMIN_CREDENTIALS.email,
             name: ADMIN_CREDENTIALS.name,
             role: 'ADMIN',
-          };
+          } as any;
         }
         return null;
       },
@@ -90,7 +90,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             role: user.role,
-          };
+          } as any;
         } catch (error) {
           console.error('Restaurant auth error:', error);
           return null;
@@ -112,7 +112,7 @@ export const authOptions: NextAuthOptions = {
         if (!user.email) return false;
 
         // Handle admin user - don't create database entry
-        if (user.role === 'ADMIN') {
+        if ((user as any).role === 'ADMIN') {
           return true;
         }
 
@@ -128,7 +128,7 @@ export const authOptions: NextAuthOptions = {
             data: {
               email: user.email,
               name: user.name,
-              image: user.image,
+              image: (user as any).image,
               googleId: account?.providerAccountId,
               role: 'CUSTOMER', // Default role, can be updated later
             },
@@ -152,19 +152,19 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       // Set initial data on first login
       if (user) {
-        token.email = user.email;
-        token.name = user.name;
+        token.email = (user as any).email;
+        token.name = (user as any).name;
 
         // Handle admin user - don't query database
-        if (user.role === 'ADMIN') {
-          token.id = 'admin';
-          token.role = 'ADMIN';
+        if ((user as any).role === 'ADMIN') {
+          (token as any).id = 'admin';
+          (token as any).role = 'ADMIN';
           return token;
         }
       }
 
       // Handle admin token on subsequent requests
-      if (token.email === ADMIN_CREDENTIALS.email && token.role === 'ADMIN') {
+      if ((token as any).email === ADMIN_CREDENTIALS.email && (token as any).role === 'ADMIN') {
         return token;
       }
 
@@ -180,19 +180,19 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (dbUser) {
-            token.id = dbUser.id;
-            token.role = dbUser.role;
-            token.phone = dbUser.phone;
+            (token as any).id = dbUser.id;
+            (token as any).role = dbUser.role;
+            (token as any).phone = dbUser.phone as any;
             token.email = dbUser.email;
 
             // Add role-specific data
             if (dbUser.role === 'CUSTOMER' && dbUser.customer) {
-              token.customerId = dbUser.customer.id;
+              (token as any).customerId = dbUser.customer.id;
             } else if (
               dbUser.role === 'DELIVERY_PARTNER' &&
               dbUser.deliveryPartner
             ) {
-              token.deliveryPartnerId = dbUser.deliveryPartner.id;
+              (token as any).deliveryPartnerId = dbUser.deliveryPartner.id;
             } else if (dbUser.role === 'RESTAURANT_OWNER') {
               // For restaurant owners, we'll fetch the restaurant separately to avoid schema issues
               const restaurant = await prisma.restaurant.findUnique({
@@ -200,7 +200,7 @@ export const authOptions: NextAuthOptions = {
                 select: { id: true },
               });
               if (restaurant) {
-                token.restaurantId = restaurant.id;
+                (token as any).restaurantId = restaurant.id;
               }
             }
           }
@@ -214,40 +214,32 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as any;
-        session.user.phone = token.phone as string;
+        (session.user as any).id = (token as any).id as string;
+        (session.user as any).role = (token as any).role as any;
+        (session.user as any).phone = (token as any).phone as string;
         session.user.email = token.email as string;
-        session.user.customerId = token.customerId as string;
-        session.user.deliveryPartnerId = token.deliveryPartnerId as string;
-        session.user.restaurantId = token.restaurantId as string;
+        (session.user as any).customerId = (token as any).customerId as string;
+        (session.user as any).deliveryPartnerId = (token as any).deliveryPartnerId as string;
+        (session.user as any).restaurantId = (token as any).restaurantId as string;
       }
       return session;
     },
     async redirect({ url, baseUrl }) {
-      console.log('Redirect URL:', url, 'Base URL:', baseUrl);
-
-      // If the URL is from our domain, allow it
-      if (url.startsWith(baseUrl)) {
-        return url;
+      try {
+        // If the URL is relative, resolve it against baseUrl (preserve /bridge/native-return)
+        if (url.startsWith('/')) {
+          return new URL(url, baseUrl).toString();
+        }
+        // If URL is same-origin, allow it
+        const base = new URL(baseUrl);
+        const target = new URL(url);
+        if (target.origin === base.origin) {
+          return url;
+        }
+      } catch (e) {
+        // If URL parsing fails, fall through to baseUrl
       }
-
-      // Check if this is admin sign-in
-      if (url.includes('/admin/') || url.includes('admin')) {
-        return `${baseUrl}/admin/dashboard`;
-      }
-
-      // Check if this is a restaurant sign-in by looking at the referrer or URL
-      if (url.includes('/restaurant/') || url.includes('restaurant')) {
-        return `${baseUrl}/restaurant/dashboard`;
-      }
-
-      // Check if this is a delivery partner sign-in
-      if (url.includes('/delivery/') || url.includes('delivery')) {
-        return `${baseUrl}/delivery/dashboard`;
-      }
-
-      // Default to home page for customers
+      // For external domains, block and return to base
       return baseUrl;
     },
   },
