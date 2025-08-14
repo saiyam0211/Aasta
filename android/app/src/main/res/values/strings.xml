@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">aasta</string>
+    <string name="title_activity_main">aasta</string>
+    <string name="package_name">food.aasta.app</string>
+    <string name="custom_url_scheme">food.aasta.app</string>
+</resources>

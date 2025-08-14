@@ -11,6 +11,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,10 +20,15 @@ export default function SignInPage() {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signIn('google', {
-        callbackUrl: '/',
-        redirect: true,
-      });
+      const callbackUrl = '/customer';
+      if (Capacitor.isNativePlatform()) {
+        // Open system browser for OAuth
+        const url = `https://aastadelivery.vercel.app/api/auth/signin/google?callbackUrl=${encodeURIComponent('https://aastadelivery.vercel.app' + callbackUrl)}`;
+        await Browser.open({ url, presentationStyle: 'fullscreen' });
+        setIsLoading(false);
+      } else {
+        await signIn('google', { callbackUrl, redirect: true });
+      }
     } catch (error) {
       console.error('Sign in error:', error);
       setIsLoading(false);
