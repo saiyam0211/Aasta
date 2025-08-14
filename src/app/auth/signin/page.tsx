@@ -22,28 +22,28 @@ export default function SignInPage() {
       const finalDestination = '/customer';
 
       if (Capacitor.isNativePlatform()) {
-        // Native Google Sign-In (no browser)
-        const { GoogleAuth } = await import('@capacitor/google-auth');
-        await GoogleAuth.initialize({
-          scopes: ['profile', 'email', 'openid'],
-          grantOfflineAccess: true,
-          forceCodeForRefreshToken: false,
-        } as any);
-        const result = await GoogleAuth.signIn();
-        const idToken = (result as any)?.idToken;
-        if (!idToken) throw new Error('No idToken from Google');
+        try {
+          const { GoogleAuth } = await import('@capacitor/google-auth');
+          await GoogleAuth.initialize({
+            clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID as string,
+            scopes: ['profile', 'email', 'openid'],
+          } as any);
+          const res = await GoogleAuth.signIn();
+          const idToken = (res as any)?.authentication?.idToken || (res as any)?.idToken;
+          if (!idToken) throw new Error('No idToken from Google');
 
-        const next = await signIn('native-google', {
-          idToken,
-          redirect: true,
-          callbackUrl: finalDestination,
-        });
-        // next-auth will redirect in WebView
-        setIsLoading(false);
-        return;
+          await signIn('native-google', {
+            idToken,
+            redirect: true,
+            callbackUrl: finalDestination,
+          });
+          setIsLoading(false);
+          return;
+        } catch (e) {
+          console.error('Native Google sign-in failed, falling back to web:', e);
+        }
       }
 
-      // Web fallback: normal NextAuth redirect
       await signIn('google', { callbackUrl: finalDestination, redirect: true });
     } catch (error) {
       console.error('Sign in error:', error);
