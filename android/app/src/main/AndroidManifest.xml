@@ -27,7 +27,15 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="aastadelivery.vercel.app" android:pathPattern="/api/auth/callback/.*" />
+                <data android:scheme="https" android:host="aastadelivery.vercel.app" android:pathPrefix="/api/auth/callback" />
+            </intent-filter>
+
+            <!-- Base URL deep link as a fallback to capture final redirects to home -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="aastadelivery.vercel.app" android:pathPrefix="/" />
             </intent-filter>
         </activity>
 
