@@ -24,30 +24,13 @@ export default function SignInPage() {
       const absoluteCallbackUrl = `https://aastadelivery.vercel.app${callbackPath}`;
 
       if (Capacitor.isNativePlatform()) {
-        // Ask NextAuth for the provider auth URL without redirecting the WebView
-        let providerUrl: string | null = null;
-        try {
-          const result = await signIn('google', {
-            callbackUrl: absoluteCallbackUrl,
-            redirect: false,
-          });
-          if (result && typeof result === 'object' && 'url' in result) {
-            providerUrl = (result as any).url as string;
-          }
-        } catch (err) {
-          console.error('Failed to get provider URL:', err);
-        }
-
-        // Fallback: start via NextAuth endpoint
-        if (!providerUrl) {
-          providerUrl = `https://aastadelivery.vercel.app/api/auth/signin/google?prompt=select_account&callbackUrl=${encodeURIComponent(
-            absoluteCallbackUrl
-          )}`;
-        }
-
-        // Open in Custom Tab (system browser); we'll jump back via custom scheme
+        // Start OAuth directly at NextAuth endpoint in the system browser (Custom Tab)
+        // so state/PKCE cookies are set in the same browser that handles the callback.
+        const nextAuthInitUrl = `https://aastadelivery.vercel.app/api/auth/signin/google?prompt=select_account&callbackUrl=${encodeURIComponent(
+          absoluteCallbackUrl
+        )}`;
         const { Browser } = await import('@capacitor/browser');
-        await Browser.open({ url: providerUrl, presentationStyle: 'fullscreen' });
+        await Browser.open({ url: nextAuthInitUrl, presentationStyle: 'fullscreen' });
         setIsLoading(false);
         return;
       }
@@ -74,7 +57,7 @@ export default function SignInPage() {
         }}
       >
         <CardHeader className="space-y-1 text-center">
-          {/* Aasta Logo */}
+          {/* Asta Logo */}
           <div className="mb-6 flex justify-center">
             <div
               className="flex h-20 w-20 items-center justify-center"
