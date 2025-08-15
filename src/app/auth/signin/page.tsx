@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
 
 export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -19,32 +18,10 @@ export default function SignInPage() {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      const finalDestination = '/customer';
-
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const { GoogleAuth } = await import('@capacitor/google-auth');
-          await GoogleAuth.initialize({
-            clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID as string,
-            scopes: ['profile', 'email', 'openid'],
-          } as any);
-          const res = await GoogleAuth.signIn();
-          const idToken = (res as any)?.authentication?.idToken || (res as any)?.idToken;
-          if (!idToken) throw new Error('No idToken from Google');
-
-          await signIn('native-google', {
-            idToken,
-            redirect: true,
-            callbackUrl: finalDestination,
-          });
-          setIsLoading(false);
-          return;
-        } catch (e) {
-          console.error('Native Google sign-in failed, falling back to web:', e);
-        }
-      }
-
-      await signIn('google', { callbackUrl: finalDestination, redirect: true });
+      await signIn('google', {
+        callbackUrl: '/',
+        redirect: true,
+      });
     } catch (error) {
       console.error('Sign in error:', error);
       setIsLoading(false);
@@ -65,7 +42,7 @@ export default function SignInPage() {
         }}
       >
         <CardHeader className="space-y-1 text-center">
-          {/* Asta Logo */}
+          {/* Aasta Logo */}
           <div className="mb-6 flex justify-center">
             <div
               className="flex h-20 w-20 items-center justify-center"

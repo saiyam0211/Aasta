@@ -258,8 +258,14 @@ export default function CheckoutPage() {
                             setSelectedAddressId(value);
                             setDeliveryAddress({
                               address: `${selectedAddr.street}, ${selectedAddr.city}, ${selectedAddr.state} ${selectedAddr.zipCode}`,
-                              latitude: 0, // You might want to geocode this
-                              longitude: 0,
+                              latitude:
+                                (selectedAddr as any).latitude ??
+                                currentLocation?.latitude ??
+                                0,
+                              longitude:
+                                (selectedAddr as any).longitude ??
+                                currentLocation?.longitude ??
+                                0,
                               instructions: selectedAddr.instructions || '',
                             });
                           }

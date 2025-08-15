@@ -98,9 +98,9 @@ export default function HomePage() {
     }
 
     if (!latitude || !longitude) setShowLocationPrompt(true);
-    // Load popular content on initial mount
+    // Load popular content on initial mount and when location becomes available
     loadPopularContent();
-  }, [session, status]);
+  }, [session, status, latitude, longitude]);
 
   const loadPopularContent = async () => {
     try {

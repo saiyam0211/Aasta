@@ -68,8 +68,13 @@ export async function POST(request: NextRequest) {
     if (updatedOrder.orderType === 'DELIVERY') {
       try {
         const botToken = process.env.TELEGRAM_BOT_TOKEN;
-        if (botToken && updatedOrder.restaurant.assignedDeliveryPartners.length > 0) {
-          const { TelegramBotService } = await import('@/lib/telegram-bot-service');
+        if (
+          botToken &&
+          updatedOrder.restaurant.assignedDeliveryPartners.length > 0
+        ) {
+          const { TelegramBotService } = await import(
+            '@/lib/telegram-bot-service'
+          );
           const telegramBot = new TelegramBotService(botToken);
 
           const partners = await prisma.deliveryPartner.findMany({
@@ -97,7 +102,9 @@ export async function POST(request: NextRequest) {
                 updatedOrder.deliveryAddress.latitude || 0,
                 updatedOrder.deliveryAddress.longitude || 0,
                 `${updatedOrder.deliveryAddress.street}, ${updatedOrder.deliveryAddress.city}`,
-                (await prisma.orderItem.count({ where: { orderId: updatedOrder.id } }))
+                await prisma.orderItem.count({
+                  where: { orderId: updatedOrder.id },
+                })
               );
             }
           }

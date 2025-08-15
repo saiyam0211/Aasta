@@ -6,11 +6,11 @@ const config: CapacitorConfig = {
   webDir: 'public',
   server: {
     url: 'https://aastadelivery.vercel.app',
-    cleartext: false
+    cleartext: false,
   },
   android: {
-    allowMixedContent: false
-  }
+    allowMixedContent: false,
+  },
 };
 
 export default config;

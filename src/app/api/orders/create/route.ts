@@ -18,7 +18,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { cart, deliveryAddress } = body;
+    const { cart, deliveryAddress, orderType } = body as any;
+    const isPickup = orderType === 'PICKUP';
 
     const userId = session.user.id;
 
@@ -30,8 +31,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate delivery address
-    if (!deliveryAddress || !deliveryAddress.address) {
+    // Validate delivery address only for delivery orders
+    if (!isPickup && (!deliveryAddress || !deliveryAddress.address)) {
       return NextResponse.json(
         { success: false, error: 'Delivery address is required' },
         { status: 400 }
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
     }, 0);
 
     const taxes = subtotal * 0.05; // 5% tax
-    const deliveryFee = cart.deliveryFee || 25;
+    const deliveryFee = isPickup ? 0 : (cart.deliveryFee ?? 25);
     const total = subtotal + taxes + deliveryFee;
 
     // Check minimum order amount
@@ -119,17 +120,24 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create delivery address
+    // Create delivery/pickup address (store for record)
     const createdDeliveryAddress = await prisma.address.create({
       data: {
         customerId: customer.id,
-        type: 'OTHER',
-        street: deliveryAddress.address,
-        city: deliveryAddress.city || 'Bengaluru',
-        state: deliveryAddress.state || 'Karnataka',
-        zipCode: deliveryAddress.zipCode || '560001',
-        latitude: deliveryAddress.latitude || 0,
-        longitude: deliveryAddress.longitude || 0,
+        type: isPickup ? 'WORK' : 'OTHER',
+        street:
+          (deliveryAddress && deliveryAddress.address) ||
+          restaurant.address ||
+          'Pickup at restaurant',
+        city: (deliveryAddress && deliveryAddress.city) || 'Bengaluru',
+        state: (deliveryAddress && deliveryAddress.state) || 'Karnataka',
+        zipCode: (deliveryAddress && deliveryAddress.zipCode) || '560001',
+        latitude: isPickup
+          ? restaurant.latitude || 0
+          : (deliveryAddress && deliveryAddress.latitude) || 0,
+        longitude: isPickup
+          ? restaurant.longitude || 0
+          : (deliveryAddress && deliveryAddress.longitude) || 0,
         isDefault: false,
       },
     });
@@ -140,51 +148,57 @@ export async function POST(request: NextRequest) {
     let calculatedDeliveryTime: Date | null = null;
 
     try {
-      // Validate coordinates before making API call
-      const restaurantLat = restaurant.latitude;
-      const restaurantLng = restaurant.longitude;
-      const customerLat = createdDeliveryAddress.latitude || 0;
-      const customerLng = createdDeliveryAddress.longitude || 0;
+      if (!isPickup) {
+        // Validate coordinates before making API call
+        const restaurantLat: number = Number(restaurant.latitude || 0);
+        const restaurantLng: number = Number(restaurant.longitude || 0);
+        const customerLat: number = Number(
+          createdDeliveryAddress.latitude || 0
+        );
+        const customerLng: number = Number(
+          createdDeliveryAddress.longitude || 0
+        );
 
-      // Validate coordinates
-      const isValidCoordinate = (lat: number, lng: number) => {
-        return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
-      };
+        // Validate coordinates
+        const isValidCoordinate = (lat: number, lng: number): boolean => {
+          return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+        };
 
-      if (
-        isValidCoordinate(restaurantLat, restaurantLng) &&
-        isValidCoordinate(customerLat, customerLng) &&
-        customerLat !== 0 &&
-        customerLng !== 0
-      ) {
-        console.log(`Calculating delivery metrics for order ${orderNumber}`);
-        console.log(`Restaurant: ${restaurantLat}, ${restaurantLng}`);
-        console.log(`Customer: ${customerLat}, ${customerLng}`);
+        if (
+          isValidCoordinate(restaurantLat, restaurantLng) &&
+          isValidCoordinate(customerLat, customerLng) &&
+          customerLat !== 0 &&
+          customerLng !== 0
+        ) {
+          console.log(`Calculating delivery metrics for order ${orderNumber}`);
+          console.log(`Restaurant: ${restaurantLat}, ${restaurantLng}`);
+          console.log(`Customer: ${customerLat}, ${customerLng}`);
 
-        const deliveryCalculation =
-          await googleMapsService.calculateDeliveryMetrics(
-            restaurantLat,
-            restaurantLng,
-            customerLat,
-            customerLng,
-            restaurant.averagePreparationTime
+          const deliveryCalculation =
+            await googleMapsService.calculateDeliveryMetrics(
+              restaurantLat,
+              restaurantLng,
+              customerLat,
+              customerLng,
+              restaurant.averagePreparationTime
+            );
+
+          deliveryDistance = Number(deliveryCalculation.distance || 0);
+          estimatedDeliveryDuration = Number(deliveryCalculation.duration || 0);
+          calculatedDeliveryTime =
+            deliveryCalculation.estimatedDeliveryTime || null;
+
+          console.log(`Delivery calculation completed:`);
+          console.log(`Distance: ${deliveryDistance} km`);
+          console.log(`Duration: ${estimatedDeliveryDuration} minutes`);
+          console.log(
+            `Estimated delivery time: ${calculatedDeliveryTime?.toISOString()}`
           );
-
-        deliveryDistance = deliveryCalculation.distance;
-        estimatedDeliveryDuration = deliveryCalculation.duration;
-        calculatedDeliveryTime =
-          deliveryCalculation.estimatedDeliveryTime || null;
-
-        console.log(`Delivery calculation completed:`);
-        console.log(`Distance: ${deliveryDistance} km`);
-        console.log(`Duration: ${estimatedDeliveryDuration} minutes`);
-        console.log(
-          `Estimated delivery time: ${calculatedDeliveryTime?.toISOString()}`
-        );
-      } else {
-        console.warn(
-          `Invalid coordinates for distance calculation. Restaurant: ${restaurantLat}, ${restaurantLng}, Customer: ${customerLat}, ${customerLng}`
-        );
+        } else {
+          console.warn(
+            `Invalid coordinates for distance calculation. Restaurant: ${restaurantLat}, ${restaurantLng}, Customer: ${customerLat}, ${customerLng}`
+          );
+        }
       }
     } catch (mapsError) {
       console.error('Error calculating delivery metrics:', mapsError);
@@ -212,7 +226,7 @@ export async function POST(request: NextRequest) {
           calculatedDeliveryTime || new Date(Date.now() + 45 * 60 * 1000), // Use calculated time or fallback to 45 minutes
         deliveryDistance: deliveryDistance, // Store calculated distance in km
         estimatedDeliveryDuration: estimatedDeliveryDuration, // Store calculated ETA in minutes
-        orderType: deliveryFee > 0 ? 'DELIVERY' : 'PICKUP',
+        orderType: isPickup ? 'PICKUP' : 'DELIVERY',
         verificationCode: verificationCode,
         orderItems: {
           create: cart.items.map((item: any) => {

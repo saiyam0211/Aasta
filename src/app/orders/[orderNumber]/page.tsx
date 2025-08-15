@@ -24,20 +24,28 @@ import {
 import CustomerLayout from '@/components/layouts/customer-layout';
 import { toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
+import localFont from 'next/font/local';
 
 function formatEta(iso: string | null): string | null {
   if (!iso) return null;
   const target = new Date(iso);
   const now = new Date();
-  const mins = Math.max(1, Math.round((target.getTime() - now.getTime()) / 60000));
-  const timeStr = target.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const mins = Math.max(
+    1,
+    Math.round((target.getTime() - now.getTime()) / 60000)
+  );
+  const timeStr = target.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
   return `${mins} mins • ~${timeStr}`;
 }
 
 function carbonSavedKg(distanceKm?: number | null): number {
   if (!distanceKm || distanceKm <= 0) return 0;
-  const gramsPerKm = 120; // Approx CO2 for a small petrol car per km
-  return (distanceKm * gramsPerKm) / 1000; // kg
+  // Factor can vary by vehicle; use a neutral mid-range factor (kg/km)
+  const kgPerKm = 0.171; // ~170 g/km (from BEIS/Defra averages)
+  return distanceKm * kgPerKm;
 }
 
 interface OrderItem {
@@ -75,6 +83,12 @@ interface Order {
   deliveryDistance?: number; // Added for carbon emission calculation
   orderType?: string; // Added for order type
   estimatedPreparationTime?: number; // Added for preparation time
+  savings?: number; // Added for savings
+  deliveryPartner?: {
+    id: string;
+    name: string;
+    phone: string;
+  };
 }
 
 const orderStatusSteps = {
@@ -94,6 +108,18 @@ const orderStatusSteps = {
   DELIVERED: { label: 'Delivered', icon: Star, completed: false },
 };
 
+const brandFont = localFont({
+  src: [
+    {
+      path: '../../../../public/fonts/Tanjambore_bysaiyam-Regular.ttf',
+      weight: '400',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-brand',
+  display: 'swap',
+});
+
 export default function OrderTrackingPage() {
   const params = useParams();
   const router = useRouter();
@@ -103,12 +129,31 @@ export default function OrderTrackingPage() {
   const [copied, setCopied] = useState(false);
   const [isProcessingRefund, setIsProcessingRefund] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [partner, setPartner] = useState<any | null>(null);
 
   useEffect(() => {
     if (params?.orderNumber) {
       fetchOrder();
     }
   }, [params?.orderNumber]);
+
+  // Lightweight polling for delivery partner assignment updates
+  useEffect(() => {
+    if (!order || order.orderType !== 'DELIVERY') return;
+    setPartner((order as any).deliveryPartner || null);
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders/${params?.orderNumber}`);
+        const data = await res.json();
+        if (res.ok && data?.success) {
+          const latest = data.order;
+          setOrder(latest);
+          setPartner(latest.deliveryPartner || null);
+        }
+      } catch {}
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [order?.orderType, params?.orderNumber]);
 
   useEffect(() => {
     const p = searchParams?.get('payment');
@@ -184,6 +229,10 @@ export default function OrderTrackingPage() {
     router.push(`/payment/${order?.orderNumber}`);
   };
 
+  const handleGoBack = () => {
+    router.back();
+  };
+
   const handleRefund = async () => {
     if (!order) return;
 
@@ -231,16 +280,20 @@ export default function OrderTrackingPage() {
 
   if (!order) {
     return (
-      <CustomerLayout>
+      <CustomerLayout hideHeader hideFooter>
         <div className="mx-auto max-w-4xl px-4 py-12 text-center">
           <h2 className="mb-2 text-2xl font-bold">Order not found</h2>
           <p className="mb-6 text-gray-500">
             The order you're looking for doesn't exist or you don't have
             permission to view it.
           </p>
-          <Button onClick={() => router.push('/customer/orders')}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Orders
+          <Button
+            onClick={handleGoBack}
+            variant="ghost"
+            size="sm"
+            className="glass-liquid h-10 w-20 rounded-full bg-white/80 p-0 shadow-sm hover:bg-white"
+          >
+            <ArrowLeft className="h-5 w-5" style={{ color: '#002a01' }} /> Back
           </Button>
         </div>
       </CustomerLayout>
@@ -248,107 +301,174 @@ export default function OrderTrackingPage() {
   }
 
   return (
-    <CustomerLayout>
-      <div className="mx-auto max-w-4xl px-4 py-6">
+    <CustomerLayout hideHeader hideFooter>
+      <div className="mx-auto max-w-4xl ">
+        <div className="sticky top-0 z-50 bg-white pt-4 px-4">
+          <div className="flex justify-between">
+            <Button
+              onClick={handleGoBack}
+              variant="ghost"
+              size="sm"
+              className="glass-liquid h-10 w-20 rounded-full bg-white/80 p-0 shadow-sm hover:bg-white"
+            >
+              <ArrowLeft className="h-5 w-5" style={{ color: '#002a01' }} />{' '}
+              Back
+            </Button>
+            {/* Savings banner */}
+            {typeof (order as any).savings === 'number' &&
+              (order as any).savings > 0 && (
+                <div className="items-right mb-4 gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3">
+                  <span className="text-sm font-medium text-orange-900">
+                    You saved ₹{((order as any).savings as number).toFixed(0)}{' '}
+                    on this order
+                  </span>
+                </div>
+              )}
+          </div>
+          {/* Header */}
+          <div className="pb-6 flex flex-col">
+            <div>
+              <div className="flex items-center gap-3">
+                <h1
+                  className={`text-[20px] font-semibold`}
+                  style={{ color: '#002a01' }}
+                >
+                  Order #{order.orderNumber}
+                </h1>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyOrderNumber}
+                  className="flex items-center gap-1 rounded-lg"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                  {/* {copied ? 'Copied!' : 'Copy'} */}
+                </Button>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Badge className={`${getStatusColor(order.status)} px-3 py-1`}>
+                {order.status.replace('_', ' ')}
+              </Badge>
+              <Badge
+                className={`${getPaymentStatusColor(order.paymentStatus)} px-3 py-1`}
+              >
+                {order.paymentStatus === 'COMPLETED'
+                  ? 'Paid'
+                  : order.paymentStatus === 'PENDING'
+                    ? 'Payment Pending'
+                    : order.paymentStatus === 'FAILED'
+                      ? 'Payment Failed'
+                      : order.paymentStatus === 'REFUNDED'
+                        ? 'Refunded'
+                        : 'Payment Status'}
+              </Badge>
+              <Badge className={`bg-yellow-50 px-3 py-1`}>
+                {order.verificationCode}
+              </Badge>
+              <Badge className={`bg-red-50 px-3 py-1`}>
+                {order.orderType}
+              </Badge>
+
+            </div>
+          </div>
+        </div>
         {/* Celebration Popup */}
         {showCelebration && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="relative w-[80%] max-w-md rounded-3xl bg-white p-6 text-center shadow-2xl">
-              <div className="absolute -top-4 left-1/2 h-2 w-24 -translate-x-1/2 rounded-full bg-[#D2F86A]" />
-              <div className="mb-3 text-3xl">🎉</div>
-              <h3 className="mb-2 text-xl font-bold text-gray-900">Order Confirmed!</h3>
-              {order.deliveryFee > 0 ? (
-                <p className="mb-2 text-sm text-gray-700">
-                  Thanks for your payment. Your food is on its way.
+            <div className="relative w-[90%] max-w-md overflow-hidden rounded-3xl border border-[#002a01]/10 bg-white shadow-2xl">
+              {/* Brand header */}
+              <div className="bg-[#002a01] px-6 pt-6 pb-4 text-center">
+                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-[#d1f86a] text-xl">
+                  🎉
+                </div>
+                <h3 className="text-lg font-extrabold tracking-tight text-[#d1f86a]">
+                  Order Confirmed!
+                </h3>
+                <p className="mt-1 text-xs text-[#fcfefe]/80">
+                  {order.deliveryFee > 0
+                    ? 'Thanks for your payment. Your food is on its way.'
+                    : 'Thanks for your payment. We’ll notify you when it’s ready for pickup.'}
                 </p>
-              ) : (
-                <p className="mb-2 text-sm text-gray-700">
-                  Thanks for your payment. We’ll notify you when it’s ready for pickup.
-                </p>
-              )}
-              {order.deliveryFee > 0 ? (
-                <div className="mb-3 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-                  ETA: {formatEta(order.estimatedDeliveryTime) || 'Soon'}
-                </div>
-              ) : (
-                <div className="mb-3 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-                  Prep time: {Math.max(10, (order as any).estimatedPreparationTime || 20)} mins
-                </div>
-              )}
-               {order.deliveryFee === 0 && order.verificationCode && (
-                <div className="mb-3 rounded-xl border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
-                  Show this code at the counter: <span className="font-mono text-lg font-bold">{order.verificationCode}</span>
-                </div>
-              )}
-              {/* Carbon saved */}
-              <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-                You saved ~{carbonSavedKg((order as any).deliveryDistance).toFixed(2)} kg CO₂ by not driving to the restaurant.
               </div>
-              <Button className="h-10 rounded-xl bg-[#fd6923] text-white" onClick={() => setShowCelebration(false)}>
-                Continue
-              </Button>
+
+              {/* Info blocks */}
+              <div className="space-y-3 px-6 py-5">
+                {order.deliveryFee > 0 ? (
+                  <div className="flex items-center justify-center rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900">
+                    <Clock className="mr-2 h-4 w-4" /> ETA{' '}
+                    {formatEta(order.estimatedDeliveryTime) || 'Soon'}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900">
+                    <ChefHat className="mr-2 h-4 w-4" /> Avg prep time{' '}
+                    {Math.max(
+                      10,
+                      (order as any).estimatedPreparationTime || 20
+                    )}{' '}
+                    mins
+                  </div>
+                )}
+
+                {/* Savings */}
+                {typeof (order as any).savings === 'number' &&
+                  (order as any).savings > 0 && (
+                    <div className="rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-center text-sm text-orange-900">
+                      You saved ₹{((order as any).savings as number).toFixed(0)}{' '}
+                      on this order 🎁
+                    </div>
+                  )}
+
+                {/* Pickup-only sections */}
+                {order.deliveryFee === 0 && (
+                  <>
+                    {order.verificationCode && (
+                      <div className="rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-center text-sm font-medium text-yellow-900">
+                        Show this pickup code:{' '}
+                        <span className="ml-1 font-mono text-base font-extrabold">
+                          {order.verificationCode}
+                        </span>
+                      </div>
+                    )}
+                    <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-center text-sm text-blue-900">
+                      You saved ~
+                      {carbonSavedKg((order as any).deliveryDistance).toFixed(
+                        2
+                      )}{' '}
+                      kg CO₂ by not driving 🚴
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="border-t px-6 py-4">
+                <Button
+                  className="h-10 w-full rounded-xl bg-[#fd6923] text-white"
+                  onClick={() => setShowCelebration(false)}
+                >
+                  Continue
+                </Button>
+              </div>
             </div>
           </div>
         )}
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <Button
-              variant="ghost"
-              onClick={() => router.push('/customer/orders')}
-              className="mb-2"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Orders
-            </Button>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold" style={{ color: '#002a01' }}>
-                Order #{order.orderNumber}
-              </h1>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={copyOrderNumber}
-                className="flex items-center gap-1"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-                {copied ? 'Copied!' : 'Copy'}
-              </Button>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Badge className={`${getStatusColor(order.status)} px-3 py-1`}>
-              {order.status.replace('_', ' ')}
-            </Badge>
-            <Badge
-              className={`${getPaymentStatusColor(order.paymentStatus)} px-3 py-1`}
-            >
-              {order.paymentStatus === 'COMPLETED'
-                ? 'Paid'
-                : order.paymentStatus === 'PENDING'
-                  ? 'Payment Pending'
-                  : order.paymentStatus === 'FAILED'
-                    ? 'Payment Failed'
-                    : order.paymentStatus === 'REFUNDED'
-                      ? 'Refunded'
-                      : 'Payment Status'}
-            </Badge>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 px-4">
           {/* Order Status & Timeline */}
           <div className="space-y-6 lg:col-span-2">
-            <Card>
+            <Card className="rounded-3xl border border-gray-100 shadow-sm">
               <CardHeader>
-                <CardTitle>Order Status</CardTitle>
+                <CardTitle className={`${brandFont.className} text-[50px] text-[#002a01] -mt-5`} style={{letterSpacing: '-0.08em'}}>
+                  Order Status
+                  <span className="ml-1 text-[60px] text-[#fd6923]">.</span>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-4 -mt-5">
                   {Object.entries(orderStatusSteps).map(
                     ([status, step], index) => {
                       const Icon = step.icon;
@@ -394,25 +514,81 @@ export default function OrderTrackingPage() {
               </CardContent>
             </Card>
 
+
+            {/* Environmental Impact / Motivation Card (admin gradient style) */}
+        <div className="relative mt-8 px-4">
+          <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#002a01] via-[#002a01]/95 to-[#002a01]"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMiIgZmlsbD0iIzAwZmY0MCIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPC9zdmc+')] opacity-10"></div>
+          <Card className="relative border-0 bg-transparent">
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-3">
+                <div className="lg:col-span-2 space-y-3">
+                  <div className="flex justify-center items-center space-x-3">
+                    <h3 className="text-xl font-bold text-[#d1f86a]">
+                      {order.deliveryFee > 0 ? 'Make it greener next time' : 'High five for a green choice!'}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-center text-[#fcfefe]/85">
+                    {order.deliveryFee > 0
+                      ? `This delivery travelled about ${(order.deliveryDistance ?? 0).toFixed(1)} km and took ~${((order as any).estimatedDeliveryDuration ?? 0)} mins. That’s roughly ${carbonSavedKg(order.deliveryDistance ?? 0).toFixed(2)} kg CO₂ emitted. Next time, pick up to save the delivery fee and the planet.`
+                      : `You walked in and saved roughly ${carbonSavedKg(order.deliveryDistance ?? 0).toFixed(2)} kg CO₂ that would have been emitted for delivery — and probably a few minutes too. Great choice!`}
+                  </p>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#d1f86a]/20 to-[#ffd500]/20 blur-2xl"></div>
+                  <div className="relative rounded-3xl border border-[#fcfefe]/20 bg-[#fcfefe]/10 p-5 backdrop-blur-sm text-center">
+                    <div className="mt-3">
+                      <p className="text-sm font-medium text-[#fcfefe]/70">Your impact</p>
+                      <p className="mt-1 text-2xl font-bold text-[#fcfefe]">
+                        {order.deliveryFee > 0
+                          ? `${carbonSavedKg(order.deliveryDistance ?? 0).toFixed(2)} kg CO₂ emitted`
+                          : `${carbonSavedKg(order.deliveryDistance ?? 0).toFixed(2)} kg CO₂ saved`}
+                      </p>
+                      {typeof (order as any).savings === 'number' && (order as any).savings > 0 && (
+                        <p className="mt-1 text-2xl font-bold text-[#fcfefe]">
+                          ₹{((order as any).savings as number).toFixed(0)} saved today
+                        </p>
+                      )}
+                      <p className="mt-2 text-xs italic text-[#fcfefe]/75">
+                        {order.deliveryFee > 0
+                          ? '“Small choices add up. Choose pickup to tread lighter.”'
+                          : '“Every step counts. Thanks for walking the green path.”'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
             {/* Restaurant & Delivery Info */}
-            <Card>
+            <Card className="rounded-2xl border border-gray-100 shadow-sm">
               <CardHeader>
-                <CardTitle>Restaurant & Delivery Details</CardTitle>
+                <CardTitle className={`${brandFont.className} text-center text-[50px] text-[#002a01]`} style={{letterSpacing: '-0.08em'}}>
+                  Restaurant & Delivery Details
+                  <span className="ml-1 text-[60px] text-[#fd6923]">.</span>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col items-start justify-between">
                   <div>
-                    <h4 className="font-semibold">{order.restaurant.name}</h4>
+                    <h6 className="text-xl font-semibold">{order.restaurant.name}</h6>
                     <p className="text-sm text-gray-500">
                       {order.restaurant.address}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 border-[#002a01]/20"
+                  >
                     <Phone className="mr-2 h-4 w-4" />
                     Call Restaurant
                   </Button>
                 </div>
 
+                {order.orderType === 'DELIVERY' && (
                 <div className="border-t pt-4">
                   <div className="flex items-start gap-2">
                     <MapPin className="mt-0.5 h-5 w-5 text-gray-400" />
@@ -424,18 +600,50 @@ export default function OrderTrackingPage() {
                     </div>
                   </div>
                 </div>
+                )}
 
                 <div className="border-t pt-4">
                   <div className="flex items-center gap-2">
                     <Clock className="h-5 w-5 text-gray-400" />
+                    {order.orderType === 'DELIVERY' ? (
                     <p className="font-medium">
-                      Estimated Delivery:{' '}
-                      {new Date(
-                        order.estimatedDeliveryTime
-                      ).toLocaleTimeString()}
+                    Estimated Delivery:{' '}
+                    {new Date(
+                      order.estimatedDeliveryTime
+                    ).toLocaleTimeString()}
+                  </p>
+                    ) : (
+                    <p className="font-medium">
+                      Average Time of Preperation:{' '}
+                      {order.estimatedPreparationTime} mins
                     </p>
+                    )}
                   </div>
                 </div>
+
+                {/* Delivery Partner Details (Delivery only) */}
+                {order.orderType === 'DELIVERY' && (
+                  <div className="border-t pt-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-medium">Delivery Partner</p>
+                        {partner ? (
+                          <p className="text-sm text-gray-700">{partner.name}{partner.phone ? ` • ${partner.phone}` : ''}</p>
+                        ) : (
+                          <p className="text-sm text-gray-500">We will assign a delivery partner soon…</p>
+                        )}
+                      </div>
+                      {partner?.phone && (
+                        <a
+                          href={`tel:${partner.phone}`}
+                          className="inline-flex items-center rounded-lg border border-[#002a01]/20 px-3 py-2 text-sm"
+                        >
+                          <Phone className="mr-2 h-4 w-4" /> Call
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {order.verificationCode && (
                   <div className="border-t pt-4">
@@ -458,9 +666,12 @@ export default function OrderTrackingPage() {
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-6">
+            <Card className="sticky top-6 rounded-2xl border border-gray-100 shadow-sm">
               <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
+                <CardTitle className={`${brandFont.className} -mb-5 text-[50px] text-[#002a01]`} style={{letterSpacing: '-0.08em'}}>
+                  Order Summary
+                  <span className="ml-1 text-[60px] text-[#fd6923]">.</span>
+                  </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Order Items */}
@@ -499,6 +710,15 @@ export default function OrderTrackingPage() {
                     <span>Taxes & Fees</span>
                     <span>₹{order.taxes.toFixed(2)}</span>
                   </div>
+                  {typeof (order as any).savings === 'number' &&
+                    (order as any).savings > 0 && (
+                      <div className="flex justify-between text-sm text-green-700">
+                        <span>Savings</span>
+                        <span>
+                          -₹{((order as any).savings as number).toFixed(0)}
+                        </span>
+                      </div>
+                    )}
                   <div className="flex justify-between border-t pt-2 text-lg font-bold">
                     <span>Total</span>
                     <span style={{ color: '#002a01' }}>
@@ -536,7 +756,7 @@ export default function OrderTrackingPage() {
                     </Button>
                   )}
 
-                  {order.paymentStatus === 'COMPLETED' &&
+                  {/* {order.paymentStatus === 'COMPLETED' &&
                     (order.status === 'PLACED' ||
                       order.status === 'CONFIRMED') && (
                       <Button
@@ -554,7 +774,7 @@ export default function OrderTrackingPage() {
                           ? 'Processing...'
                           : 'Request Refund'}
                       </Button>
-                    )}
+                    )} */}
 
                   <Button
                     variant="outline"

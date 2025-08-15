@@ -4,7 +4,6 @@ import './globals.css';
 import { Providers } from '@/components/providers';
 import { TelegramBotInitializer } from '@/components/telegram-bot-initializer';
 import Script from 'next/script';
-import CapacitorBridge from './providers/capacitor-bridge'
 
 // Import bot initialization (server-side only)
 import '@/lib/telegram-bot-init';
@@ -89,7 +88,6 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="font-sans antialiased">
-        <CapacitorBridge />
         <Providers>
           <TelegramBotInitializer />
           {children}

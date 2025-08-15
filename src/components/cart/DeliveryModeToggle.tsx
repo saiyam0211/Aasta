@@ -9,7 +9,10 @@ interface DeliveryModeToggleProps {
   onModeChange: (mode: 'delivery' | 'pickup') => void;
 }
 
-export function DeliveryModeToggle({ mode, onModeChange }: DeliveryModeToggleProps) {
+export function DeliveryModeToggle({
+  mode,
+  onModeChange,
+}: DeliveryModeToggleProps) {
   const handleChange = (value: string) => {
     const next = value === 'pickup' ? 'pickup' : 'delivery';
     onModeChange(next);
@@ -17,17 +20,17 @@ export function DeliveryModeToggle({ mode, onModeChange }: DeliveryModeTogglePro
   return (
     <div className="mb-3">
       <Tabs value={mode as string} onValueChange={handleChange}>
-        <TabsList className="inline-flex rounded-xl border border-primary-dark-green p-1 bg-white">
-          <TabsTrigger 
-            value="delivery" 
-            className="px-3 py-1.5 text-sm rounded-lg flex items-center gap-2 data-[state=active]:bg-accent-leaf-green data-[state=active]:text-primary-dark-green data-[state=active]:shadow-sm text-primary-dark-green"
+        <TabsList className="border-primary-dark-green inline-flex rounded-xl border bg-white p-1">
+          <TabsTrigger
+            value="delivery"
+            className="data-[state=active]:bg-accent-leaf-green data-[state=active]:text-primary-dark-green text-primary-dark-green flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm data-[state=active]:shadow-sm"
           >
             <Bike className="h-4 w-4" />
             Delivery
           </TabsTrigger>
-          <TabsTrigger 
+          <TabsTrigger
             value="pickup"
-            className="px-3 py-1.5 text-sm rounded-lg flex items-center gap-2 data-[state=active]:bg-accent-leaf-green data-[state=active]:text-primary-dark-green data-[state=active]:shadow-sm text-primary-dark-green"
+            className="data-[state=active]:bg-accent-leaf-green data-[state=active]:text-primary-dark-green text-primary-dark-green flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm data-[state=active]:shadow-sm"
           >
             <Store className="h-4 w-4" />
             Pickup

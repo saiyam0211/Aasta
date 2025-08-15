@@ -83,14 +83,17 @@ export default function CartPage() {
         toast.error('Your cart is empty');
         return;
       }
-      if (!currentLocation) {
-        toast.error('Please set your live location');
-        return;
-      }
-      const addrText = currentAddress?.address;
-      if (!addrText || addrText.trim().length === 0) {
-        toast.error('Please select an address');
-        return;
+      const isPickup = mode === 'pickup';
+      if (!isPickup) {
+        if (!currentLocation) {
+          toast.error('Please set your live location');
+          return;
+        }
+        const addrText = currentAddress?.address;
+        if (!addrText || addrText.trim().length === 0) {
+          toast.error('Please select an address');
+          return;
+        }
       }
 
       setPlacing(true);
@@ -101,12 +104,23 @@ export default function CartPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cart,
-          deliveryAddress: {
-            address: addrText,
-            latitude: currentLocation.latitude,
-            longitude: currentLocation.longitude,
-            instructions: '',
-          },
+          orderType: isPickup ? 'PICKUP' : 'DELIVERY',
+          deliveryAddress: isPickup
+            ? {
+                address:
+                  cart.restaurant?.address ||
+                  cart.restaurant?.name ||
+                  'Pickup at restaurant',
+                latitude: Number((cart.restaurant as any)?.latitude || 0),
+                longitude: Number((cart.restaurant as any)?.longitude || 0),
+                instructions: 'Pickup at restaurant',
+              }
+            : {
+                address: currentAddress?.address,
+                latitude: currentLocation!.latitude,
+                longitude: currentLocation!.longitude,
+                instructions: '',
+              },
         }),
       });
       const createData = await createRes.json();

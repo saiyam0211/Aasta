@@ -77,7 +77,8 @@ export default function AddressSheet({
   const saveAddress = async () => {
     // Validate required fields and live location
     const missing: string[] = [];
-    if (!currentLocation?.latitude || !currentLocation?.longitude) missing.push('Live location');
+    if (!currentLocation?.latitude || !currentLocation?.longitude)
+      missing.push('Live location');
     if (!form.houseNumber.trim()) missing.push('House/Flat no.');
     if (!form.locality.trim()) missing.push('Locality');
     if (!form.street.trim()) missing.push('Street/Area');
@@ -212,7 +213,8 @@ export default function AddressSheet({
                     onClick={handleUseLiveLocation}
                     disabled={loading}
                   >
-                    <MapPin className="h-4 w-4" /> Use live location <span className="ml-1 text-red-500">*</span>
+                    <MapPin className="h-4 w-4" /> Use live location{' '}
+                    <span className="ml-1 text-red-500">*</span>
                   </button>
                   {/* Static Map Preview */}
                   {currentLocation && (
@@ -233,7 +235,12 @@ export default function AddressSheet({
                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                         placeholder="e.g., A-307"
                         value={form.houseNumber}
-                        onChange={(e) => setForm((f) => ({ ...f, houseNumber: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            houseNumber: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div className="col-span-1">
@@ -244,7 +251,9 @@ export default function AddressSheet({
                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                         placeholder="e.g., Whitefield"
                         value={form.locality}
-                        onChange={(e) => setForm((f) => ({ ...f, locality: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, locality: e.target.value }))
+                        }
                       />
                     </div>
                     <div className="col-span-2">
@@ -255,7 +264,9 @@ export default function AddressSheet({
                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                         placeholder="e.g., Extension Road"
                         value={form.street}
-                        onChange={(e) => setForm((f) => ({ ...f, street: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, street: e.target.value }))
+                        }
                       />
                     </div>
                     <div className="col-span-2">
@@ -266,25 +277,41 @@ export default function AddressSheet({
                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                         placeholder="e.g., 8901825390"
                         value={form.contactPhone}
-                        onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            contactPhone: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="mb-1 block text-xs font-medium text-gray-700">Landmark (optional)</label>
+                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                        Landmark (optional)
+                      </label>
                       <input
                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                         placeholder="e.g., Near Yello Living"
                         value={form.landmark}
-                        onChange={(e) => setForm((f) => ({ ...f, landmark: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, landmark: e.target.value }))
+                        }
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="mb-1 block text-xs font-medium text-gray-700">Instructions (optional)</label>
+                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                        Instructions (optional)
+                      </label>
                       <textarea
                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                         placeholder="e.g., Call on arrival"
                         value={form.instructions}
-                        onChange={(e) => setForm((f) => ({ ...f, instructions: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            instructions: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   </div>

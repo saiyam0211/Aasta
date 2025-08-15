@@ -19,24 +19,9 @@ export async function GET(
 
     const { orderNumber } = await params;
 
-    // First, find the customer record for this user
-    const customer = await prisma.customer.findUnique({
-      where: { userId: session.user.id },
-    });
-
-    if (!customer) {
-      return NextResponse.json(
-        { success: false, error: 'Customer not found' },
-        { status: 404 }
-      );
-    }
-
-    // Fetch order with all related data
+    // Fetch order with related data and the owning customer's userId for auth
     const order = await prisma.order.findFirst({
-      where: {
-        orderNumber,
-        customerId: customer.id, // Use customer.id instead of session.user.id
-      },
+      where: { orderNumber },
       include: {
         orderItems: {
           include: {
@@ -56,7 +41,13 @@ export async function GET(
             address: true,
           },
         },
+        deliveryPartner: {
+          include: {
+            user: { select: { name: true, phone: true } },
+          },
+        },
         deliveryAddress: true,
+        customer: { include: { user: { select: { id: true } } } },
       },
     });
 
@@ -67,24 +58,43 @@ export async function GET(
       );
     }
 
+    // Authorization: ensure this order belongs to the signed-in user
+    if (order.customer?.user?.id !== session.user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
     // Transform the order data to match frontend expectations
+    // Compute savings based on original vs actual item totals
+    const itemsTotalOriginal = (order as any).orderItems.reduce((sum: number, item: any) => {
+      const originalUnit = item.originalUnitPrice ?? item.unitPrice;
+      const totalOriginal =
+        item.totalOriginalPrice ?? originalUnit * item.quantity;
+      return sum + Number(totalOriginal || 0);
+    }, 0);
+    const itemsTotal = (order as any).orderItems.reduce((sum: number, item: any) => {
+      const total = item.totalPrice ?? item.unitPrice * item.quantity;
+      return sum + Number(total || 0);
+    }, 0);
+    const savings = Math.max(0, Math.round(itemsTotalOriginal - itemsTotal));
     const transformedOrder = {
       id: order.id,
       orderNumber: order.orderNumber,
       status: order.status,
       paymentStatus: order.paymentStatus,
-      total: order.totalAmount,
-      subtotal: order.subtotal,
-      taxes: order.taxes,
-      deliveryFee: order.deliveryFee,
-      deliveryAddress: `${order.deliveryAddress.street}, ${order.deliveryAddress.city}, ${order.deliveryAddress.state} ${order.deliveryAddress.zipCode}`,
+      total: (order as any).totalAmount,
+      subtotal: (order as any).subtotal,
+      taxes: (order as any).taxes,
+      deliveryFee: (order as any).deliveryFee,
+      deliveryAddress: `${(order as any).deliveryAddress.street}, ${(order as any).deliveryAddress.city}, ${(order as any).deliveryAddress.state} ${(order as any).deliveryAddress.zipCode}`,
       estimatedDeliveryTime:
         order.estimatedDeliveryTime ||
         new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       createdAt: order.createdAt.toISOString(),
-      verificationCode:
-        order.verificationCode || undefined,
-      items: order.orderItems.map((item) => ({
+      verificationCode: order.verificationCode || undefined,
+      items: (order as any).orderItems.map((item: any) => ({
         id: item.id,
         menuItemId: item.menuItemId,
         quantity: item.quantity,
@@ -95,10 +105,23 @@ export async function GET(
           imageUrl: item.menuItem.imageUrl,
         },
       })),
-      restaurant: order.restaurant,
-      deliveryDistance: order.deliveryDistance,
-      estimatedPreparationTime: order.estimatedPreparationTime,
-      orderType: order.orderType,
+      restaurant: (order as any).restaurant,
+      deliveryPartner: (order as any).deliveryPartner
+        ? {
+            id: (order as any).deliveryPartner.id,
+            name:
+              (order as any).deliveryPartner.user?.name || 'Delivery Partner',
+            phone: (order as any).deliveryPartner.user?.phone || null,
+            latitude: (order as any).deliveryPartner.currentLatitude ?? null,
+            longitude: (order as any).deliveryPartner.currentLongitude ?? null,
+          }
+        : null,
+      deliveryDistance: (order as any).deliveryDistance,
+      estimatedPreparationTime: (order as any).estimatedPreparationTime,
+      estimatedDeliveryDuration:
+        (order as any).estimatedDeliveryDuration ?? null,
+      orderType: (order as any).orderType,
+      savings,
     };
 
     return NextResponse.json({
