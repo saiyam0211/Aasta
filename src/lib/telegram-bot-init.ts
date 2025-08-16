@@ -1,9 +1,11 @@
 import { forceInitializeBot } from './telegram-bot-integration';
 
-// Initialize bot immediately when this module is imported
+// Initialize bot immediately only if explicitly enabled
 if (typeof window === 'undefined') {
-  // Only run on server side
-  forceInitializeBot().catch(console.error);
+	const enable = process.env.ENABLE_TELEGRAM_BOT === 'true';
+	if (enable) {
+		forceInitializeBot().catch(console.error);
+	}
 }
 
 export { forceInitializeBot };

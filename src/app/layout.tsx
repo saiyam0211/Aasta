@@ -2,11 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
 import { Providers } from '@/components/providers';
-import { TelegramBotInitializer } from '@/components/telegram-bot-initializer';
 import Script from 'next/script';
-
-// Import bot initialization (server-side only)
-import '@/lib/telegram-bot-init';
 
 const brandFont = localFont({
   src: [
@@ -89,7 +85,6 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased">
         <Providers>
-          <TelegramBotInitializer />
           {children}
         </Providers>
       </body>
