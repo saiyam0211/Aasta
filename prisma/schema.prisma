@@ -98,6 +98,7 @@ model DeliveryPartner {
   todayEarnings       Float         @default(0)
   totalEarnings       Float         @default(0)
   rating              Float         @default(0)
+  ratingCount         Int           @default(0)
   completedDeliveries Int           @default(0)
   telegramPhone       String? // Telegram phone number for notifications
   telegramChatId      String? // Telegram chat ID for bot messaging
@@ -149,6 +150,8 @@ model Restaurant {
   restaurantPricePercentage Float            @default(0.40) // 40% - Percentage for restaurant earnings
   aastaPricePercentage      Float            @default(0.10) // 10% - Percentage for Aasta earnings
   rating                    Float            @default(0)
+  pickupExperienceRating    Float            @default(0)
+  pickupExperienceCount     Int              @default(0)
   totalOrders               Int              @default(0)
   status                    RestaurantStatus @default(ACTIVE)
   operatingHours            Json // Store as JSON: { "monday": { "open": "21:00", "close": "00:00" }, ... }
@@ -182,6 +185,8 @@ model MenuItem {
   available       Boolean  @default(true)
   featured        Boolean  @default(false)
   stockLeft       Int? // Number of items left in stock
+  rating          Float    @default(0)
+  ratingCount     Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -410,6 +415,8 @@ model PlatformMetrics {
   customerAcquisition    Int      @default(0)
   restaurantSignups      Int      @default(0)
   deliveryPartnerSignups Int      @default(0)
+  platformRatingSum      Float    @default(0)
+  platformRatingCount    Int      @default(0)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
@@ -565,7 +572,6 @@ enum OrderStatus {
   OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
-  PICKED_UP
 }
 
 enum OrderType{

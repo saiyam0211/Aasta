@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { getSocketManager } from '@/lib/socket-server';
 
 export async function POST(
   request: NextRequest,
@@ -91,10 +92,36 @@ export async function POST(
     const updatedOrder = await prisma.order.update({
       where: { orderNumber },
       data: {
+        // Use DELIVERED to represent "Picked Up" for pickup orders (keeps enum/schema stable)
         status: order.orderType === 'PICKUP' ? 'DELIVERED' : 'OUT_FOR_DELIVERY',
         updatedAt: new Date(),
       },
+      include: {
+        customer: { select: { userId: true } },
+        deliveryPartner: { select: { userId: true } },
+      },
     });
+
+    // Broadcast real-time update via sockets
+    const socket = getSocketManager?.();
+    const updatePayload = {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      status: updatedOrder.status,
+      timestamp: new Date().toISOString(),
+    };
+    if (socket) {
+      if (updatedOrder.customer?.userId) {
+        (socket as any).io
+          .to(`user_${updatedOrder.customer.userId}`)
+          .emit('order_status_update', updatePayload);
+      }
+      if (updatedOrder.deliveryPartner?.userId) {
+        (socket as any).io
+          .to(`user_${updatedOrder.deliveryPartner.userId}`)
+          .emit('order_status_update', updatePayload);
+      }
+    }
 
     // Log the successful verification
     console.log(

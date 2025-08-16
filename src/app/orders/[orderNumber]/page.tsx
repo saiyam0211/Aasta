@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,10 +20,15 @@ import {
   CreditCard,
   AlertCircle,
   RefreshCw,
+  Star as StarIcon,
+  Bike,
+  Store,
 } from 'lucide-react';
 import CustomerLayout from '@/components/layouts/customer-layout';
 import { toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
+import { socketClient } from '@/lib/socket-client';
+import { useSession } from 'next-auth/react';
 import localFont from 'next/font/local';
 
 function formatEta(iso: string | null): string | null {
@@ -89,6 +94,7 @@ interface Order {
     name: string;
     phone: string;
   };
+  reviewSubmitted?: boolean; // Added for review submission status
 }
 
 const orderStatusSteps = {
@@ -105,7 +111,14 @@ const orderStatusSteps = {
     icon: Truck,
     completed: false,
   },
+  PICKED_UP: { label: 'Picked Up', icon: CheckCircle, completed: false },
   DELIVERED: { label: 'Delivered', icon: Star, completed: false },
+} as const;
+
+const getStatusSequence = (orderType?: string) => {
+  return orderType === 'PICKUP'
+    ? (['PLACED', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'PICKED_UP'] as const)
+    : (['PLACED', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY', 'DELIVERED'] as const);
 };
 
 const brandFont = localFont({
@@ -121,6 +134,7 @@ const brandFont = localFont({
 });
 
 export default function OrderTrackingPage() {
+  const { data: session } = useSession();
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -132,9 +146,49 @@ export default function OrderTrackingPage() {
   const [partner, setPartner] = useState<any | null>(null);
 
   useEffect(() => {
+    // Ensure socket connected and authenticated so we join user_* room
+    const token = session?.user?.id || '';
+    if (token) {
+      socketClient.connect(token);
+      socketClient.authenticate(session!.user!.id, token);
+    }
     if (params?.orderNumber) {
       fetchOrder();
     }
+  }, [params?.orderNumber, session?.user?.id]);
+
+  // Socket: subscribe to real-time order status updates
+  useEffect(() => {
+    let handler: any;
+    try {
+      handler = (update: any) => {
+        if (update?.orderNumber === order?.orderNumber) {
+          setOrder((prev) => (prev ? { ...prev, status: update.status } : prev));
+        }
+      };
+      socketClient.on('order_status_update', handler);
+    } catch {}
+    return () => {
+      if (handler) socketClient.off('order_status_update', handler);
+    };
+  }, [order?.orderNumber]);
+
+  // Polling fallback: refresh ONLY the order status every 5s (pickup + delivery)
+  useEffect(() => {
+    if (!params?.orderNumber) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders/${params.orderNumber}`);
+        const data = await res.json();
+        if (res.ok && data?.success) {
+          const nextStatus = data.order?.status;
+          if (nextStatus) {
+            setOrder((prev) => (prev ? { ...prev, status: nextStatus } : prev));
+          }
+        }
+      } catch {}
+    }, 5000);
+    return () => clearInterval(interval);
   }, [params?.orderNumber]);
 
   // Lightweight polling for delivery partner assignment updates
@@ -206,8 +260,9 @@ export default function OrderTrackingPage() {
     }
   };
 
+  const sequence = getStatusSequence(order?.orderType);
   const getCurrentStepIndex = (status: string) => {
-    return Object.keys(orderStatusSteps).indexOf(status);
+    return sequence.indexOf(status as any);
   };
 
   const getPaymentStatusColor = (paymentStatus: string) => {
@@ -263,6 +318,75 @@ export default function OrderTrackingPage() {
       setIsProcessingRefund(false);
     }
   };
+
+  // Rating UI state (post-completion)
+  const [deliveryRating, setDeliveryRating] = useState(0);
+  const [restaurantRating, setRestaurantRating] = useState(0);
+  const [mealRating, setMealRating] = useState(0);
+  const [aastaRating, setAastaRating] = useState(0);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [hasSubmittedReview, setHasSubmittedReview] = useState(false);
+
+  const thankYouQuotes = [
+    'Your feedback fuels better late-night meals. Thank you!',
+    'Every bite gets better with your feedback. Appreciate it!',
+    'Thanks! You just made Aasta a little tastier for everyone.',
+    'Gratitude served hot! Your review helps us improve.',
+    'Thanks for the love. Great food is a team effort—us and you!'
+  ];
+  const thankQuote = useMemo(
+    () => thankYouQuotes[Math.floor(Math.random() * thankYouQuotes.length)],
+    [order?.orderNumber]
+  );
+
+  const submitReview = async () => {
+    if (!order) return;
+    try {
+      setSubmittingReview(true);
+      const payload: any = {
+        orderNumber: order.orderNumber,
+        deliveryRating: order.orderType === 'DELIVERY' ? deliveryRating || undefined : undefined,
+        serviceRating: order.orderType === 'PICKUP' ? restaurantRating || undefined : undefined,
+        foodRating: mealRating || undefined,
+        platformRating: aastaRating || undefined,
+      };
+      await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      toast.success('Thanks for your feedback!');
+      setHasSubmittedReview(true);
+      setOrder((prev) => (prev ? { ...prev, reviewSubmitted: true } : prev));
+    } catch (e) {
+      toast.error('Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const RatingStars = ({ value, onChange }: { value: number; onChange: (n: number) => void }) => {
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            aria-label={`Rate ${n}`}
+            onClick={() => onChange(n)}
+            className="p-0.5"
+          >
+            <Star
+              className={`h-6 w-6 ${n <= value ? 'text-[#ffd500]' : 'text-gray-300'}`}
+              strokeWidth={2}
+              fill={n <= value ? 'currentColor' : 'none'}
+            />
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  const isCompleted = order?.status === 'DELIVERED';
 
   if (isLoading) {
     return (
@@ -457,6 +581,65 @@ export default function OrderTrackingPage() {
           </div>
         )}
 
+        {isCompleted && (
+          <div className="px-4 pt-6">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#002a01] via-[#002a01]/95 to-[#002a01]"></div>
+              <div className="relative rounded-3xl  border border-[#fcfefe]/15 p-6 text-center text-[#fcfefe]">
+                {order.reviewSubmitted || hasSubmittedReview ? (
+                  <div className="space-y-3">
+                    <h3 className="text-xl font-bold">Thank you! 💚</h3>
+                    <p className="text-sm text-[#fcfefe]/85">{thankQuote}</p>
+                    <div className="mt-3 flex items-center justify-center gap-3">
+                      <Button onClick={() => router.push('/')} className="rounded-xl bg-[#d1f86a] text-[#002a01]">
+                        Explore more
+                      </Button>
+                      {/* <Button variant="outline" onClick={() => router.push('/customer/orders')} className="rounded-xl border-[#fcfefe]/30 text-[#fcfefe]">
+                        View my orders
+                      </Button> */}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h3 className="mb-1 text-xl font-bold">Enjoy your meal!</h3>
+                    <p className="mb-4 text-sm text-[#fcfefe]/80">We’d love your feedback</p>
+
+                    {order.orderType === 'DELIVERY' ? (
+                      <div className="mb-4 justify-center items-center flex flex-col">
+                        <p className="mb-2 text-sm">Rate your delivery partner experience</p>
+                        <RatingStars value={deliveryRating} onChange={setDeliveryRating} />
+                      </div>
+                    ) : (
+                      <div className="mb-4 justify-center items-center flex flex-col">
+                        <p className="mb-2 text-sm">Rate your pickup experience</p>
+                        <RatingStars value={restaurantRating} onChange={setRestaurantRating} />
+                      </div>
+                    )}
+
+                    <div className="mb-4 justify-center items-center flex flex-col">
+                      <p className="mb-2 text-sm">How's the food quality?</p>
+                      <RatingStars value={mealRating} onChange={setMealRating} />
+                    </div>
+
+                    <div className="mb-6 justify-center items-center flex flex-col">
+                      <p className="mb-2 text-sm">How's your overall experience with Aasta?</p>
+                      <RatingStars value={aastaRating} onChange={setAastaRating} />
+                    </div>
+
+                    <Button
+                      className="h-10 w-full rounded-xl bg-[#d1f86a] text-[#002a01]"
+                      disabled={submittingReview}
+                      onClick={submitReview}
+                    >
+                      {submittingReview ? 'Submitting…' : 'Submit review'}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 px-4">
           {/* Order Status & Timeline */}
           <div className="space-y-6 lg:col-span-2">
@@ -469,16 +652,16 @@ export default function OrderTrackingPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4 -mt-5">
-                  {Object.entries(orderStatusSteps).map(
-                    ([status, step], index) => {
+                  {sequence.map((status, index) => {
+                    const step = (orderStatusSteps as any)[status];
                       const Icon = step.icon;
                       const isCompleted =
                         index <= getCurrentStepIndex(order.status);
                       const isCurrent =
                         index === getCurrentStepIndex(order.status);
 
-                      return (
-                        <div key={status} className="flex items-center gap-4">
+                    return (
+                      <div key={status} className="flex items-center gap-4">
                           <div
                             className={`rounded-full p-2 ${
                               isCompleted
@@ -507,9 +690,8 @@ export default function OrderTrackingPage() {
                             )}
                           </div>
                         </div>
-                      );
-                    }
-                  )}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

@@ -47,6 +47,7 @@ export async function GET(
           },
         },
         deliveryAddress: true,
+        review: { select: { id: true } },
         customer: { include: { user: { select: { id: true } } } },
       },
     });
@@ -122,6 +123,7 @@ export async function GET(
         (order as any).estimatedDeliveryDuration ?? null,
       orderType: (order as any).orderType,
       savings,
+      reviewSubmitted: Boolean((order as any).review),
     };
 
     return NextResponse.json({

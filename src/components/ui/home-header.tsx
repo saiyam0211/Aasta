@@ -276,7 +276,7 @@ export function HomeHeader({
           </div>
         </button>
 
-        <div className="flex items-center gap-3">
+        {/* <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onProfileClick}
@@ -284,7 +284,7 @@ export function HomeHeader({
           >
             <User className="h-5 w-5" />
           </button>
-        </div>
+        </div> */}
       </div>
 
       {/* Headline - Only show when NOT in search mode */}
@@ -478,14 +478,14 @@ export function HomeHeader({
             </div>
           )}
         </div>
-        <button
+        {/* <button
           type="button"
           onClick={onFilterClick}
           className="glass-liquid flex h-12 w-12 items-center justify-center rounded-full"
           aria-label="Filter"
         >
           <SlidersHorizontal className="h-5 w-5 text-[#002A01]" />
-        </button>
+        </button> */}
       </form>
     </div>
   );

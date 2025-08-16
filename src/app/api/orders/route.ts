@@ -301,14 +301,14 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const status = searchParams.get('status');
     const restaurantId = searchParams.get('restaurantId');
+    const scope = searchParams.get('as'); // 'customer' | 'restaurant' | 'delivery'
 
     const skip = (page - 1) * limit;
 
     // Build where clause based on user role
     let where: any = {};
-
-    if (session.user.role === 'CUSTOMER') {
-      // For customers, find their customer record first
+    // Prefer explicit scope first, then fall back to role
+    if (scope === 'customer' || session.user.role === 'CUSTOMER') {
       const customer = await prisma.customer.findUnique({
         where: { userId: session.user.id },
       });
@@ -319,8 +319,8 @@ export async function GET(request: NextRequest) {
           data: {
             orders: [],
             pagination: {
-              page: 1,
-              limit: 10,
+              page,
+              limit,
               total: 0,
               totalPages: 0,
               hasNext: false,
@@ -331,34 +331,52 @@ export async function GET(request: NextRequest) {
       }
 
       where.customerId = customer.id;
-    } else if (session.user.role === 'RESTAURANT_OWNER') {
-      // Find restaurant for this user
+    } else if (scope === 'restaurant' || session.user.role === 'RESTAURANT_OWNER') {
       const restaurant = await prisma.restaurant.findFirst({
         where: { ownerId: session.user.id },
       });
 
       if (!restaurant) {
-        return NextResponse.json(
-          { error: 'Restaurant not found' },
-          { status: 404 }
-        );
+        // Gracefully return empty list instead of 404 to avoid noisy errors in UI contexts
+        return NextResponse.json({
+          success: true,
+          data: {
+            orders: [],
+            pagination: {
+              page,
+              limit,
+              total: 0,
+              totalPages: 0,
+              hasNext: false,
+              hasPrev: false,
+            },
+          },
+        });
       }
 
       where.restaurantId = restaurant.id;
-    } else if (session.user.role === 'DELIVERY_PARTNER') {
-      // Find delivery partner for this user
+    } else if (scope === 'delivery' || session.user.role === 'DELIVERY_PARTNER') {
       const deliveryPartner = await prisma.deliveryPartner.findUnique({
         where: { userId: session.user.id },
       });
 
       if (!deliveryPartner) {
-        return NextResponse.json(
-          { error: 'Delivery partner not found' },
-          { status: 404 }
-        );
+        return NextResponse.json({
+          success: true,
+          data: {
+            orders: [],
+            pagination: {
+              page,
+              limit,
+              total: 0,
+              totalPages: 0,
+              hasNext: false,
+              hasPrev: false,
+            },
+          },
+        });
       }
 
-      // Delivery partners can see orders assigned to them
       where.deliveryPartnerId = deliveryPartner.id;
     } else if (session.user.role === 'ADMIN') {
       // Admin can see all orders

@@ -76,7 +76,6 @@ export function ProductBottomSheet({
     if (!dish) return;
     updateQuantity(dish.id, existingQuantity + 1);
   };
-
   const handleDecrease = () => {
     if (!dish) return;
     updateQuantity(dish.id, existingQuantity - 1);

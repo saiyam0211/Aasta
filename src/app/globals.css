@@ -390,6 +390,14 @@ body {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+@supports not ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+  .glass-liquid {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+  }
+}
+
 .glass-liquid:focus {
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(255, 255, 255, 0.4);

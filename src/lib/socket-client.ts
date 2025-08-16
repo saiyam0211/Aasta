@@ -15,6 +15,16 @@ class SocketClient {
     }
   }
 
+  isConnected() {
+    return !!this.socket && this.socket.connected;
+  }
+
+  authenticate(userId: string, token: string) {
+    if (this.socket) {
+      this.socket.emit('authenticate', { userId, token });
+    }
+  }
+
   private setupEventHandlers() {
     if (this.socket) {
       this.socket.on('connect', () => {
@@ -49,6 +59,18 @@ class SocketClient {
   emit(event: string, data: any) {
     if (this.socket) {
       this.socket.emit(event, data);
+    }
+  }
+
+  on(event: string, handler: (data: any) => void) {
+    if (this.socket) {
+      this.socket.on(event, handler);
+    }
+  }
+
+  off(event: string, handler: (data: any) => void) {
+    if (this.socket) {
+      this.socket.off(event, handler);
     }
   }
 }

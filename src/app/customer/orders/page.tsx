@@ -63,19 +63,19 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PLACED':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-[#f3ffe6] text-[#002a01] border border-[#d1f86a]/50';
       case 'CONFIRMED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-[#e9ffe0] text-[#0f6a16] border border-[#d1f86a]/50';
       case 'PREPARING':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-[#fff6db] text-[#7a5a00] border border-[#ffd166]/50';
       case 'READY_FOR_PICKUP':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-[#eef2ff] text-[#1d4ed8] border border-[#c7d2fe]/60';
       case 'OUT_FOR_DELIVERY':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-[#fff0e6] text-[#7a3d00] border border-[#fb923c]/50';
       case 'DELIVERED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-[#e9ffe9] text-[#0f6a16] border border-[#d1f86a]/50';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border border-gray-200';
     }
   };
 
@@ -149,7 +149,7 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {orders.map((order) => {
         const StatusIcon = getStatusIcon(order.status);
         const progress = getOrderProgress(order.status);
@@ -159,17 +159,17 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
           <Card
             key={order.id}
             className={`cursor-pointer transition-shadow hover:shadow-lg ${
-              active ? 'border-l-4 border-l-orange-400' : ''
-            }`}
+              active ? 'border-l-4 border-l-[#d1f86a]' : ''
+            } border border-[#002a01]/10 rounded-lg`}
             onClick={() => router.push(`/customer/orders/${order.orderNumber}`)}
           >
-            <CardHeader className="pb-3">
+            <CardHeader className="py-2">
               <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     Order #{order.orderNumber}
                     {active && (
-                      <span className="rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-800">
+                      <span className="rounded-full border border-[#d1f86a]/60 bg-[#d1f86a]/30 px-2 py-[2px] text-[11px] text-[#002a01]">
                         Live
                       </span>
                     )}
@@ -179,24 +179,24 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
                   </span>
                 </div>
                 <Badge
-                  className={`${getStatusColor(order.status)} flex items-center gap-1 px-3 py-1`}
+                  className={`${getStatusColor(order.status)} flex items-center gap-1 px-2 py-[2px] text-xs rounded-full`}
                 >
                   <StatusIcon className="h-3 w-3" />
                   {order.status.replace('_', ' ')}
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4">
               {/* Progress Bar for Active Orders */}
               {active && (
-                <div className="mb-4">
+                <div className="mb-3">
                   <div className="mb-1 flex justify-between text-xs text-gray-500">
                     <span>Order Progress</span>
                     <span>{Math.round(progress)}%</span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200">
+                  <div className="h-1.5 w-full rounded-full bg-gray-200">
                     <div
-                      className="h-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 transition-all duration-300"
+                      className="h-1.5 rounded-full transition-all duration-300 bg-[#d1f86a]"
                       style={{ width: `${progress}%` }}
                     ></div>
                   </div>
@@ -204,8 +204,8 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
               )}
 
               {/* Order Items */}
-              <div className="mb-4">
-                <span className="text-sm text-gray-600">
+              <div className="mb-2">
+                <span className="block text-sm text-gray-600 overflow-hidden whitespace-nowrap text-ellipsis">
                   {order.items
                     .map((item, index) => (
                       <span key={item.id}>
@@ -222,12 +222,12 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
 
               {/* Delivery Address */}
               {active && (
-                <div className="mb-4 rounded-lg bg-gray-50 p-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="mb-3 rounded-lg border border-[#d1f86a]/40 bg-[#f6ffe6] p-2 text-xs">
+                  <div className="flex items-center gap-2 text-gray-600">
                     <MapPin className="h-4 w-4" />
                     <span className="font-medium">Delivery to:</span>
                   </div>
-                  <p className="ml-6 text-sm text-gray-700">
+                  <p className="ml-6 text-gray-700 overflow-hidden whitespace-nowrap text-ellipsis">
                     {order.deliveryAddress}
                   </p>
                 </div>
@@ -241,7 +241,7 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
                       order.estimatedDeliveryTime
                     ) {
                       return (
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-1 text-xs text-gray-600">
                           <Clock className="h-4 w-4" />
                           {`Delivered ${new Date(order.estimatedDeliveryTime).toLocaleDateString()}`}
                         </div>
@@ -253,14 +253,14 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
                       const calculatedTime =
                         getCalculatedEstimatedDeliveryTime(order);
                       return (
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-1 text-xs text-gray-600">
                           <Clock className="h-4 w-4" />
                           {`Est: ${calculatedTime.toLocaleTimeString()}`}
                         </div>
                       );
                     } else if (order.estimatedDeliveryTime) {
                       return (
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-1 text-xs text-gray-600">
                           <Clock className="h-4 w-4" />
                           {`Est: ${new Date(order.estimatedDeliveryTime).toLocaleTimeString()}`}
                         </div>
@@ -269,9 +269,9 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
                     return null;
                   })()}
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <span
-                    className="text-lg font-bold"
+                    className="text-base font-bold"
                     style={{ color: '#002a01' }}
                   >
                     ₹{order.total.toFixed(2)}
@@ -338,44 +338,52 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/orders`);
+      const response = await fetch(`/api/orders?as=customer`);
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(text || `HTTP ${response.status}`);
+      }
       const data = await response.json();
 
-      if (data.success) {
+      if (data?.success) {
         // Transform the API response to match our interface
-        const transformedOrders = data.data.orders.map((order: any) => ({
-          id: order.id,
-          orderNumber: order.orderNumber,
-          status: order.status,
-          total: order.totalAmount,
-          subtotal: order.subtotal,
-          taxes: order.taxes,
-          deliveryFee: order.deliveryFee,
-          createdAt: order.createdAt,
-          estimatedDeliveryTime: order.estimatedDeliveryTime,
-          estimatedPreparationTime: order.estimatedPreparationTime || 0,
-          estimatedDeliveryDuration: order.estimatedDeliveryDuration || 0,
-          deliveryAddress: `${order.deliveryAddress.street}, ${order.deliveryAddress.city}`,
-          items: order.orderItems.map((item: any) => ({
-            id: item.id,
-            menuItemId: item.menuItemId,
-            quantity: item.quantity,
-            price: item.unitPrice,
-            itemName: item.menuItem.name,
-          })),
-          restaurant: {
-            id: order.restaurant.id,
-            name: order.restaurant.name,
-            address: order.restaurant.address,
-          },
-        }));
+        const transformedOrders = (data.data.orders || []).map((order: any) => {
+          const restaurant = order.restaurant || {};
+          const address = order.deliveryAddress || {};
+          return {
+            id: order.id,
+            orderNumber: order.orderNumber,
+            status: order.status,
+            total: order.totalAmount,
+            subtotal: order.subtotal,
+            taxes: order.taxes,
+            deliveryFee: order.deliveryFee,
+            createdAt: order.createdAt,
+            estimatedDeliveryTime: order.estimatedDeliveryTime,
+            estimatedPreparationTime: order.estimatedPreparationTime || 0,
+            estimatedDeliveryDuration: order.estimatedDeliveryDuration || 0,
+            deliveryAddress: address?.street && address?.city ? `${address.street}, ${address.city}` : (address?.street || address?.city || ''),
+            items: (order.orderItems || []).map((item: any) => ({
+              id: item.id,
+              menuItemId: item.menuItemId,
+              quantity: item.quantity,
+              price: item.unitPrice,
+              itemName: item.menuItem?.name || 'Item',
+            })),
+            restaurant: {
+              id: restaurant?.id || '',
+              name: restaurant?.name || 'Restaurant',
+              address: restaurant?.address,
+            },
+          } as Order;
+        });
         setOrders(transformedOrders);
       } else {
-        toast.error('Failed to fetch orders');
+        toast.error(data?.error || 'Failed to fetch orders');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch orders:', error);
-      toast.error('Failed to fetch orders');
+      toast.error(error?.message || 'Failed to fetch orders');
     } finally {
       setIsLoading(false);
     }
@@ -549,12 +557,12 @@ export default function OrdersPage() {
   return (
     <CustomerLayout>
       <div className="mx-auto max-w-4xl px-4 py-6">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold" style={{ color: '#002a01' }}>
+            <h1 className="text-2xl font-bold" style={{ color: '#002a01' }}>
               Your Orders
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-1 text-gray-600 text-sm">
               Track your current and past orders
             </p>
           </div>
@@ -574,7 +582,7 @@ export default function OrdersPage() {
 
         {orders.length === 0 ? (
           <Card>
-            <CardContent className="py-16 text-center">
+            <CardContent className="py-12 text-center">
               <ShoppingBag className="mx-auto mb-4 h-16 w-16 text-gray-400" />
               <h3 className="mb-2 text-xl font-semibold">No orders yet</h3>
               <p className="mb-6 text-gray-500">
@@ -598,73 +606,73 @@ export default function OrdersPage() {
             {(() => {
               const stats = getOrderStats();
               return (
-                <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
+                <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-4">
                   <Card>
-                    <CardContent className="p-6">
+                    <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-600">
                             Total Orders
                           </p>
                           <p
-                            className="text-2xl font-bold"
+                            className="text-xl font-bold"
                             style={{ color: '#002a01' }}
                           >
                             {stats.total}
                           </p>
                         </div>
-                        <ShoppingBag className="h-8 w-8 text-gray-400" />
+                        <ShoppingBag className="h-8 w-8" style={{ color: '#002a01' }} />
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card>
-                    <CardContent className="p-6">
+                    <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-600">
                             Active Orders
                           </p>
-                          <p className="text-2xl font-bold text-orange-600">
+                          <p className="text-xl font-bold" style={{ color: '#002a01' }}>
                             {stats.active}
                           </p>
                         </div>
-                        <Truck className="h-8 w-8 text-orange-400" />
+                        <Truck className="h-8 w-8" style={{ color: '#002a01' }} />
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card>
-                    <CardContent className="p-6">
+                    <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-600">
                             Completed
                           </p>
-                          <p className="text-2xl font-bold text-green-600">
+                          <p className="text-xl font-bold" style={{ color: '#002a01' }}>
                             {stats.completed}
                           </p>
                         </div>
-                        <CheckCircle className="h-8 w-8 text-green-400" />
+                        <CheckCircle className="h-8 w-8" style={{ color: '#002a01' }} />
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card>
-                    <CardContent className="p-6">
+                    <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-600">
                             Total Spent
                           </p>
                           <p
-                            className="text-2xl font-bold"
+                            className="text-xl font-bold"
                             style={{ color: '#002a01' }}
                           >
                             ₹{stats.totalSpent.toFixed(0)}
                           </p>
                         </div>
-                        <TrendingUp className="h-8 w-8 text-gray-400" />
+                        <TrendingUp className="h-8 w-8" style={{ color: '#002a01' }} />
                       </div>
                     </CardContent>
                   </Card>
@@ -673,20 +681,20 @@ export default function OrdersPage() {
             })()}
 
             {/* Search and Filter */}
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row">
               <div className="relative flex-1">
                 <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                 <Input
                   placeholder="Search by order number or restaurant name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 focus-visible:ring-1 focus-visible:ring-[#d1f86a] border-[#d1f86a]/40"
                 />
               </div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-md border border-gray-300 bg-white px-3 py-2"
+                className="rounded-md border border-[#d1f86a]/50 bg-white px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#d1f86a]"
               >
                 <option value="ALL">All Status</option>
                 <option value="PLACED">Placed</option>
@@ -705,28 +713,26 @@ export default function OrdersPage() {
               className="w-full"
             >
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="all">
+                <TabsTrigger value="all" className="data-[state=active]:bg-[#d1f86a] data-[state=active]:text-[#002a01]">
                   All Orders ({orders.length})
                 </TabsTrigger>
-                <TabsTrigger value="active">
-                  Active ({orders.filter((o) => isActiveOrder(o.status)).length}
-                  )
+                <TabsTrigger value="active" className="data-[state=active]:bg-[#d1f86a] data-[state=active]:text-[#002a01]">
+                  Active ({orders.filter((o) => isActiveOrder(o.status)).length})
                 </TabsTrigger>
-                <TabsTrigger value="completed">
-                  Completed (
-                  {orders.filter((o) => o.status === 'DELIVERED').length})
+                <TabsTrigger value="completed" className="data-[state=active]:bg-[#d1f86a] data-[state=active]:text-[#002a01]">
+                  Completed ({orders.filter((o) => o.status === 'DELIVERED').length})
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="all" className="mt-6">
+              <TabsContent value="all" className="mt-4">
                 <OrdersList orders={getFilteredOrdersByTab('all')} />
               </TabsContent>
 
-              <TabsContent value="active" className="mt-6">
+              <TabsContent value="active" className="mt-4">
                 <OrdersList orders={getFilteredOrdersByTab('active')} />
               </TabsContent>
 
-              <TabsContent value="completed" className="mt-6">
+              <TabsContent value="completed" className="mt-4">
                 <OrdersList orders={getFilteredOrdersByTab('completed')} />
               </TabsContent>
             </Tabs>
