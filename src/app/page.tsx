@@ -97,7 +97,12 @@ export default function HomePage() {
       return;
     }
 
-    if (!latitude || !longitude) setShowLocationPrompt(true);
+    // If user has not shared location yet, go to full-screen onboarding
+    if (!latitude || !longitude) {
+      router.replace('/onboarding/location');
+      return;
+    }
+
     // Load popular content on initial mount and when location becomes available
     loadPopularContent();
   }, [session, status, latitude, longitude]);
@@ -295,6 +300,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Full-screen onboarding handles location; fallback UI kept for legacy */}
       {showLocationPrompt && (
         <LocationPrompt
           onLocationShared={(location) => {
@@ -309,7 +315,7 @@ export default function HomePage() {
 
       <HomeHeader
         locationLabel={selectedLocationLabel}
-        onLocationClick={() => setShowLocationPrompt(true)}
+        onLocationClick={() => router.push('/onboarding/location')}
         onSearch={(q) => performInlineSearch(q)}
         onFilterClick={() => router.push('/search')}
         onCartClick={() => router.push('/cart')}

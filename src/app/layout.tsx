@@ -3,7 +3,7 @@ import localFont from 'next/font/local';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import Script from 'next/script';
-import NativeBridge from '@/components/native-bridge';
+import ClientRoot from '@/components/client-root';
 
 const brandFont = localFont({
   src: [
@@ -87,8 +87,7 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased pt-safe pb-safe">
         <Providers>
-          <NativeBridge />
-          {children}
+          <ClientRoot>{children}</ClientRoot>
         </Providers>
       </body>
     </html>
