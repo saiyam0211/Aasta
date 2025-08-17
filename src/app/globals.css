@@ -380,10 +380,9 @@ body {
 /* Enhanced liquid glass effect for search bars */
 .glass-liquid {
   /* Stronger base so it isn't too transparent on platforms with weak backdrop-filter */
-  background: rgba(255, 255, 255, 0.72);
-  background-color: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(14px) saturate(160%) contrast(105%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%) contrast(105%);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(22px) saturate(180%) contrast(110%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%) contrast(110%);
   border: 1px solid rgba(255, 255, 255, 0.35);
   box-shadow:
     0 10px 36px rgba(0, 42, 1, 0.12),
@@ -393,22 +392,12 @@ body {
   -webkit-background-clip: padding-box;
   background-clip: padding-box;
   isolation: isolate;
-  will-change: backdrop-filter, background-color;
-}
-
-/* If the browser reports support for backdrop-filter, allow slightly lighter base */
-@supports ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
-  .glass-liquid {
-    background: rgba(255, 255, 255, 0.58);
-    background-color: rgba(255, 255, 255, 0.58);
-  }
 }
 
 /* Fallback for environments without backdrop-filter (many WebViews) */
 @supports not ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
   .glass-liquid {
-    background: rgba(255, 255, 255, 0.9);
-    background-color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.96);
     border-color: rgba(0, 0, 0, 0.06);
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
   }

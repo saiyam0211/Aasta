@@ -1,16 +1,13 @@
-'use client';
-
-import { useParams } from 'next/navigation';
-
 interface DeliveryPartnerDetailPageProps {
   params: Promise<{
     id: string;
   }>;
 }
 
-export default function DeliveryPartnerDetailPage() {
-  const params = useParams();
-  const id = params?.id as string;
+export default async function DeliveryPartnerDetailPage({
+  params,
+}: DeliveryPartnerDetailPageProps) {
+  const { id } = await params;
 
   return (
     <div>
