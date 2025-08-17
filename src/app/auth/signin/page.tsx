@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Lottie from 'lottie-react';
 import step1 from '../../../../public/lotties/step1.json';
 import step2 from '../../../../public/lotties/step2.json';
@@ -19,11 +19,29 @@ export default function SignInPage() {
 	const [error, setError] = useState('');
 	const verifierRef = useRef<RecaptchaVerifier | null>(null);
 
+	useEffect(() => {
+		// When entering the phone step, reset and create a fresh verifier
+		if (step === 5) {
+			try {
+				// Clear any stale verifier first
+				if (verifierRef.current && typeof (verifierRef.current as any).clear === 'function') {
+					(verifierRef.current as any).clear();
+				}
+				verifierRef.current = null;
+				const size = process.env.NEXT_PUBLIC_RECAPTCHA_SIZE === 'normal' ? 'normal' : 'invisible';
+				verifierRef.current = createInvisibleRecaptcha('recaptcha-container', size);
+			} catch (e) {
+				console.error('Failed to (re)create reCAPTCHA verifier', e);
+			}
+		}
+	}, [step]);
+
 	async function startPhoneFlow() {
 		setError('');
 		try {
 			setIsLoading(true);
 			const formatted = phone.trim().startsWith('+') ? phone.trim() : `+91${phone.trim()}`;
+			// Ensure verifier is present
 			if (!verifierRef.current) {
 				const size = process.env.NEXT_PUBLIC_RECAPTCHA_SIZE === 'normal' ? 'normal' : 'invisible';
 				verifierRef.current = createInvisibleRecaptcha('recaptcha-container', size);
