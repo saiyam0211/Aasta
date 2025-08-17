@@ -17,7 +17,20 @@ export default withAuth(
       });
     }
 
-    // Allow access to auth pages only
+    // If already authenticated, prevent accessing auth screens to avoid loops
+    if (token) {
+      if (pathname.startsWith('/auth')) {
+        return NextResponse.redirect(new URL('/', req.url));
+      }
+      if (pathname.startsWith('/restaurant/auth')) {
+        return NextResponse.redirect(new URL('/restaurant/dashboard', req.url));
+      }
+      if (pathname.startsWith('/delivery/auth')) {
+        return NextResponse.redirect(new URL('/delivery/dashboard', req.url));
+      }
+    }
+
+    // Allow access to auth pages and public admin/ops entry pages
     if (
       pathname.startsWith('/auth') ||
       pathname.startsWith('/restaurant/auth') ||

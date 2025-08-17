@@ -300,6 +300,13 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       console.log('Redirect URL:', url, 'Base URL:', baseUrl);
 
+      // Normalize any redirects back to auth pages → home to avoid loops
+      const urlObj = new URL(url, baseUrl);
+      const path = urlObj.pathname || '';
+      if (path.startsWith('/auth')) {
+        return baseUrl;
+      }
+
       // If the URL is from our domain, allow it
       if (url.startsWith(baseUrl)) {
         return url;

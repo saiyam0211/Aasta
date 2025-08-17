@@ -8,8 +8,12 @@ import step3 from '../../../../public/lotties/step3.json';
 import { createInvisibleRecaptcha, sendOtp } from '@/lib/firebase-client';
 import type { RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
 import { signIn } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function SignInPage() {
+	const { status } = useSession();
+	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
 	const [step, setStep] = useState<number>(1);
 	const [name, setName] = useState('');
@@ -18,6 +22,13 @@ export default function SignInPage() {
 	const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
 	const [error, setError] = useState('');
 	const verifierRef = useRef<RecaptchaVerifier | null>(null);
+
+	useEffect(() => {
+		if (status === 'authenticated') {
+			// Immediately leave sign-in if already logged in
+			router.replace('/');
+		}
+	}, [status, router]);
 
 	useEffect(() => {
 		// When entering the phone step, reset and create a fresh verifier
