@@ -1,180 +1,177 @@
 'use client';
 
+import { useState, useRef } from 'react';
+import Lottie from 'lottie-react';
+import step1 from '../../../../public/lotties/step1.json';
+import step2 from '../../../../public/lotties/step2.json';
+import step3 from '../../../../public/lotties/step3.json';
+import { createInvisibleRecaptcha, sendOtp } from '@/lib/firebase-client';
+import type { RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
 
 export default function SignInPage() {
-  const [isLoading, setIsLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
+	const [step, setStep] = useState<number>(1);
+	const [name, setName] = useState('');
+	const [phone, setPhone] = useState('');
+	const [otp, setOtp] = useState('');
+	const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
+	const [error, setError] = useState('');
+	const verifierRef = useRef<RecaptchaVerifier | null>(null);
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setIsLoading(true);
-      await signIn('google', {
-        callbackUrl: '/',
-        redirect: true,
-      });
-    } catch (error) {
-      console.error('Sign in error:', error);
-      setIsLoading(false);
-    }
-  };
+	async function startPhoneFlow() {
+		setError('');
+		try {
+			setIsLoading(true);
+			const formatted = phone.trim().startsWith('+') ? phone.trim() : `+91${phone.trim()}`;
+			if (!verifierRef.current) {
+				const size = process.env.NEXT_PUBLIC_RECAPTCHA_SIZE === 'normal' ? 'normal' : 'invisible';
+				verifierRef.current = createInvisibleRecaptcha('recaptcha-container', size);
+			}
+			const result = await sendOtp(formatted, verifierRef.current);
+			setConfirmation(result);
+		} catch (e: any) {
+			console.error(e);
+			setError(e?.message || 'Failed to send OTP');
+		} finally {
+			setIsLoading(false);
+		}
+	}
 
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center p-4"
-      style={{ backgroundColor: '#002a01' }}
-    >
-      <Card
-        className="w-full max-w-md"
-        style={{
-          backgroundColor: '#fcfefe',
-          borderRadius: '16px',
-          boxShadow: '0 4px 20px rgba(0, 42, 1, 0.15)',
-        }}
-      >
-        <CardHeader className="space-y-1 text-center">
-          {/* Aasta Logo */}
-          <div className="mb-6 flex justify-center">
-            <div
-              className="flex h-20 w-20 items-center justify-center"
-              style={{
-                backgroundColor: '#d1f86a',
-                borderRadius: '16px',
-              }}
-            >
-              <span
-                className="text-3xl font-bold"
-                style={{
-                  color: '#002a01',
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: '700',
-                }}
-              >
-                A
-              </span>
-            </div>
-          </div>
+	async function verifyOtp() {
+		if (!confirmation || !otp) return;
+		setError('');
+		try {
+			setIsLoading(true);
+			// Confirm with Firebase
+			await confirmation.confirm(otp);
+			// Create NextAuth session via credentials provider
+			const formatted = phone.trim().startsWith('+') ? phone.trim() : `+91${phone.trim()}`;
+			await signIn('phone-otp', {
+				phone: formatted,
+				name: name.trim(),
+				redirect: true,
+				callbackUrl: '/',
+			});
+		} catch (e: any) {
+			console.error(e);
+			setError('Invalid code, try again');
+		} finally {
+			setIsLoading(false);
+		}
+	}
 
-          <CardTitle
-            className="text-3xl font-bold"
-            style={{
-              color: '#002a01',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: '700',
-            }}
-          >
-            Welcome to Aasta
-          </CardTitle>
-          <CardDescription
-            className="text-lg"
-            style={{
-              color: '#002a01',
-              fontStyle: 'italic',
-            }}
-          >
-            Premium late night food delivery from 9 PM to 12 AM ✨
-          </CardDescription>
-        </CardHeader>
+	return (
+		<div className="min-h-screen w-full bg-white">
+			<div className="mx-auto flex min-h-screen max-w-md flex-col px-5 pb-8 pt-[50%]">
+				<div key={step} className="animate-slide-up transition-all duration-300 ease-out">
+					{step === 1 && (
+						<div className="flex h-full flex-col items-center text-center">
+							<div className="mb-6 w-full">
+								<Lottie animationData={step1 as any} loop autoplay style={{ width: '100%', height: 280 }} />
+							</div>
+							<h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">Tired of endless scrolling?</h2>
+							<p className="mx-auto max-w-sm text-base text-[#475569]">
+								Too many apps, too many fake deals. Finding food shouldn’t feel like a chore.
+							</p>
+							<div className="mt-6 w-full">
+								<button onClick={() => setStep(2)} className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white">
+									Skip the scroll →
+								</button>
+							</div>
+						</div>
+					)}
 
-        <CardContent className="space-y-6">
-          <Button
-            onClick={handleGoogleSignIn}
-            disabled={isLoading}
-            className="h-12 w-full text-base font-semibold"
-            style={{
-              backgroundColor: '#d1f86a',
-              color: '#002a01',
-              border: '2px solid #002a01',
-              borderRadius: '12px',
-              minHeight: '48px',
-            }}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              <>
-                <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
-                  <path
-                    fill="currentColor"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                Continue with Google
-              </>
-            )}
-          </Button>
+					{step === 2 && (
+						<div className="flex h-full flex-col items-center text-center">
+							<div className="mb-6 w-full">
+								<Lottie animationData={step2 as any} loop autoplay style={{ width: '100%', height: 280 }} />
+							</div>
+							<h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">We’ve already made the smart choice.</h2>
+							<p className="mx-auto max-w-sm text-base text-[#475569]">
+								Aasta handpicks real, transparent deals and eco-friendly partner kitchens — so you save time, money, and the planet..
+							</p>
+							<div className="mt-6 w-full">
+								<button onClick={() => setStep(3)} className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white">
+									Show me the #FoodHack →
+								</button>
+							</div>
+						</div>
+					)}
 
-          <div className="space-y-2 text-center">
-            <p className="text-xs text-gray-600">
-              By continuing, you agree to our{' '}
-              <a
-                href="/terms"
-                className="underline hover:no-underline"
-                style={{ color: '#002a01' }}
-              >
-                Terms of Service
-              </a>{' '}
-              and{' '}
-              <a
-                href="/privacy"
-                className="underline hover:no-underline"
-                style={{ color: '#002a01' }}
-              >
-                Privacy Policy
-              </a>
-            </p>
-          </div>
+					{step === 3 && (
+						<div className="flex h-full flex-col items-center text-center">
+							<div className="mb-6 w-full">
+								<Lottie animationData={step3 as any} loop autoplay style={{ width: '100%', height: 280 }} />
+							</div>
+							<h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">Eat smarter. Feel lighter.</h2>
+							<p className="mx-auto max-w-sm text-base text-[#475569]">
+								Fast delivery, fair prices, and food that doesn’t cost the Earth. Because every order is a #FoodHack for you — and for the planet.
+							</p>
+							<div className="mt-6 w-full">
+								<button onClick={() => setStep(4)} className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white">
+									Let’s Get Started →
+								</button>
+							</div>
+						</div>
+					)}
 
-          <div
-            className="rounded-xl p-4 text-center"
-            style={{ backgroundColor: 'rgba(209, 248, 106, 0.2)' }}
-          >
-            <p
-              className="mb-1 font-semibold"
-              style={{
-                color: '#002a01',
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: '600',
-              }}
-            >
-              Operating Hours:
-            </p>
-            <p className="text-2xl font-bold" style={{ color: '#002a01' }}>
-              9:00 PM
-            </p>
-            <p className="text-sm" style={{ color: '#002a01' }}>
-              to
-            </p>
-            <p className="text-2xl font-bold" style={{ color: '#002a01' }}>
-              12:00 AM
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+					{step === 4 && (
+						<div className="flex h-full flex-col items-center text-center">
+							<h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">What's your name?</h2>
+							<p className="mx-auto max-w-sm text-base text-[#475569]">We’ll personalize your experience.</p>
+							<div className="mt-4 w-full space-y-3">
+								<input
+									type="text"
+									placeholder="Your name"
+									className="w-full rounded-xl border border-gray-300 px-4 py-3 text-center text-lg"
+									value={name}
+									onChange={(e) => setName(e.target.value)}
+								/>
+								<button onClick={() => setStep(5)} disabled={!name.trim()} className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white">
+									Next →
+								</button>
+							</div>
+						</div>
+					)}
+
+					{step === 5 && (
+						<div className="flex h-full flex-col items-center text-center">
+							<h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">Enter your phone number</h2>
+							<p className="mx-auto max-w-sm text-base text-[#475569]">We’ll send you a one-time code to sign in securely.</p>
+							<div className="mt-4 w-full space-y-3">
+								<input
+									type="tel"
+									placeholder="e.g., 9876543210"
+									className="w-full rounded-xl border border-gray-300 px-4 py-3 text-center text-lg"
+									value={phone}
+									onChange={(e) => setPhone(e.target.value)}
+								/>
+								<div id="recaptcha-container" />
+								<button disabled={isLoading || phone.length < 8} onClick={startPhoneFlow} className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white">
+									{isLoading ? 'Sending…' : 'Send OTP'}
+								</button>
+								{confirmation && (
+									<div className="space-y-3 pt-4">
+										<input
+											type="text"
+											placeholder="6-digit code"
+											className="w-full rounded-xl border border-gray-300 px-4 py-3 text-center text-lg tracking-widest"
+											maxLength={6}
+											value={otp}
+											onChange={(e) => setOtp(e.target.value)}
+										/>
+										<button disabled={isLoading || otp.length < 6} onClick={verifyOtp} className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white">
+											{isLoading ? 'Verifying…' : 'Verify & Continue'}
+										</button>
+										{error && <p className="pt-2 text-sm text-red-600">{error}</p>}
+									</div>
+								)}
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
+		</div>
+	);
 }

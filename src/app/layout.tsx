@@ -66,7 +66,7 @@ export default function RootLayout({
               deferredPrompt = e;
               const installBtn = document.createElement('button');
               installBtn.innerText = 'Install Aasta App';
-              installBtn.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:1000;padding:12px 20px;background:#002a01;color:white;border:none;border-radius:6px;font-size:16px;cursor:pointer;';
+              installBtn.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:1000;padding:12px 20px;background:#002a01;color:white;border:none;border-radius:6px;font-size:16px;cursor:pointer;';
               installBtn.addEventListener('click', async () => {
                 if (deferredPrompt) {
                   deferredPrompt.prompt();

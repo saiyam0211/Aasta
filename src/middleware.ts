@@ -17,7 +17,7 @@ export default withAuth(
       });
     }
 
-    // Allow access to auth pages, admin routes, and operations routes (they have separate auth)
+    // Allow access to auth pages only
     if (
       pathname.startsWith('/auth') ||
       pathname.startsWith('/restaurant/auth') ||
@@ -33,13 +33,10 @@ export default withAuth(
       return NextResponse.next();
     }
 
-    // Redirect to signin if not authenticated
+    // Redirect unauthenticated users to sign in
     if (!token) {
-      // Redirect to appropriate signin page based on path
       if (pathname.startsWith('/restaurant')) {
-        return NextResponse.redirect(
-          new URL('/restaurant/auth/signin', req.url)
-        );
+        return NextResponse.redirect(new URL('/restaurant/auth/signin', req.url));
       } else if (pathname.startsWith('/delivery')) {
         return NextResponse.redirect(new URL('/delivery/auth/signin', req.url));
       } else {
@@ -47,41 +44,17 @@ export default withAuth(
       }
     }
 
-    // Allow access to all authenticated routes for now
-    // We'll implement proper role-based access control later
     return NextResponse.next();
   },
   {
     callbacks: {
-      authorized: ({ token, req }) => {
-        // Allow access to public routes
-        const { pathname } = req.nextUrl;
-
-        // Always allow auth pages, home page, admin routes, operations routes, and API routes
-        if (
-          pathname === '/' ||
-          pathname.startsWith('/auth') ||
-          pathname.startsWith('/restaurant/auth') ||
-          pathname.startsWith('/delivery/auth') ||
-          pathname.startsWith('/admin') ||
-          pathname.startsWith('/operations') ||
-          pathname.startsWith('/api/')
-        ) {
-          return true;
-        }
-
-        // For protected routes, require authentication
-        return !!token;
-      },
+      authorized: () => true,
     },
   }
 );
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths including API routes for logging
-     */
     '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|offline.html|icons|public).*)',
   ],
 };

@@ -7,13 +7,13 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get the user from database
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: session.user.id as string },
     });
 
     if (!user) {
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         longitude: data.longitude,
         address: data.address,
         phone: data.phone,
-        email: user.email,
+        email: user.email ?? null,
         locationId: data.locationId,
         // Default values for admin-controlled fields
         cuisineTypes: data.cuisineTypes || [], // Empty array, admin will set later
@@ -116,13 +116,13 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get the user from database
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: session.user.id as string },
       include: {
         restaurant: true,
       },

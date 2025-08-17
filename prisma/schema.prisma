@@ -16,10 +16,10 @@ datasource db {
 // User Management
 model User {
   id        String   @id @default(cuid())
-  email     String   @unique
+  email     String?  @unique
   name      String?
   image     String?
-  phone     String?
+  phone     String?  @unique
   password  String?  // For email/password authentication
   role      UserRole @default(CUSTOMER)
   googleId  String?  @unique

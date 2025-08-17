@@ -44,7 +44,7 @@ export const authOptions: NextAuthOptions = {
             email: ADMIN_CREDENTIALS.email,
             name: ADMIN_CREDENTIALS.name,
             role: 'ADMIN',
-          };
+          } as any;
         }
         return null;
       },
@@ -67,7 +67,7 @@ export const authOptions: NextAuthOptions = {
             where: {
               email: credentials.email,
               role: 'RESTAURANT_OWNER',
-            },
+            } as any,
           });
 
           if (!user || !user.password) {
@@ -89,9 +89,59 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             role: user.role,
-          };
+          } as any;
         } catch (error) {
           console.error('Restaurant auth error:', error);
+          return null;
+        }
+      },
+    }),
+    CredentialsProvider({
+      id: 'phone-otp',
+      name: 'Phone OTP',
+      credentials: {
+        phone: { label: 'Phone', type: 'text' },
+        name: { label: 'Name', type: 'text' },
+      },
+      async authorize(credentials) {
+        const phoneRaw = credentials?.phone?.toString().trim();
+        if (!phoneRaw) return null;
+        const providedName = credentials?.name?.toString().trim();
+        // Expect E.164 from client (+<country><number>)
+        const phone = phoneRaw.startsWith('+') ? phoneRaw : `+91${phoneRaw}`;
+
+        try {
+          let user = await prisma.user.findFirst({ where: { phone } as any });
+          if (!user) {
+            user = await prisma.user.create({
+              data: {
+                phone,
+                role: 'CUSTOMER',
+                name: providedName && providedName.length > 0 ? providedName : 'Aasta User',
+              } as any,
+            });
+            await prisma.customer.create({
+              data: {
+                userId: user.id,
+                favoriteRestaurants: [],
+              },
+            });
+          } else if (providedName && !user.name) {
+            // Backfill name on first sign-in if it was missing
+            user = await prisma.user.update({
+              where: { id: user.id },
+              data: { name: providedName },
+            });
+          }
+          return {
+            id: user.id,
+            name: user.name || providedName || 'Asta User',
+            email: user.email,
+            role: user.role,
+            phone: (user as any).phone || phone,
+          } as any;
+        } catch (error) {
+          console.error('Phone OTP authorize error:', error);
           return null;
         }
       },
@@ -106,40 +156,62 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error',
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       try {
-        if (!user.email) return false;
-
-        // Handle admin user - don't create database entry
-        if (user.role === 'ADMIN') {
+        // Allow if admin
+        if ((user as any).role === 'ADMIN') {
           return true;
         }
 
-        // Check if user exists in our database
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email },
-        });
+        const userHasEmail = !!user.email;
+        const userHasPhone = !!(user as any).phone;
+        if (!userHasEmail && !userHasPhone) return false;
 
-        if (!existingUser) {
-          // Determine role based on the signin URL (this will be passed via state or we'll use a default)
-          // For now, we'll create with CUSTOMER role and update it later if needed
-          const newUser = await prisma.user.create({
-            data: {
-              email: user.email,
-              name: user.name,
-              image: user.image,
-              googleId: account?.providerAccountId,
-              role: 'CUSTOMER', // Default role, can be updated later
-            },
+        // When signing in with Google, ensure user exists (by email)
+        if (account?.provider === 'google' && userHasEmail) {
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email as string },
           });
+          if (!existingUser) {
+            const newUser = await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name,
+                image: user.image,
+                googleId: account?.providerAccountId,
+                role: 'CUSTOMER',
+              },
+            });
+            await prisma.customer.create({
+              data: {
+                userId: newUser.id,
+                favoriteRestaurants: [],
+              },
+            });
+          }
+          return true;
+        }
 
-          // Create customer profile by default
-          await prisma.customer.create({
-            data: {
-              userId: newUser.id,
-              favoriteRestaurants: [],
-            },
-          });
+        // When signing in with phone credentials, ensure user exists (by phone)
+        if (account?.provider === 'phone-otp' && userHasPhone) {
+          const phone = (user as any).phone as string;
+          const existingByPhone = await prisma.user.findFirst({ where: { phone } as any });
+          if (!existingByPhone) {
+            const newUser = await prisma.user.create({
+              data: {
+                phone,
+                name: user.name || 'Aasta User',
+                role: 'CUSTOMER',
+              } as any,
+            });
+            await prisma.customer.create({
+              data: {
+                userId: newUser.id,
+                favoriteRestaurants: [],
+              },
+            });
+          }
+          return true;
         }
 
         return true;
@@ -148,78 +220,80 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       // Set initial data on first login
       if (user) {
-        token.email = user.email;
+        token.email = (user.email as any) || '';
+        (token as any).phone = (user as any).phone as any;
         token.name = user.name;
 
         // Handle admin user - don't query database
-        if (user.role === 'ADMIN') {
-          token.id = 'admin';
-          token.role = 'ADMIN';
+        if ((user as any).role === 'ADMIN') {
+          (token as any).id = 'admin';
+          (token as any).role = 'ADMIN';
           return token;
         }
       }
 
       // Handle admin token on subsequent requests
-      if (token.email === ADMIN_CREDENTIALS.email && token.role === 'ADMIN') {
+      if (token.email === ADMIN_CREDENTIALS.email && (token as any).role === 'ADMIN') {
         return token;
       }
 
-      // Always fetch fresh user data from database to ensure role is up-to-date (for non-admin users)
-      if (token.email) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { email: token.email as string },
-            include: {
-              customer: true,
-              deliveryPartner: true,
-            },
-          });
+      // Always fetch fresh user data from database (by email or phone)
+      try {
+        const dbUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              token.email ? { email: token.email as string } : undefined,
+              (token as any).phone ? { phone: (token as any).phone as string } : undefined,
+            ].filter(Boolean) as any,
+          },
+          include: {
+            customer: true,
+            deliveryPartner: true,
+          },
+        });
 
-          if (dbUser) {
-            token.id = dbUser.id;
-            token.role = dbUser.role;
-            token.phone = dbUser.phone;
-            token.email = dbUser.email;
+        if (dbUser) {
+          (token as any).id = dbUser.id;
+          (token as any).role = dbUser.role;
+          (token as any).phone = (dbUser as any).phone;
+          token.email = (dbUser.email as any) || '';
 
-            // Add role-specific data
-            if (dbUser.role === 'CUSTOMER' && dbUser.customer) {
-              token.customerId = dbUser.customer.id;
-            } else if (
-              dbUser.role === 'DELIVERY_PARTNER' &&
-              dbUser.deliveryPartner
-            ) {
-              token.deliveryPartnerId = dbUser.deliveryPartner.id;
-            } else if (dbUser.role === 'RESTAURANT_OWNER') {
-              // For restaurant owners, we'll fetch the restaurant separately to avoid schema issues
-              const restaurant = await prisma.restaurant.findUnique({
-                where: { ownerId: dbUser.id },
-                select: { id: true },
-              });
-              if (restaurant) {
-                token.restaurantId = restaurant.id;
-              }
+          // Add role-specific data
+          if (dbUser.role === 'CUSTOMER' && dbUser.customer) {
+            (token as any).customerId = dbUser.customer.id;
+          } else if (
+            dbUser.role === 'DELIVERY_PARTNER' &&
+            dbUser.deliveryPartner
+          ) {
+            (token as any).deliveryPartnerId = dbUser.deliveryPartner.id;
+          } else if (dbUser.role === 'RESTAURANT_OWNER') {
+            const restaurant = await prisma.restaurant.findUnique({
+              where: { ownerId: dbUser.id },
+              select: { id: true },
+            });
+            if (restaurant) {
+              (token as any).restaurantId = restaurant.id;
             }
           }
-        } catch (error) {
-          console.error('JWT callback error:', error);
-          // Continue with existing token data if database query fails
         }
+      } catch (error) {
+        console.error('JWT callback error:', error);
       }
 
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as any;
-        session.user.phone = token.phone as string;
-        session.user.email = token.email as string;
-        session.user.customerId = token.customerId as string;
-        session.user.deliveryPartnerId = token.deliveryPartnerId as string;
-        session.user.restaurantId = token.restaurantId as string;
+        (session.user as any).id = (token as any).id as string;
+        (session.user as any).role = (token as any).role as any;
+        (session.user as any).phone = (token as any).phone as string;
+        session.user.email = (token as any).email as string;
+        (session.user as any).customerId = (token as any).customerId as string;
+        (session.user as any).deliveryPartnerId = (token as any).deliveryPartnerId as string;
+        (session.user as any).restaurantId = (token as any).restaurantId as string;
       }
       return session;
     },
@@ -251,12 +325,12 @@ export const authOptions: NextAuthOptions = {
     },
   },
   events: {
-    async signIn({ user, account, isNewUser }) {
+    async signIn({ user, isNewUser }) {
       if (isNewUser) {
-        console.log(`New user signed up: ${user.email}`);
+        console.log(`New user signed up: ${user?.email}`);
       }
     },
-    async signOut({ session, token }) {
+    async signOut({ session }) {
       console.log(`User signed out: ${session?.user?.email}`);
     },
   },
