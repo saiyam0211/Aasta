@@ -48,6 +48,8 @@ export default function SignInPage() {
 			}
 			const result = await sendOtp(formatted, verifierRef.current);
 			setConfirmation(result);
+			// Move to OTP step
+			setStep(6);
 		} catch (e: any) {
 			console.error(e);
 			setError(e?.message || 'Failed to send OTP');
@@ -157,11 +159,11 @@ export default function SignInPage() {
 						<div className="flex h-full flex-col items-center text-center">
 							<h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">Enter your phone number</h2>
 							<p className="mx-auto max-w-sm text-base text-[#475569]">We’ll send you a one-time code to sign in securely.</p>
-							<div className="mt-4 w-full space-y-3">
+							<div className="mt-4 w-full space-y-3 rounded-3xl glass-liquid p-4 shadow-xl">
 								<input
 									type="tel"
 									placeholder="e.g., 9876543210"
-									className="w-full rounded-xl border border-gray-300 px-4 py-3 text-center text-lg"
+									className="w-full rounded-xl border border-gray-300 px-4 py-3 text-center text-lg bg-white/60"
 									value={phone}
 									onChange={(e) => setPhone(e.target.value)}
 								/>
@@ -169,22 +171,28 @@ export default function SignInPage() {
 								<button disabled={isLoading || phone.length < 8} onClick={startPhoneFlow} className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white">
 									{isLoading ? 'Sending…' : 'Send OTP'}
 								</button>
-								{confirmation && (
-									<div className="space-y-3 pt-4">
-										<input
-											type="text"
-											placeholder="6-digit code"
-											className="w-full rounded-xl border border-gray-300 px-4 py-3 text-center text-lg tracking-widest"
-											maxLength={6}
-											value={otp}
-											onChange={(e) => setOtp(e.target.value)}
-										/>
-										<button disabled={isLoading || otp.length < 6} onClick={verifyOtp} className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white">
-											{isLoading ? 'Verifying…' : 'Verify & Continue'}
-										</button>
-										{error && <p className="pt-2 text-sm text-red-600">{error}</p>}
-									</div>
-								)}
+								{error && <p className="pt-2 text-sm text-red-600">{error}</p>}
+							</div>
+						</div>
+					)}
+
+					{step === 6 && (
+						<div className="flex h-full flex-col items-center text-center">
+							<h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">Verify code</h2>
+							<p className="mx-auto max-w-sm text-base text-[#475569]">We sent an OTP to {phone.trim().startsWith('+') ? phone : `+91${phone}`}</p>
+							<div className="mt-4 w-full space-y-3 rounded-3xl glass-liquid p-4 shadow-xl">
+								<input
+									type="text"
+									placeholder="6-digit code"
+									className="w-full rounded-xl border border-gray-300 px-4 py-3 text-center text-lg tracking-widest bg-white/60"
+									maxLength={6}
+									value={otp}
+									onChange={(e) => setOtp(e.target.value)}
+								/>
+								<button disabled={isLoading || otp.length < 6} onClick={verifyOtp} className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white">
+									{isLoading ? 'Verifying…' : 'Verify & Continue'}
+								</button>
+								{error && <p className="pt-2 text-sm text-red-600">{error}</p>}
 							</div>
 						</div>
 					)}
