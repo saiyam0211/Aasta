@@ -37,23 +37,23 @@ export const LocationPrompt = ({
         throw new Error('Geolocation is not supported by this browser.');
       }
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setIsSharing(false);
-          onLocationShared({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setIsSharing(false);
+        onLocationShared({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
         (geoError) => {
-          setIsSharing(false);
-          setError(
+        setIsSharing(false);
+        setError(
             "Couldn't get your location. Please try again or check your settings."
-          );
+        );
           console.error('Geolocation error:', geoError);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-      );
+    );
     } catch (e: any) {
       setIsSharing(false);
       setError(e?.message || 'Failed to get location');

@@ -4,7 +4,7 @@ import { initializeTelegramBot } from '@/lib/telegram-bot-integration';
 
 export async function TelegramBotInitializer() {
 	if (process.env.ENABLE_TELEGRAM_BOT === 'true') {
-		await initializeTelegramBot();
+  await initializeTelegramBot();
 	}
-	return null;
+  return null;
 }
