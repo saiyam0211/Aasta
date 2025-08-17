@@ -202,13 +202,15 @@ function buildMenuItems(restaurantId: string) {
     const bank = dishBank[category] ?? dishBank['North Indian'];
     const dish = sample(bank);
     const price = rand(80, 450);
-    const originalPrice = Math.random() > 0.5 ? price + rand(10, 60) : null;
+    // Ensure at least 50% off: originalPrice >= 2x price
+    const multiplier = 2 + Math.random(); // 2.0 - 3.0x
+    const originalPrice = Math.round(price * multiplier);
     items.push({
       restaurantId,
       name: dish,
       description: `${dish} prepared fresh with quality ingredients` ,
       price,
-      originalPrice: originalPrice ?? undefined,
+      originalPrice,
       category,
       preparationTime: rand(10, 25),
       imageUrl: `https://source.unsplash.com/featured/400x300/?${encodeURIComponent(dish)}`,
