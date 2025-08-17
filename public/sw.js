@@ -1,5 +1,5 @@
-const CACHE_NAME = 'aasta-night-delivery-v4';
-const STATIC_CACHE = 'static-v4';
+const CACHE_NAME = 'aasta-night-delivery-v6';
+const STATIC_CACHE = 'static-v6';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -48,8 +48,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Next static assets: cache-first
-  if (url.pathname.startsWith('/_next/') || url.pathname.startsWith('/icons/')) {
+  // Never cache Next.js build assets in the service worker to avoid version mismatches
+  if (url.pathname.startsWith('/_next/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Icons and other static public assets: cache-first
+  if (url.pathname.startsWith('/icons/')) {
     event.respondWith(
       caches.match(request).then((cached) => {
         return (

@@ -107,8 +107,8 @@ export const usePWA = () => {
     window.addEventListener('offline', handleOffline);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // Register service worker
-    if ('serviceWorker' in navigator) {
+    // Register service worker only in production builds
+    if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
@@ -120,6 +120,14 @@ export const usePWA = () => {
             registrationError
           );
         });
+    } else if ('serviceWorker' in navigator) {
+      // In development, ensure no SW is controlling the page to avoid caching dev chunks
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((reg) => reg.unregister());
+      });
+      caches.keys().then((keys) => {
+        keys.forEach((k) => caches.delete(k));
+      });
     }
 
     return () => {
