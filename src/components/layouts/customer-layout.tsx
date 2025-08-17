@@ -182,18 +182,9 @@ export default function CustomerLayout({
     return (
       <div className="bg-primary-dark-green flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="bg-accent-leaf-green mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
-            <span className="text-brand text-primary-dark-green text-xl font-bold">
-              A
-            </span>
+          <div className="bg-accent-leaf-green mx-auto flex h-16 w-16 items-center justify-center rounded-full shadow-lg">
+            <span className="text-brand text-primary-dark-green text-xl font-bold">A</span>
           </div>
-          <h1 className="text-brand text-off-white mb-4 text-2xl font-bold">
-            Aasta
-          </h1>
-          <p className="text-off-white mb-4">Please sign in to continue</p>
-          <Link href="/auth/signin">
-            <Button className="btn-primary">Sign In</Button>
-          </Link>
         </div>
       </div>
     );
