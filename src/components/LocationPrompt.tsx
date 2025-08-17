@@ -17,26 +17,48 @@ export const LocationPrompt = ({
   const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleShareLocation = () => {
+  const handleShareLocation = async () => {
     setIsSharing(true);
     setError(null);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    try {
+      // Try Capacitor Geolocation first if available
+      const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.();
+      if (isCapacitor) {
+        const { Geolocation } = await import('@capacitor/geolocation');
+        const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
         setIsSharing(false);
-        onLocationShared({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-      },
-      (error) => {
-        setIsSharing(false);
-        setError(
-          "Couldn't get your location. Please try again or check your browser settings."
-        );
-        console.error('Geolocation error:', error);
+        onLocationShared({ lat: position.coords.latitude, lng: position.coords.longitude });
+        return;
       }
-    );
+
+      // Fallback to browser geolocation
+      if (!navigator.geolocation) {
+        throw new Error('Geolocation is not supported by this browser.');
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setIsSharing(false);
+          onLocationShared({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (geoError) => {
+          setIsSharing(false);
+          setError(
+            "Couldn't get your location. Please try again or check your settings."
+          );
+          console.error('Geolocation error:', geoError);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      );
+    } catch (e: any) {
+      setIsSharing(false);
+      setError(e?.message || 'Failed to get location');
+      console.error('Location error:', e);
+    }
   };
 
   return (
