@@ -3,6 +3,7 @@ import localFont from 'next/font/local';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import Script from 'next/script';
+import NativeBridge from '@/components/native-bridge';
 
 const brandFont = localFont({
   src: [
@@ -48,6 +49,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   themeColor: '#002a01',
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -83,8 +85,9 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased pt-safe pb-safe">
         <Providers>
+          <NativeBridge />
           {children}
         </Providers>
       </body>

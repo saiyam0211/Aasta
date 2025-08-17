@@ -392,12 +392,22 @@ body {
   background-clip: padding-box;
 }
 
+/* Fallback for environments without backdrop-filter (many WebViews) */
 @supports not ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
   .glass-liquid {
     background: rgba(255, 255, 255, 0.9);
     border-color: rgba(0, 0, 0, 0.06);
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
   }
+}
+
+/* Force fallback in native WebView even if supports check reports true */
+.native-webview .glass-liquid {
+  background: rgba(255, 255, 255, 0.88) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12) !important;
 }
 
 .glass-liquid:focus {
