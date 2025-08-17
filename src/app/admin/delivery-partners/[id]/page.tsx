@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-export const fetchCache = 'force-no-store';
+'use client';
+
+import { useParams } from 'next/navigation';
 
 interface DeliveryPartnerDetailPageProps {
   params: Promise<{
@@ -8,10 +8,9 @@ interface DeliveryPartnerDetailPageProps {
   }>;
 }
 
-export default async function DeliveryPartnerDetailPage({
-  params,
-}: DeliveryPartnerDetailPageProps) {
-  const { id } = await params;
+export default function DeliveryPartnerDetailPage() {
+  const params = useParams();
+  const id = params?.id as string;
 
   return (
     <div>
