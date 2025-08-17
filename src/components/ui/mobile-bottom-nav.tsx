@@ -40,7 +40,7 @@ export function MobileBottomNav({
   ];
 
   return (
-    <div className="fixed bottom-3 left-1/2 z-50 w-[50%] max-w-xl -translate-x-1/2 rounded-[40px] bg-[#002A01]/10 md:hidden">
+    <div className="fixed bottom-6 left-1/2 z-50 w-[50%] max-w-xl -translate-x-1/2 rounded-[40px] bg-[#002A01]/10 md:hidden">
       <div className="glass-liquid relative rounded-[40px] border border-black/5 px-3 py-3 text-black shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
         <div className="flex items-center justify-center">
           {navItems.map((item) => {
