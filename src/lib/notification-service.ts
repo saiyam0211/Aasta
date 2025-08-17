@@ -60,8 +60,11 @@ class NotificationService {
       const socketManager = getSocketManager();
       socketManager?.sendOrderUpdate(orderId, status);
 
-      // Email
-      await this.sendEmail(order.customer.user.email, 'Order Update', payload);
+      // Email (only if user has an email)
+      const to = order.customer.user.email;
+      if (to) {
+        await this.sendEmail(to, 'Order Update', payload);
+      }
 
       // Push
       await this.sendPushNotification(order.customer.id, payload);
