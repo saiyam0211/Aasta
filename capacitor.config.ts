@@ -5,7 +5,9 @@ const config: CapacitorConfig = {
   appName: 'aasta',
   webDir: 'public',
   server: {
-    url: 'https://aasta.food',
+    url: 'https://www.aasta.food',
+    androidScheme: 'https',
+    allowNavigation: ['*'],
     cleartext: false,
   },
   android: {
