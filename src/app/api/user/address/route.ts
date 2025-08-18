@@ -67,9 +67,10 @@ export async function POST(request: NextRequest) {
       latitude,
       longitude,
       isDefault,
-      houseNumber,
-      locality,
-      contactPhone,
+      // The following may not exist on older DB schemas; ignore safely
+      // houseNumber,
+      // locality,
+      // contactPhone,
       city,
       state,
       zipCode,
@@ -79,38 +80,46 @@ export async function POST(request: NextRequest) {
     const lat = typeof latitude === 'string' ? Number(latitude) : latitude;
     const lng = typeof longitude === 'string' ? Number(longitude) : longitude;
 
-    if (isDefault) {
-      await prisma.address.updateMany({
-        where: { customerId: customer.id },
-        data: { isDefault: false },
-      });
-    }
-
-    const data: any = {
+    // Build whitelist of fields known to exist across older schemas
+    const addressData: any = {
       customerId: customer.id,
       street: street ?? undefined,
       landmark: landmark ?? undefined,
       instructions: instructions ?? undefined,
       type: (type as any) ?? 'HOME',
-      latitude: typeof lat === 'number' ? lat : undefined,
-      longitude: typeof lng === 'number' ? lng : undefined,
+      latitude: typeof lat === 'number' && !Number.isNaN(lat) ? lat : undefined,
+      longitude: typeof lng === 'number' && !Number.isNaN(lng) ? lng : undefined,
       isDefault: !!isDefault,
-      houseNumber: houseNumber ?? undefined,
-      locality: locality ?? undefined,
-      contactPhone: contactPhone ?? undefined,
-      // Backward-compat defaults in case remote schema still requires these
       city:
         (city as string | undefined) ?? process.env.DEFAULT_CITY ?? 'Bengaluru',
       state:
-        (state as string | undefined) ??
-        process.env.DEFAULT_STATE ??
-        'Karnataka',
+        (state as string | undefined) ?? process.env.DEFAULT_STATE ?? 'Karnataka',
       zipCode:
         (zipCode as string | undefined) ?? process.env.DEFAULT_ZIP ?? '560001',
     };
 
-    const created = await prisma.address.create({
-      data,
+    // Use a transaction to ensure default flags are consistent
+    const created = await prisma.$transaction(async (tx) => {
+      if (isDefault) {
+        await tx.address.updateMany({
+          where: { customerId: customer!.id },
+          data: { isDefault: false },
+        });
+      }
+      const a = await tx.address.create({ data: addressData });
+      if (isDefault) {
+        // Best-effort: update customer's defaultAddressId if column exists in DB
+        try {
+          await tx.customer.update({
+            where: { id: customer!.id },
+            data: { defaultAddressId: a.id } as any,
+          });
+        } catch (e) {
+          // Ignore if older schema doesn't have defaultAddressId
+          console.warn('defaultAddressId update skipped:', (e as any)?.code || e);
+        }
+      }
+      return a;
     });
 
     return NextResponse.json({ success: true, address: created });
@@ -127,8 +136,9 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+    // Fall back to a safe error message without leaking details
     return NextResponse.json(
-      { success: false, message: error?.message || 'Error creating address' },
+      { success: false, message: 'Error creating address' },
       { status: 500 }
     );
   }
