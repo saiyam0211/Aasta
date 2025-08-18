@@ -9,7 +9,20 @@ export async function GET(req: NextRequest) {
     const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const thisWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Helper: last Friday 00:00 and next Friday 00:00
+    const getFridayWindow = (base: Date) => {
+      const d = new Date(base);
+      const day = d.getDay(); // 0 Sun ... 5 Fri
+      const diffToLastFri = (day + 7 - 5) % 7; // days since last Friday
+      const lastFri = new Date(d);
+      lastFri.setDate(d.getDate() - diffToLastFri);
+      lastFri.setHours(0, 0, 0, 0);
+      const nextFri = new Date(lastFri);
+      nextFri.setDate(lastFri.getDate() + 7);
+      return { lastFri, nextFri };
+    };
+    const { lastFri, nextFri } = getFridayWindow(today);
 
     // Initialize with default values in case of database errors
     let totalRestaurants = 0;
@@ -17,228 +30,182 @@ export async function GET(req: NextRequest) {
     let totalCustomers = 0;
     let customersThisMonth = 0;
     let customersLastMonth = 0;
+
+    // Orders and revenue (real aggregates)
+    let totalOrders = 0;
+    let ordersToday = 0;
+    let ordersYesterday = 0;
+    let revenueTotal = 0;
+    let revenueToday = 0;
+    let revenueYesterday = 0;
+    let avgOrderValue = 0;
+
     let topRestaurants: any[] = [];
     let topDeliveryPartners: any[] = [];
 
     try {
-      // Fetch restaurant metrics with error handling
-      const startOfWeek = (() => {
-        const thursday = new Date();
-        thursday.setDate(today.getDate() - ((today.getDay() + 2) % 7) - 4);
-        return thursday;
-      })();
+      // Basic counts
+      [totalRestaurants, activeRestaurants, totalCustomers, customersThisMonth, customersLastMonth] = await Promise.all([
+        prisma.restaurant.count(),
+        prisma.restaurant.count({ where: { status: 'ACTIVE' } as any }),
+        prisma.user.count({ where: { role: 'CUSTOMER' } as any }),
+        prisma.user.count({ where: { role: 'CUSTOMER', createdAt: { gte: thisMonth } } as any }),
+        prisma.user.count({ where: { role: 'CUSTOMER', createdAt: { gte: lastMonth, lt: thisMonth } } as any }),
+      ]);
 
-      // Fetch top restaurants with earnings calculation
-      const restaurantsWithOrders = await prisma.restaurant.findMany({
-        take: 10, // Get more to sort properly
-        include: {
-          _count: {
-            select: {
-              orders: true,
-              menuItems: true,
-            },
-          },
-          orders: {
-            where: {
-              createdAt: {
-                gte: thisMonth,
-              },
-            },
-            include: {
-              orderItems: true,
-            },
-          },
-        },
+      // Orders counts
+      const [ordersTotalCount, ordersTodayCount, ordersYesterdayCount] = await Promise.all([
+        prisma.order.count(),
+        prisma.order.count({ where: { createdAt: { gte: today } } }),
+        prisma.order.count({ where: { createdAt: { gte: new Date(today.getTime() - 24 * 60 * 60 * 1000), lt: today } } }),
+      ]);
+      totalOrders = ordersTotalCount;
+      ordersToday = ordersTodayCount;
+      ordersYesterday = ordersYesterdayCount;
+
+      // Revenue aggregates (based on totalAmount actually charged)
+      const [sumAll, sumToday, sumYesterday, avgAll] = await Promise.all([
+        prisma.order.aggregate({ _sum: { totalAmount: true } }),
+        prisma.order.aggregate({ _sum: { totalAmount: true }, where: { createdAt: { gte: today } } }),
+        prisma.order.aggregate({ _sum: { totalAmount: true }, where: { createdAt: { gte: new Date(today.getTime() - 24 * 60 * 60 * 1000), lt: today } } }),
+        prisma.order.aggregate({ _avg: { totalAmount: true } }),
+      ]);
+      revenueTotal = Number(sumAll._sum.totalAmount || 0);
+      revenueToday = Number(sumToday._sum.totalAmount || 0);
+      revenueYesterday = Number(sumYesterday._sum.totalAmount || 0);
+      avgOrderValue = Number(avgAll._avg.totalAmount || 0);
+
+      // Identify candidate restaurants (by count or GMV this month based on order totals), then compute precise GMV from OrderItems
+      const topRestGroups = await prisma.order.groupBy({
+        by: ['restaurantId'],
+        where: { createdAt: { gte: thisMonth } },
+        _count: { _all: true },
+        orderBy: { _count: { _all: 'desc' } },
+        take: 10,
       });
+      const topRestaurantIds = topRestGroups.map((g) => g.restaurantId);
+      const restaurants = await prisma.restaurant.findMany({
+        where: { id: { in: topRestaurantIds } },
+        include: { _count: { select: { menuItems: true, orders: true } } },
+      });
+      const restaurantsById = new Map(restaurants.map((r) => [r.id, r]));
 
-      // Calculate earnings and sort by revenue
-      const restaurantsWithEarnings = restaurantsWithOrders
-        .map((restaurant) => {
-          const totalEarnings = restaurant.orders.reduce(
-            (acc, order) => acc + order.totalAmount,
-            0
-          );
-          const lastWeekEarnings = restaurant.orders.reduce((acc, order) => {
-            if (new Date(order.createdAt) >= startOfWeek)
-              return acc + order.totalAmount;
-            return acc;
+      // For each restaurant, compute:
+      // - GMV (month): sum of totalOriginalPrice (or originalUnitPrice*quantity) for order items in current month
+      // - Order count (month) for platform fee additions
+      // - Weekly payout (Fri→Fri): restaurantPricePercentage * GMV over that window
+      const computed = await Promise.all(
+        topRestGroups.map(async (g) => {
+          const r = restaurantsById.get(g.restaurantId);
+          if (!r) return null;
+
+          // Month GMV from order items (original prices)
+          const [itemsMonth, orderCountMonth] = await Promise.all([
+            prisma.orderItem.findMany({
+              where: {
+                order: { restaurantId: r.id, createdAt: { gte: thisMonth } },
+              },
+              select: { totalOriginalPrice: true, originalUnitPrice: true, quantity: true },
+            }),
+            prisma.order.count({ where: { restaurantId: r.id, createdAt: { gte: thisMonth } } }),
+          ]);
+          const gmvMonth = itemsMonth.reduce((acc, it) => {
+            const fallback = (it.originalUnitPrice ?? 0) * (it.quantity ?? 0);
+            const val = it.totalOriginalPrice ?? fallback;
+            return acc + (Number.isFinite(val as any) ? Number(val) : 0);
           }, 0);
 
-          // Aasta earnings calculation using restaurant's aastaPricePercentage on original item prices
-          const aastaEarnings = restaurant.orders.reduce((acc, order) => {
-            return (
-              acc +
-              order.orderItems.reduce((itemAcc, item) => {
-                // Calculate Aasta earnings: aastaPricePercentage * original unit price * quantity
-                const aastaEarningPerItem =
-                  item.totalPrice * (restaurant.aastaPricePercentage || 0.1);
-                return itemAcc + aastaEarningPerItem;
-              }, 0)
-            );
+          // Weekly payout (Fri→Fri) using restaurant percentage on original GMV
+          const itemsWeek = await prisma.orderItem.findMany({
+            where: { order: { restaurantId: r.id, createdAt: { gte: lastFri, lt: nextFri } } },
+            select: { totalOriginalPrice: true, originalUnitPrice: true, quantity: true },
+          });
+          const gmvWeek = itemsWeek.reduce((acc, it) => {
+            const fallback = (it.originalUnitPrice ?? 0) * (it.quantity ?? 0);
+            const val = it.totalOriginalPrice ?? fallback;
+            return acc + (Number.isFinite(val as any) ? Number(val) : 0);
           }, 0);
+          const weeklyPayout = gmvWeek * (r.restaurantPricePercentage || 0.4);
+
+          // Aasta earnings: percentage on GMV (month) + platform fee ₹6 per order (month)
+          const aastaEarnings = gmvMonth * (r.aastaPricePercentage || 0.1) + 6 * orderCountMonth;
 
           return {
-            id: restaurant.id,
-            name: restaurant.name,
-            orders: restaurant._count.orders,
-            revenue: totalEarnings,
-            rating: restaurant.rating,
-            menuItems: restaurant._count.menuItems,
-            deliveryPartners: restaurant.assignedDeliveryPartners.length,
-            lastWeekEarnings,
+            id: r.id,
+            name: r.name,
+            orders: g._count._all,
+            gmv: gmvMonth,
+            revenue: gmvMonth, // Keep for compatibility if UI uses `revenue`
+            rating: r.rating,
+            menuItems: r._count.menuItems,
+            deliveryPartners: r.assignedDeliveryPartners.length,
+            lastWeekEarnings: weeklyPayout,
             aastaEarnings,
           };
         })
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 3);
-
-      topRestaurants = restaurantsWithEarnings;
-
-      // Fetch top delivery partners with more details
-      const deliveryPartnersWithDetails = await prisma.deliveryPartner.findMany(
-        {
-          take: 10, // Get more to sort properly
-          include: {
-            user: {
-              select: {
-                name: true,
-              },
-            },
-            orders: true, // Fetch all orders to properly calculate cancelled orders
-          },
-          orderBy: {
-            totalEarnings: 'desc',
-          },
-        }
       );
 
-      // Calculate weekly earnings and other metrics with proper async handling
+      topRestaurants = (computed.filter(Boolean) as any[])
+        .sort((a, b) => b.gmv - a.gmv)
+        .slice(0, 3);
+
+      // Top delivery partners (by totalEarnings)
+      const deliveryPartnersWithDetails = await prisma.deliveryPartner.findMany({
+        take: 10,
+        include: {
+          user: { select: { name: true } },
+          orders: true,
+        },
+        orderBy: { totalEarnings: 'desc' },
+      });
+
+      const startOfWeek = lastFri;
       const deliveryPartnersWithEarnings = await Promise.all(
         deliveryPartnersWithDetails.map(async (partner) => {
-          // For delivery partners, we need to calculate their actual earnings, not order totals
-          // Delivery partners only earn money for successfully delivered orders
-          // They don't get paid for cancelled, pending, or failed deliveries
-
-          const deliveredMonthlyOrders = partner.orders.filter(
-            (order) => order.status === 'DELIVERED'
+          const deliveredWeeklyOrders = partner.orders.filter(
+            (order) => new Date(order.createdAt) >= startOfWeek && new Date(order.createdAt) < nextFri && order.status === 'DELIVERED'
           );
-          const deliveredWeeklyOrders = partner.orders.filter((order) => {
-            return (
-              new Date(order.createdAt) >= startOfWeek &&
-              order.status === 'DELIVERED'
-            );
-          });
-
-          // Calculate partner's earnings from delivery fees (only for delivered orders)
-          // In a real scenario, this might be a percentage of delivery fee or a fixed amount per delivery
-          const monthlyEarnings = deliveredMonthlyOrders.reduce(
-            (acc, order) => acc + (order.deliveryFee || 50),
-            0
-          ); // Default ₹50 per delivery if no fee set
           const weeklyEarnings = deliveredWeeklyOrders.reduce(
             (acc, order) => acc + (order.deliveryFee || 50),
             0
           );
 
-          // Count cancelled orders using separate query to get all cancelled orders for this partner
-          const cancelledOrders = await prisma.order.count({
-            where: {
-              deliveryPartnerId: partner.id,
-              status: 'CANCELLED',
-            },
-          });
-
-          // Count total orders for this partner using separate query to get accurate count
-          const totalOrders = await prisma.order.count({
-            where: {
-              deliveryPartnerId: partner.id,
-            },
-          });
-
-          // Count assigned restaurants from the assignedRestaurants array
-          const assignedRestaurants = partner.assignedRestaurants.length;
+          const [cancelledOrders, totalOrdersForPartner] = await Promise.all([
+            prisma.order.count({ where: { deliveryPartnerId: partner.id, status: 'CANCELLED' } }),
+            prisma.order.count({ where: { deliveryPartnerId: partner.id } }),
+          ]);
 
           return {
             id: partner.id,
             name: partner.user.name || 'N/A',
-            todayEarnings: partner.todayEarnings,
-            totalEarnings: partner.totalEarnings,
-            rating: partner.rating,
-            orders: totalOrders,
-            cancelledOrders: cancelledOrders,
-            assignedRestaurants: assignedRestaurants,
-            lastWeekEarnings: weeklyEarnings, // This is now their actual weekly earnings from deliveries
+            todayEarnings: partner.todayEarnings || 0,
+            totalEarnings: partner.totalEarnings || 0,
+            rating: partner.rating || 0,
+            orders: totalOrdersForPartner,
+            cancelledOrders,
+            assignedRestaurants: partner.assignedRestaurants.length,
+            lastWeekEarnings: weeklyEarnings,
           };
         })
       );
 
-      // Sort by total earnings and take top 3
-      const sortedDeliveryPartners = deliveryPartnersWithEarnings
+      topDeliveryPartners = deliveryPartnersWithEarnings
         .sort((a, b) => b.totalEarnings - a.totalEarnings)
         .slice(0, 3);
-
-      topDeliveryPartners = sortedDeliveryPartners;
-
-      // Fetch basic restaurant and customer counts
-      totalRestaurants = await prisma.restaurant.count();
-      activeRestaurants = await prisma.restaurant.count({
-        where: { status: 'ACTIVE' },
-      });
-
-      totalCustomers = await prisma.user.count({
-        where: { role: 'CUSTOMER' },
-      });
-      customersThisMonth = await prisma.user.count({
-        where: {
-          role: 'CUSTOMER',
-          createdAt: { gte: thisMonth },
-        },
-      });
-      customersLastMonth = await prisma.user.count({
-        where: {
-          role: 'CUSTOMER',
-          createdAt: {
-            gte: lastMonth,
-            lt: thisMonth,
-          },
-        },
-      });
     } catch (dbError) {
       console.warn('Database query failed, using fallback data:', dbError);
-      // Fallback to mock data if database queries fail
-      totalRestaurants = 3;
-      activeRestaurants = 2;
-      totalCustomers = 45;
-      customersThisMonth = 12;
-      customersLastMonth = 8;
-      topRestaurants = [
-        {
-          id: 'mock-1',
-          name: 'Midnight Bites',
-          rating: 4.5,
-          createdAt: new Date(),
-        },
-        {
-          id: 'mock-2',
-          name: 'Night Owl Pizza',
-          rating: 4.2,
-          createdAt: new Date(),
-        },
-      ];
+      // Minimal fallback so UI stays useful
+      totalRestaurants = totalRestaurants || 0;
+      activeRestaurants = activeRestaurants || 0;
+      totalCustomers = totalCustomers || 0;
+      customersThisMonth = customersThisMonth || 0;
+      customersLastMonth = customersLastMonth || 0;
     }
-
-    // Mock order data (replace with real data when Order model is implemented)
-    const totalOrders = 1247;
-    const ordersToday = 23;
-    const ordersYesterday = 19;
 
     // Calculate growth percentages
     const customerGrowth =
       customersLastMonth > 0
-        ? (
-            ((customersThisMonth - customersLastMonth) / customersLastMonth) *
-            100
-          ).toFixed(1)
+        ? (((customersThisMonth - customersLastMonth) / customersLastMonth) * 100).toFixed(1)
         : '0';
 
     const orderGrowth =
@@ -246,87 +213,10 @@ export async function GET(req: NextRequest) {
         ? (((ordersToday - ordersYesterday) / ordersYesterday) * 100).toFixed(1)
         : '0';
 
-    // Mock delivery partner data (replace with real data when model exists)
-    const deliveryPartners = {
-      total: 12,
-      active: 8,
-    };
-
-    // Mock revenue data (replace with real calculations when Order model has amounts)
-    const revenue = {
-      total: 89540,
-      today: 3240,
-      yesterday: 2980,
-      average: 285,
-    };
-
     const revenueGrowth =
-      revenue.yesterday > 0
-        ? (
-            ((revenue.today - revenue.yesterday) / revenue.yesterday) *
-            100
-          ).toFixed(1)
+      revenueYesterday > 0
+        ? (((revenueToday - revenueYesterday) / revenueYesterday) * 100).toFixed(1)
         : '0';
-
-    // Use the calculated restaurant data or fallback to mock data
-    const topRestaurantsWithStats =
-      topRestaurants.length > 0
-        ? topRestaurants
-        : [
-            {
-              id: 'mock-1',
-              name: 'Midnight Bites',
-              orders: 87,
-              revenue: 45600,
-              rating: 4.5,
-              menuItems: 12,
-              deliveryPartners: 3,
-              lastWeekEarnings: 12300,
-              aastaEarnings: 4560,
-            },
-            {
-              id: 'mock-2',
-              name: 'Night Owl Pizza',
-              orders: 64,
-              revenue: 32400,
-              rating: 4.2,
-              menuItems: 8,
-              deliveryPartners: 2,
-              lastWeekEarnings: 8200,
-              aastaEarnings: 3240,
-            },
-            {
-              id: 'mock-3',
-              name: 'Late Night Delights',
-              orders: 52,
-              revenue: 28900,
-              rating: 4.1,
-              menuItems: 15,
-              deliveryPartners: 4,
-              lastWeekEarnings: 7500,
-              aastaEarnings: 2890,
-            },
-          ];
-
-    // Mock recent orders data
-    const recentOrders = [
-      {
-        id: 'ORD' + Date.now(),
-        restaurant: 'Midnight Bites',
-        customer: 'John Doe',
-        totalAmount: 450,
-        status: 'delivered',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'ORD' + (Date.now() - 1000),
-        restaurant: 'Night Owl Pizza',
-        customer: 'Jane Smith',
-        totalAmount: 320,
-        status: 'preparing',
-        createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      },
-    ];
 
     const dashboardData = {
       restaurants: {
@@ -343,51 +233,40 @@ export async function GET(req: NextRequest) {
         today: ordersToday,
         growth: orderGrowth,
       },
-      deliveryPartners,
+      deliveryPartners: {
+        total: await prisma.deliveryPartner.count(),
+        active: await prisma.deliveryPartner.count({ where: { status: 'ONLINE' } as any }).catch(() => 0),
+      },
       revenue: {
-        ...revenue,
+        total: revenueTotal,
+        today: revenueToday,
+        yesterday: revenueYesterday,
+        average: Math.round(avgOrderValue),
         growth: revenueGrowth,
       },
-      topRestaurants: topRestaurantsWithStats,
-      topDeliveryPartners:
-        topDeliveryPartners.length > 0
-          ? topDeliveryPartners
-          : [
-              {
-                id: 'dp-mock-1',
-                name: 'Rajesh Kumar',
-                todayEarnings: 450,
-                totalEarnings: 12800,
-                rating: 4.7,
-                orders: 45,
-                cancelledOrders: 2,
-                assignedRestaurants: 3,
-                lastWeekEarnings: 1400, // 28 delivered orders * ₹50 per delivery
-              },
-              {
-                id: 'dp-mock-2',
-                name: 'Priya Sharma',
-                todayEarnings: 380,
-                totalEarnings: 9200,
-                rating: 4.5,
-                orders: 32,
-                cancelledOrders: 1,
-                assignedRestaurants: 2,
-                lastWeekEarnings: 1000, // 20 delivered orders * ₹50 per delivery
-              },
-              {
-                id: 'dp-mock-3',
-                name: 'Amit Singh',
-                todayEarnings: 320,
-                totalEarnings: 7600,
-                rating: 4.3,
-                orders: 28,
-                cancelledOrders: 3,
-                assignedRestaurants: 2,
-                lastWeekEarnings: 750, // 15 delivered orders * ₹50 per delivery
-              },
-            ],
-      recentOrders,
+      topRestaurants: topRestaurants,
+      topDeliveryPartners: topDeliveryPartners,
+      recentOrders: await prisma.order.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          totalAmount: true,
+          status: true,
+          createdAt: true,
+          restaurant: { select: { name: true } },
+          customer: { select: { user: { select: { name: true } } } },
+        },
+      }).then((rows) =>
+        rows.map((o) => ({
+          id: o.id,
+          restaurant: o.restaurant?.name || 'N/A',
+          customer: (o as any).customer?.user?.name || 'N/A',
+          total: o.totalAmount,
+          status: o.status,
+          createdAt: o.createdAt.toISOString(),
+        }))
+      ).catch(() => []),
       lastUpdated: new Date().toISOString(),
       // Dynamic operational data
       activeOrdersCount: ordersToday,
