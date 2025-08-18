@@ -110,7 +110,7 @@ function randomRestaurantName() {
 }
 
 function operatingHoursJSON() {
-  return {
+  return {  
     monday: { open: '21:00', close: '00:00', isOpen: true },
     tuesday: { open: '21:00', close: '00:00', isOpen: true },
     wednesday: { open: '21:00', close: '00:00', isOpen: true },
@@ -175,7 +175,7 @@ async function seedOwnersAndRestaurants(locationIdByName: Record<string, string>
         address: centroid.address,
         phone: uniquePhone(20000 + i),
         email: `orders-${i}@aasta.dev`,
-        imageUrl: `https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=60`,
+        imageUrl: `https://picsum.photos/seed/${Math.random()}/400/300`,
         cuisineTypes: Array.from(new Set([sample(cuisines), sample(cuisines)])).slice(0, 2),
         averagePreparationTime: rand(15, 30),
         minimumOrderAmount: rand(150, 300),
@@ -193,6 +193,7 @@ async function seedOwnersAndRestaurants(locationIdByName: Record<string, string>
   }
   return restaurants;
 }
+
 
 function buildMenuItems(restaurantId: string) {
   const itemsCount = rand(MIN_ITEMS_PER_RESTAURANT, MAX_ITEMS_PER_RESTAURANT);

@@ -452,45 +452,45 @@ export default function OrderTrackingPage() {
           {/* Header */}
           <div className="pb-6 flex flex-col">
             <div>
-              <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
                 <h1
                   className={`text-[20px] font-semibold`}
                   style={{ color: '#002a01' }}
                 >
-                  Order #{order.orderNumber}
-                </h1>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={copyOrderNumber}
+                Order #{order.orderNumber}
+              </h1>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyOrderNumber}
                   className="flex items-center gap-1 rounded-lg"
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                  {/* {copied ? 'Copied!' : 'Copy'} */}
-                </Button>
-              </div>
-            </div>
-            <div className="mt-4 flex gap-2">
-              <Badge className={`${getStatusColor(order.status)} px-3 py-1`}>
-                {order.status.replace('_', ' ')}
-              </Badge>
-              <Badge
-                className={`${getPaymentStatusColor(order.paymentStatus)} px-3 py-1`}
               >
-                {order.paymentStatus === 'COMPLETED'
-                  ? 'Paid'
-                  : order.paymentStatus === 'PENDING'
-                    ? 'Payment Pending'
-                    : order.paymentStatus === 'FAILED'
-                      ? 'Payment Failed'
-                      : order.paymentStatus === 'REFUNDED'
-                        ? 'Refunded'
-                        : 'Payment Status'}
-              </Badge>
+                {copied ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+                  {/* {copied ? 'Copied!' : 'Copy'} */}
+              </Button>
+            </div>
+          </div>
+            <div className="mt-4 flex gap-2">
+            <Badge className={`${getStatusColor(order.status)} px-3 py-1`}>
+              {order.status.replace('_', ' ')}
+            </Badge>
+            <Badge
+              className={`${getPaymentStatusColor(order.paymentStatus)} px-3 py-1`}
+            >
+              {order.paymentStatus === 'COMPLETED'
+                ? 'Paid'
+                : order.paymentStatus === 'PENDING'
+                  ? 'Payment Pending'
+                  : order.paymentStatus === 'FAILED'
+                    ? 'Payment Failed'
+                    : order.paymentStatus === 'REFUNDED'
+                      ? 'Refunded'
+                      : 'Payment Status'}
+            </Badge>
               <Badge className={`bg-yellow-50 px-3 py-1`}>
                 {order.verificationCode}
               </Badge>
@@ -660,8 +660,8 @@ export default function OrderTrackingPage() {
                       const isCurrent =
                         index === getCurrentStepIndex(order.status);
 
-                    return (
-                      <div key={status} className="flex items-center gap-4">
+                      return (
+                        <div key={status} className="flex items-center gap-4">
                           <div
                             className={`rounded-full p-2 ${
                               isCompleted
@@ -690,7 +690,7 @@ export default function OrderTrackingPage() {
                             )}
                           </div>
                         </div>
-                    );
+                      );
                   })}
                 </div>
               </CardContent>
@@ -789,11 +789,11 @@ export default function OrderTrackingPage() {
                     <Clock className="h-5 w-5 text-gray-400" />
                     {order.orderType === 'DELIVERY' ? (
                     <p className="font-medium">
-                    Estimated Delivery:{' '}
-                    {new Date(
-                      order.estimatedDeliveryTime
-                    ).toLocaleTimeString()}
-                  </p>
+                      Estimated Delivery:{' '}
+                      {new Date(
+                        order.estimatedDeliveryTime
+                      ).toLocaleTimeString()}
+                    </p>
                     ) : (
                     <p className="font-medium">
                       Average Time of Preperation:{' '}

@@ -315,7 +315,7 @@ export default function HomePage() {
 
       <HomeHeader
         locationLabel={selectedLocationLabel}
-        onLocationClick={() => router.push('/onboarding/location')}
+        onLocationClick={() => router.push('/onboarding/location?reselect=1')}
         onSearch={(q) => performInlineSearch(q)}
         onFilterClick={() => router.push('/search')}
         onCartClick={() => router.push('/cart')}

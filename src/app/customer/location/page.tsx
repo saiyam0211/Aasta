@@ -16,12 +16,15 @@ import { MapPin, Navigation, Search, AlertCircle } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { locationService } from '@/lib/location-service';
 import { toast } from 'sonner';
+import { useSearchParams } from 'next/navigation';
 
 export default function LocationSetup() {
   const [address, setAddress] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isReselect = searchParams.get('reselect') === '1';
 
   const {
     location,
@@ -33,10 +36,10 @@ export default function LocationSetup() {
   } = useStore();
 
   useEffect(() => {
-    if (location) {
+    if (location && !isReselect) {
       router.push('/customer/discover');
     }
-  }, [location, router]);
+  }, [location, router, isReselect]);
 
   const handleRequestLocation = async () => {
     try {

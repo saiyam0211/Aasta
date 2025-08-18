@@ -8,13 +8,9 @@ import step3 from '../../../../public/lotties/step3.json';
 import { createInvisibleRecaptcha, sendOtp } from '@/lib/firebase-client';
 import type { RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
 import { signIn } from 'next-auth/react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 
 export default function SignInPage() {
-	const { status } = useSession();
-	const router = useRouter();
-	const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 	const [step, setStep] = useState<number>(1);
 	const [name, setName] = useState('');
 	const [phone, setPhone] = useState('');
@@ -22,13 +18,6 @@ export default function SignInPage() {
 	const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
 	const [error, setError] = useState('');
 	const verifierRef = useRef<RecaptchaVerifier | null>(null);
-
-	useEffect(() => {
-		if (status === 'authenticated') {
-			// Immediately leave sign-in if already logged in
-			router.replace('/');
-		}
-	}, [status, router]);
 
 	useEffect(() => {
 		// When entering the phone step, reset and create a fresh verifier
@@ -72,8 +61,8 @@ export default function SignInPage() {
 	async function verifyOtp() {
 		if (!confirmation || !otp) return;
 		setError('');
-		try {
-			setIsLoading(true);
+    try {
+      setIsLoading(true);
 			// Confirm with Firebase
 			await confirmation.confirm(otp);
 			// Create NextAuth session via credentials provider
@@ -82,17 +71,17 @@ export default function SignInPage() {
 				phone: formatted,
 				name: name.trim(),
 				redirect: true,
-				callbackUrl: '/',
+        callbackUrl: '/',
 			});
 		} catch (e: any) {
 			console.error(e);
 			setError('Invalid code, try again');
 		} finally {
-			setIsLoading(false);
-		}
+      setIsLoading(false);
+    }
 	}
 
-	return (
+  return (
 		<div className="min-h-screen w-full bg-white">
 			<div className="mx-auto flex min-h-screen max-w-md flex-col px-5 pb-8 pt-[50%]">
 				<div key={step} className="animate-slide-up transition-all duration-300 ease-out">
@@ -126,8 +115,8 @@ export default function SignInPage() {
 								<button onClick={() => setStep(3)} className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white">
 									Show me the #FoodHack →
 								</button>
-							</div>
-						</div>
+            </div>
+          </div>
 					)}
 
 					{step === 3 && (
@@ -207,8 +196,8 @@ export default function SignInPage() {
 							</div>
 						</div>
 					)}
-				</div>
-			</div>
-		</div>
-	);
+          </div>
+          </div>
+    </div>
+  );
 }

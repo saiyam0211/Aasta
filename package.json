@@ -22,6 +22,7 @@
     "db:generate": "npx prisma generate",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:seed:perf": "node -e \"process.env.SEED_RESTAURANTS=45,process.env.SEED_CUSTOMERS=150,process.env.SEED_PARTNERS=40,0\" && npx tsx prisma/seed.perf.ts",
+    "db:seed:harsh": "node -e \"process.env.SEED_RESTAURANTS=500,process.env.SEED_CUSTOMERS=10000,process.env.SEED_PARTNERS=1000,0\" && npx tsx prisma/seed.harsh.ts",
     "db:studio": "npx prisma studio",
     "db:reset": "npx prisma migrate reset && npm run db:seed",
     "start:telegram-bot": "ENABLE_TELEGRAM_BOT=true tsx src/scripts/start-telegram-bot.ts",

@@ -5,18 +5,21 @@ import { useRouter } from 'next/navigation';
 import Lottie from 'lottie-react';
 import locationAnim from '../../../../public/lotties/location.json';
 import { useLocationStore } from '@/hooks/useLocation';
+import { useSearchParams } from 'next/navigation';
 
 export default function LocationOnboarding() {
   const router = useRouter();
   const { latitude, longitude, setLocation } = useLocationStore();
   const [isRequesting, setIsRequesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const isReselect = searchParams.get('reselect') === '1';
 
   useEffect(() => {
-    if (latitude && longitude) {
+    if (latitude && longitude && !isReselect) {
       router.replace('/');
     }
-  }, [latitude, longitude, router]);
+  }, [latitude, longitude, router, isReselect]);
 
   const requestLocation = async () => {
     setIsRequesting(true);
@@ -52,7 +55,7 @@ export default function LocationOnboarding() {
   };
 
   const goManual = () => {
-    router.push('/customer/location');
+    router.push('/customer/location?reselect=1');
   };
 
   return (

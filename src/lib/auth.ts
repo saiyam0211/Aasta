@@ -169,16 +169,16 @@ export const authOptions: NextAuthOptions = {
 
         // When signing in with Google, ensure user exists (by email)
         if (account?.provider === 'google' && userHasEmail) {
-          const existingUser = await prisma.user.findUnique({
+        const existingUser = await prisma.user.findUnique({
             where: { email: user.email as string },
-          });
-          if (!existingUser) {
-            const newUser = await prisma.user.create({
-              data: {
+        });
+        if (!existingUser) {
+          const newUser = await prisma.user.create({
+            data: {
                 email: user.email!,
-                name: user.name,
-                image: user.image,
-                googleId: account?.providerAccountId,
+              name: user.name,
+              image: user.image,
+              googleId: account?.providerAccountId,
                 role: 'CUSTOMER',
               },
             });
@@ -186,8 +186,8 @@ export const authOptions: NextAuthOptions = {
               data: {
                 userId: newUser.id,
                 favoriteRestaurants: [],
-              },
-            });
+            },
+          });
           }
           return true;
         }
@@ -204,12 +204,12 @@ export const authOptions: NextAuthOptions = {
                 role: 'CUSTOMER',
               } as any,
             });
-            await prisma.customer.create({
-              data: {
-                userId: newUser.id,
-                favoriteRestaurants: [],
-              },
-            });
+          await prisma.customer.create({
+            data: {
+              userId: newUser.id,
+              favoriteRestaurants: [],
+            },
+          });
           }
           return true;
         }
@@ -241,7 +241,7 @@ export const authOptions: NextAuthOptions = {
       }
 
       // Always fetch fresh user data from database (by email or phone)
-      try {
+        try {
         const dbUser = await prisma.user.findFirst({
           where: {
             OR: [
@@ -249,32 +249,32 @@ export const authOptions: NextAuthOptions = {
               (token as any).phone ? { phone: (token as any).phone as string } : undefined,
             ].filter(Boolean) as any,
           },
-          include: {
-            customer: true,
-            deliveryPartner: true,
-          },
-        });
+            include: {
+              customer: true,
+              deliveryPartner: true,
+            },
+          });
 
-        if (dbUser) {
+          if (dbUser) {
           (token as any).id = dbUser.id;
           (token as any).role = dbUser.role;
           (token as any).phone = (dbUser as any).phone;
           token.email = (dbUser.email as any) || '';
 
-          // Add role-specific data
-          if (dbUser.role === 'CUSTOMER' && dbUser.customer) {
+            // Add role-specific data
+            if (dbUser.role === 'CUSTOMER' && dbUser.customer) {
             (token as any).customerId = dbUser.customer.id;
-          } else if (
-            dbUser.role === 'DELIVERY_PARTNER' &&
-            dbUser.deliveryPartner
-          ) {
+            } else if (
+              dbUser.role === 'DELIVERY_PARTNER' &&
+              dbUser.deliveryPartner
+            ) {
             (token as any).deliveryPartnerId = dbUser.deliveryPartner.id;
-          } else if (dbUser.role === 'RESTAURANT_OWNER') {
-            const restaurant = await prisma.restaurant.findUnique({
-              where: { ownerId: dbUser.id },
-              select: { id: true },
-            });
-            if (restaurant) {
+            } else if (dbUser.role === 'RESTAURANT_OWNER') {
+              const restaurant = await prisma.restaurant.findUnique({
+                where: { ownerId: dbUser.id },
+                select: { id: true },
+              });
+              if (restaurant) {
               (token as any).restaurantId = restaurant.id;
             }
           }
@@ -299,13 +299,6 @@ export const authOptions: NextAuthOptions = {
     },
     async redirect({ url, baseUrl }) {
       console.log('Redirect URL:', url, 'Base URL:', baseUrl);
-
-      // Normalize any redirects back to auth pages → home to avoid loops
-      const urlObj = new URL(url, baseUrl);
-      const path = urlObj.pathname || '';
-      if (path.startsWith('/auth')) {
-        return baseUrl;
-      }
 
       // If the URL is from our domain, allow it
       if (url.startsWith(baseUrl)) {
