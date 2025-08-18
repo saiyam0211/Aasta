@@ -45,14 +45,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const customer = await prisma.customer.findUnique({
+    // Ensure a customer profile exists for this user. If not, create one.
+    let customer = await prisma.customer.findUnique({
       where: { userId: session.user.id },
     });
     if (!customer) {
-      return NextResponse.json(
-        { success: false, message: 'Customer profile not found' },
-        { status: 404 }
-      );
+      customer = await prisma.customer.create({
+        data: {
+          userId: session.user.id,
+          favoriteRestaurants: [],
+        },
+      });
     }
 
     const body = await request.json();
