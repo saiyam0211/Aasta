@@ -6,7 +6,6 @@ export async function GET(req: NextRequest) {
     // Get current date for calculations
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
@@ -75,12 +74,12 @@ export async function GET(req: NextRequest) {
       revenueYesterday = Number(sumYesterday._sum.totalAmount || 0);
       avgOrderValue = Number(avgAll._avg.totalAmount || 0);
 
-      // Identify candidate restaurants (by count or GMV this month based on order totals), then compute precise GMV from OrderItems
+      // Choose candidate restaurants by GMV (sum of totalAmount) for this month; then recompute precise GMV from order items
       const topRestGroups = await prisma.order.groupBy({
         by: ['restaurantId'],
         where: { createdAt: { gte: thisMonth } },
-        _count: { _all: true },
-        orderBy: { _count: { _all: 'desc' } },
+        _sum: { totalAmount: true },
+        orderBy: { _sum: { totalAmount: 'desc' } },
         take: 10,
       });
       const topRestaurantIds = topRestGroups.map((g) => g.restaurantId);
@@ -90,10 +89,6 @@ export async function GET(req: NextRequest) {
       });
       const restaurantsById = new Map(restaurants.map((r) => [r.id, r]));
 
-      // For each restaurant, compute:
-      // - GMV (month): sum of totalOriginalPrice (or originalUnitPrice*quantity) for order items in current month
-      // - Order count (month) for platform fee additions
-      // - Weekly payout (Fri→Fri): restaurantPricePercentage * GMV over that window
       const computed = await Promise.all(
         topRestGroups.map(async (g) => {
           const r = restaurantsById.get(g.restaurantId);
@@ -103,7 +98,7 @@ export async function GET(req: NextRequest) {
           const [itemsMonth, orderCountMonth] = await Promise.all([
             prisma.orderItem.findMany({
               where: {
-                order: { restaurantId: r.id, createdAt: { gte: thisMonth } },
+                order: { is: { restaurantId: r.id, createdAt: { gte: thisMonth } } },
               },
               select: { totalOriginalPrice: true, originalUnitPrice: true, quantity: true },
             }),
@@ -117,7 +112,7 @@ export async function GET(req: NextRequest) {
 
           // Weekly payout (Fri→Fri) using restaurant percentage on original GMV
           const itemsWeek = await prisma.orderItem.findMany({
-            where: { order: { restaurantId: r.id, createdAt: { gte: lastFri, lt: nextFri } } },
+            where: { order: { is: { restaurantId: r.id, createdAt: { gte: lastFri, lt: nextFri } } } },
             select: { totalOriginalPrice: true, originalUnitPrice: true, quantity: true },
           });
           const gmvWeek = itemsWeek.reduce((acc, it) => {
@@ -130,12 +125,15 @@ export async function GET(req: NextRequest) {
           // Aasta earnings: percentage on GMV (month) + platform fee ₹6 per order (month)
           const aastaEarnings = gmvMonth * (r.aastaPricePercentage || 0.1) + 6 * orderCountMonth;
 
+          // Revenue (customer payments) for the month from grouped orders
+          const revenueMonth = Number(g._sum.totalAmount || 0);
+
           return {
             id: r.id,
             name: r.name,
-            orders: g._count._all,
+            orders: orderCountMonth,
             gmv: gmvMonth,
-            revenue: gmvMonth, // Keep for compatibility if UI uses `revenue`
+            revenue: revenueMonth,
             rating: r.rating,
             menuItems: r._count.menuItems,
             deliveryPartners: r.assignedDeliveryPartners.length,
@@ -159,11 +157,10 @@ export async function GET(req: NextRequest) {
         orderBy: { totalEarnings: 'desc' },
       });
 
-      const startOfWeek = lastFri;
       const deliveryPartnersWithEarnings = await Promise.all(
         deliveryPartnersWithDetails.map(async (partner) => {
           const deliveredWeeklyOrders = partner.orders.filter(
-            (order) => new Date(order.createdAt) >= startOfWeek && new Date(order.createdAt) < nextFri && order.status === 'DELIVERED'
+            (order) => new Date(order.createdAt) >= lastFri && new Date(order.createdAt) < nextFri && order.status === 'DELIVERED'
           );
           const weeklyEarnings = deliveredWeeklyOrders.reduce(
             (acc, order) => acc + (order.deliveryFee || 50),
@@ -235,7 +232,9 @@ export async function GET(req: NextRequest) {
       },
       deliveryPartners: {
         total: await prisma.deliveryPartner.count(),
-        active: await prisma.deliveryPartner.count({ where: { status: 'ONLINE' } as any }).catch(() => 0),
+        active: await prisma.deliveryPartner
+          .count({ where: { status: 'AVAILABLE' } as any })
+          .catch(() => 0),
       },
       revenue: {
         total: revenueTotal,
@@ -246,27 +245,30 @@ export async function GET(req: NextRequest) {
       },
       topRestaurants: topRestaurants,
       topDeliveryPartners: topDeliveryPartners,
-      recentOrders: await prisma.order.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-        select: {
-          id: true,
-          totalAmount: true,
-          status: true,
-          createdAt: true,
-          restaurant: { select: { name: true } },
-          customer: { select: { user: { select: { name: true } } } },
-        },
-      }).then((rows) =>
-        rows.map((o) => ({
-          id: o.id,
-          restaurant: o.restaurant?.name || 'N/A',
-          customer: (o as any).customer?.user?.name || 'N/A',
-          total: o.totalAmount,
-          status: o.status,
-          createdAt: o.createdAt.toISOString(),
-        }))
-      ).catch(() => []),
+      recentOrders: await prisma.order
+        .findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          select: {
+            id: true,
+            totalAmount: true,
+            status: true,
+            createdAt: true,
+            restaurant: { select: { name: true } },
+            customer: { select: { user: { select: { name: true } } } },
+          },
+        })
+        .then((rows) =>
+          rows.map((o) => ({
+            id: o.id,
+            restaurant: o.restaurant?.name || 'N/A',
+            customer: (o as any).customer?.user?.name || 'N/A',
+            total: o.totalAmount,
+            status: o.status,
+            createdAt: o.createdAt.toISOString(),
+          }))
+        )
+        .catch(() => []),
       lastUpdated: new Date().toISOString(),
       // Dynamic operational data
       activeOrdersCount: ordersToday,
