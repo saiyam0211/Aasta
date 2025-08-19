@@ -6,6 +6,7 @@ import { X, Plus, MapPin, Phone, Home, Building2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocationStore } from '@/lib/store';
 import { toast } from 'sonner';
+import { locationService } from '@/lib/location-service';
 
 interface AddressRecord {
   id: string;
@@ -49,6 +50,55 @@ export default function AddressSheet({
     contactPhone: '',
     instructions: '',
   });
+
+  // Address search state
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searching, setSearching] = React.useState(false);
+  const [searchResults, setSearchResults] = React.useState<
+    { address: string; latitude: number; longitude: number }[]
+  >([]);
+  const [selectedBySearch, setSelectedBySearch] = React.useState(false);
+
+  // Debounced search
+  React.useEffect(() => {
+    if (searchQuery.trim().length < 3) {
+      setSearchResults([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      try {
+        setSearching(true);
+        const results = await locationService.getPlaceSuggestions(searchQuery);
+        const mapped = (results || []).map((r) => ({
+          address: r.address,
+          latitude: r.latitude,
+          longitude: r.longitude,
+        }));
+        setSearchResults(mapped);
+      } catch {
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  const applySuggestion = (s: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  }) => {
+    // Set coordinates from search selection
+    useLocationStore.getState().setLocation({
+      latitude: s.latitude,
+      longitude: s.longitude,
+    });
+    // Optionally help-fill street
+    setForm((f) => ({ ...f, street: s.address }));
+    setSelectedBySearch(true);
+    setSearchResults([]);
+    setSearchQuery(s.address);
+  };
 
   const fetchAddresses = React.useCallback(async () => {
     try {
@@ -162,7 +212,10 @@ export default function AddressSheet({
                         'w-full rounded-xl border p-4 text-left',
                         a.isDefault ? 'border-green-400' : 'border-gray-200'
                       )}
-                      onClick={() => onSelect(a)}
+                      onClick={() => {
+                        useLocationStore.getState().setSelectedAddressId(a.id);
+                        onSelect(a);
+                      }}
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
@@ -216,6 +269,49 @@ export default function AddressSheet({
                     <MapPin className="h-4 w-4" /> Use live location{' '}
                     <span className="ml-1 text-red-500">*</span>
                   </button>
+                  {/* Search address */}
+                  <div className="mt-3">
+                    <label className="mb-1 block text-xs font-medium text-gray-700">
+                      Or search address <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                        placeholder="Type to search via Google Maps"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setSelectedBySearch(false);
+                        }}
+                      />
+                      {searching && (
+                        <div className="absolute top-2 right-2 text-xs text-gray-400">
+                          Searching...
+                        </div>
+                      )}
+                      {searchResults.length > 0 && (
+                        <div className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+                          {searchResults.map((s, i) => (
+                            <div
+                              key={i}
+                              className="cursor-pointer border-b p-2 text-sm last:border-b-0 hover:bg-gray-50"
+                              onClick={() => applySuggestion(s)}
+                            >
+                              {s.address}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {(selectedBySearch || currentLocation) && (
+                      <div className="mt-1 text-xs text-green-600">
+                        Coordinates set{' '}
+                        {selectedBySearch
+                          ? 'from search'
+                          : 'from live location'}
+                      </div>
+                    )}
+                  </div>
                   {/* Static Map Preview */}
                   {currentLocation && (
                     <div className="mt-3 overflow-hidden rounded-lg border">
@@ -274,15 +370,20 @@ export default function AddressSheet({
                         Phone number <span className="text-red-500">*</span>
                       </label>
                       <input
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                        placeholder="e.g., 8901825390"
+                        placeholder="e.g., 99889 88998"
                         value={form.contactPhone}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          // Only allow numbers
+                          const value = e.target.value.replace(/\D/g, '');
                           setForm((f) => ({
                             ...f,
-                            contactPhone: e.target.value,
-                          }))
-                        }
+                            contactPhone: value,
+                          }));
+                        }}
                       />
                     </div>
                     <div className="col-span-2">
@@ -291,7 +392,7 @@ export default function AddressSheet({
                       </label>
                       <input
                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                        placeholder="e.g., Near Yello Living"
+                        placeholder="e.g., Nearby landmark"
                         value={form.landmark}
                         onChange={(e) =>
                           setForm((f) => ({ ...f, landmark: e.target.value }))

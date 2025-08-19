@@ -69,16 +69,22 @@ export async function GET(
 
     // Transform the order data to match frontend expectations
     // Compute savings based on original vs actual item totals
-    const itemsTotalOriginal = (order as any).orderItems.reduce((sum: number, item: any) => {
-      const originalUnit = item.originalUnitPrice ?? item.unitPrice;
-      const totalOriginal =
-        item.totalOriginalPrice ?? originalUnit * item.quantity;
-      return sum + Number(totalOriginal || 0);
-    }, 0);
-    const itemsTotal = (order as any).orderItems.reduce((sum: number, item: any) => {
-      const total = item.totalPrice ?? item.unitPrice * item.quantity;
-      return sum + Number(total || 0);
-    }, 0);
+    const itemsTotalOriginal = (order as any).orderItems.reduce(
+      (sum: number, item: any) => {
+        const originalUnit = item.originalUnitPrice ?? item.unitPrice;
+        const totalOriginal =
+          item.totalOriginalPrice ?? originalUnit * item.quantity;
+        return sum + Number(totalOriginal || 0);
+      },
+      0
+    );
+    const itemsTotal = (order as any).orderItems.reduce(
+      (sum: number, item: any) => {
+        const total = item.totalPrice ?? item.unitPrice * item.quantity;
+        return sum + Number(total || 0);
+      },
+      0
+    );
     const savings = Math.max(0, Math.round(itemsTotalOriginal - itemsTotal));
     const transformedOrder = {
       id: order.id,

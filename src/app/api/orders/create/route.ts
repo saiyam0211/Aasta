@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { cart, deliveryAddress, orderType } = body as any;
+    const { cart, deliveryAddress, orderType, addressId } = body as any;
     const isPickup = orderType === 'PICKUP';
 
     const userId = session.user.id;
@@ -120,27 +120,52 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create delivery/pickup address (store for record)
-    const createdDeliveryAddress = await prisma.address.create({
-      data: {
-        customerId: customer.id,
-        type: isPickup ? 'WORK' : 'OTHER',
-        street:
-          (deliveryAddress && deliveryAddress.address) ||
-          restaurant.address ||
-          'Pickup at restaurant',
-        city: (deliveryAddress && deliveryAddress.city) || 'Bengaluru',
-        state: (deliveryAddress && deliveryAddress.state) || 'Karnataka',
-        zipCode: (deliveryAddress && deliveryAddress.zipCode) || '560001',
-        latitude: isPickup
-          ? restaurant.latitude || 0
-          : (deliveryAddress && deliveryAddress.latitude) || 0,
-        longitude: isPickup
-          ? restaurant.longitude || 0
-          : (deliveryAddress && deliveryAddress.longitude) || 0,
-        isDefault: false,
-      },
-    });
+    // Resolve delivery/pickup address without creating duplicates
+    let createdDeliveryAddress: any = null;
+    if (isPickup) {
+      createdDeliveryAddress = {
+        id: 'pickup-temp',
+        latitude: restaurant.latitude || 0,
+        longitude: restaurant.longitude || 0,
+        street: restaurant.address || 'Pickup at restaurant',
+        city: 'Bengaluru',
+      };
+    } else {
+      if (addressId) {
+        const existing = await prisma.address.findFirst({
+          where: { id: addressId, customerId: customer.id },
+        });
+        if (!existing) {
+          return NextResponse.json(
+            { success: false, error: 'Invalid address selected' },
+            { status: 400 }
+          );
+        }
+        createdDeliveryAddress = existing;
+      } else {
+        const addrText = (deliveryAddress && deliveryAddress.address) || '';
+        const maybeExisting = await prisma.address.findFirst({
+          where: { customerId: customer.id, street: addrText },
+        });
+        if (maybeExisting) {
+          createdDeliveryAddress = maybeExisting;
+        } else {
+          createdDeliveryAddress = await prisma.address.create({
+            data: {
+              customerId: customer.id,
+              type: 'OTHER',
+              street: addrText,
+              city: (deliveryAddress && deliveryAddress.city) || 'Bengaluru',
+              state: (deliveryAddress && deliveryAddress.state) || 'Karnataka',
+              zipCode: (deliveryAddress && deliveryAddress.zipCode) || '560001',
+              latitude: (deliveryAddress && deliveryAddress.latitude) || 0,
+              longitude: (deliveryAddress && deliveryAddress.longitude) || 0,
+              isDefault: false,
+            },
+          });
+        }
+      }
+    }
 
     // Calculate distance and ETA using Google Maps API
     let deliveryDistance: number | null = null;
@@ -220,7 +245,10 @@ export async function POST(request: NextRequest) {
         subtotal,
         status: 'PLACED',
         paymentStatus: 'pending',
-        deliveryAddressId: createdDeliveryAddress.id,
+        deliveryAddressId:
+          createdDeliveryAddress && createdDeliveryAddress.id !== 'pickup-temp'
+            ? createdDeliveryAddress.id
+            : undefined,
         estimatedPreparationTime: restaurant.averagePreparationTime,
         estimatedDeliveryTime:
           calculatedDeliveryTime || new Date(Date.now() + 45 * 60 * 1000), // Use calculated time or fallback to 45 minutes

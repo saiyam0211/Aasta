@@ -71,7 +71,10 @@ export default function UserProfile() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [stats, setStats] = useState<{ totalSaved: number; co2SavedKg: number }>({ totalSaved: 0, co2SavedKg: 0 });
+  const [stats, setStats] = useState<{
+    totalSaved: number;
+    co2SavedKg: number;
+  }>({ totalSaved: 0, co2SavedKg: 0 });
   const [loadingStats, setLoadingStats] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedPhone, setSavedPhone] = useState<string>('');
@@ -96,7 +99,8 @@ export default function UserProfile() {
       const data = await res.json();
       if (data.success) {
         setAddresses(data.profile.addresses);
-        if (typeof data.profile.name === 'string') setUserName(data.profile.name || '');
+        if (typeof data.profile.name === 'string')
+          setUserName(data.profile.name || '');
         if (typeof data.profile.phone === 'string') {
           setPhone(data.profile.phone || '');
           setSavedPhone(data.profile.phone || '');
@@ -129,8 +133,10 @@ export default function UserProfile() {
         const items = order.orderItems || [];
         const savedForOrder = items.reduce((sum: number, item: any) => {
           const originalUnit = (item.originalUnitPrice ?? item.unitPrice) || 0;
-          const totalOriginal = (item.totalOriginalPrice ?? originalUnit * item.quantity) || 0;
-          const actual = (item.totalPrice ?? item.unitPrice * item.quantity) || 0;
+          const totalOriginal =
+            (item.totalOriginalPrice ?? originalUnit * item.quantity) || 0;
+          const actual =
+            (item.totalPrice ?? item.unitPrice * item.quantity) || 0;
           const saved = Math.max(0, Number(totalOriginal) - Number(actual));
           return sum + saved;
         }, 0);
@@ -144,7 +150,10 @@ export default function UserProfile() {
           }
         }
       }
-      setStats({ totalSaved: Math.round(totalSaved), co2SavedKg: Number(co2SavedKg.toFixed(2)) });
+      setStats({
+        totalSaved: Math.round(totalSaved),
+        co2SavedKg: Number(co2SavedKg.toFixed(2)),
+      });
     } catch (e) {
       console.error('Failed to fetch order stats', e);
     } finally {
@@ -296,7 +305,8 @@ export default function UserProfile() {
       setSuccess('');
       setIsSaving(true);
       const payload: any = {};
-      if (userName && userName !== (session?.user?.name || '')) payload.name = userName;
+      if (userName && userName !== (session?.user?.name || ''))
+        payload.name = userName;
       if (phone && phone !== savedPhone) {
         const digitsOnly = phone.replace(/\D/g, '');
         if (!/^\d{10}$/.test(digitsOnly)) {
@@ -344,18 +354,35 @@ export default function UserProfile() {
   return (
     <CustomerLayout>
       <div className="mx-auto max-w-4xl px-4 py-6">
-        <h1 className="mb-2 text-2xl font-bold" style={{ color: '#002a01' }}>User Profile</h1>
-        <p className="mb-5 text-sm text-gray-600">Manage your details, addresses, and track your positive impact</p>
+        <h1 className="mb-2 text-2xl font-bold" style={{ color: '#002a01' }}>
+          User Profile
+        </h1>
+        <p className="mb-5 text-sm text-gray-600">
+          Manage your details, addresses, and track your positive impact
+        </p>
 
         {/* Profile header card */}
         <Card className="mb-5 border border-[#002a01]/10">
           <CardContent className="flex items-center justify-between p-4">
             <div>
               <p className="text-sm text-gray-600">Signed in as</p>
-              <p className="text-lg font-semibold" style={{ color: '#002a01' }}>{userName || '—'}</p>
-              <p className="text-sm text-gray-600">{phone || 'Add your phone for quicker delivery updates'}</p>
+              <p className="text-lg font-semibold" style={{ color: '#002a01' }}>
+                {userName || '—'}
+              </p>
+              <p className="text-sm text-gray-600">
+                {phone || 'Add your phone for quicker delivery updates'}
+              </p>
             </div>
-            <Button onClick={saveProfile} disabled={isSaving} className="rounded-xl" style={{ backgroundColor: '#d1f86a', color: '#002a01', border: '1px solid #002a01' }}>
+            <Button
+              onClick={saveProfile}
+              disabled={isSaving}
+              className="rounded-xl"
+              style={{
+                backgroundColor: '#d1f86a',
+                color: '#002a01',
+                border: '1px solid #002a01',
+              }}
+            >
               {isSaving ? 'Saving…' : 'Save Profile'}
             </Button>
           </CardContent>
@@ -365,12 +392,22 @@ export default function UserProfile() {
         <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium">Name</label>
-            <Input value={userName} onChange={(e) => setUserName(e.target.value)} className="focus-visible:ring-1 focus-visible:ring-[#d1f86a] border-[#d1f86a]/40" />
+            <Input
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              className="border-[#d1f86a]/40 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
+            />
           </div>
           {!savedPhone && (
             <div>
-              <label className="mb-1 block text-sm font-medium">Phone Number</label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="focus-visible:ring-1 focus-visible:ring-[#d1f86a] border-[#d1f86a]/40" />
+              <label className="mb-1 block text-sm font-medium">
+                Phone Number
+              </label>
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="border-[#d1f86a]/40 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
+              />
             </div>
           )}
         </div>
@@ -381,7 +418,9 @@ export default function UserProfile() {
             <CardContent className="flex items-center justify-between p-4">
               <div>
                 <p className="text-sm text-gray-600">Total Saved</p>
-                <p className="text-xl font-bold" style={{ color: '#002a01' }}>₹{stats.totalSaved.toFixed(0)}</p>
+                <p className="text-xl font-bold" style={{ color: '#002a01' }}>
+                  ₹{stats.totalSaved.toFixed(0)}
+                </p>
               </div>
               <PiggyBank className="h-7 w-7" style={{ color: '#002a01' }} />
             </CardContent>
@@ -390,7 +429,9 @@ export default function UserProfile() {
             <CardContent className="flex items-center justify-between p-4">
               <div>
                 <p className="text-sm text-gray-600">CO₂ Saved</p>
-                <p className="text-xl font-bold" style={{ color: '#002a01' }}>{stats.co2SavedKg.toFixed(2)} kg</p>
+                <p className="text-xl font-bold" style={{ color: '#002a01' }}>
+                  {stats.co2SavedKg.toFixed(2)} kg
+                </p>
               </div>
               <Leaf className="h-7 w-7" style={{ color: '#002a01' }} />
             </CardContent>
@@ -399,9 +440,15 @@ export default function UserProfile() {
             <CardContent className="flex items-center justify-between p-4">
               <div>
                 <p className="text-sm text-gray-600">Saved Addresses</p>
-                <p className="text-xl font-bold" style={{ color: '#002a01' }}>{addresses.length}</p>
+                <p className="text-xl font-bold" style={{ color: '#002a01' }}>
+                  {addresses.length}
+                </p>
               </div>
-              <Button onClick={() => setAddressSheetOpen(true)} className="rounded-full" variant="outline">
+              <Button
+                onClick={() => setAddressSheetOpen(true)}
+                className="rounded-full"
+                variant="outline"
+              >
                 View
               </Button>
             </CardContent>
@@ -413,19 +460,32 @@ export default function UserProfile() {
           <div className="relative">
             <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#002a01] via-[#002a01]/95 to-[#002a01]"></div>
             <div className="relative rounded-3xl border border-[#fcfefe]/15 p-5 text-[#fcfefe]">
-              <h3 className="text-lg font-bold">You’re making a difference 🌿</h3>
-              <p className="mt-1 text-sm text-[#fcfefe]/85">By choosing pickups, you’ve avoided delivery emissions.</p>
+              <h3 className="text-lg font-bold">
+                You’re making a difference 🌿
+              </h3>
+              <p className="mt-1 text-sm text-[#fcfefe]/85">
+                By choosing pickups, you’ve avoided delivery emissions.
+              </p>
               <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#d1f86a] px-3 py-1 text-[#002a01]">
                 <Leaf className="h-4 w-4" />
-                <span className="font-semibold">{stats.co2SavedKg.toFixed(2)} kg CO₂ saved</span>
+                <span className="font-semibold">
+                  {stats.co2SavedKg.toFixed(2)} kg CO₂ saved
+                </span>
               </div>
-              <p className="mt-3 text-sm text-[#fcfefe]/75">“Small steps today, greener tomorrows.”</p>
+              <p className="mt-3 text-sm text-[#fcfefe]/75">
+                “Small steps today, greener tomorrows.”
+              </p>
             </div>
           </div>
         </div>
 
         <div>
-          <h2 className="mb-3 text-xl font-semibold" style={{ color: '#002a01' }}>Saved Addresses</h2>
+          <h2
+            className="mb-3 text-xl font-semibold"
+            style={{ color: '#002a01' }}
+          >
+            Saved Addresses
+          </h2>
 
           {/* Success/Error Messages */}
           {success && (
@@ -447,28 +507,48 @@ export default function UserProfile() {
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {addresses.map((address) => (
-                <div key={address.id} className="rounded-2xl border border-[#d1f86a]/50 bg-[#f6ffe6] p-3">
+                <div
+                  key={address.id}
+                  className="rounded-2xl border border-[#d1f86a]/50 bg-[#f6ffe6] p-3"
+                >
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-[#002a01]" />
-                        <span className="font-medium text-[#002a01]">{address.type || 'Home'}</span>
+                        <span className="font-medium text-[#002a01]">
+                          {address.type || 'Home'}
+                        </span>
                         {address.isDefault && (
-                          <span className="rounded-full border border-[#002a01]/20 bg-white px-2 py-[2px] text-xs text-[#002a01]">Default</span>
+                          <span className="rounded-full border border-[#002a01]/20 bg-white px-2 py-[2px] text-xs text-[#002a01]">
+                            Default
+                          </span>
                         )}
                       </div>
                       <p className="truncate text-sm text-[#002a01]/90">
-                        {address.street}, {address.city}, {address.state} {address.zipCode}
+                        {address.street}, {address.city}, {address.state}{' '}
+                        {address.zipCode}
                       </p>
                       {address.landmark && (
-                        <p className="mt-1 truncate text-xs text-[#002a01]/70">Landmark: {address.landmark}</p>
+                        <p className="mt-1 truncate text-xs text-[#002a01]/70">
+                          Landmark: {address.landmark}
+                        </p>
                       )}
                     </div>
                     <div className="ml-3 flex shrink-0 gap-2">
-                      <Button onClick={() => editAddress(address)} size="sm" variant="outline" className="h-8 rounded-full px-3">
+                      <Button
+                        onClick={() => editAddress(address)}
+                        size="sm"
+                        variant="outline"
+                        className="h-8 rounded-full px-3"
+                      >
                         <Edit className="h-3 w-3" />
                       </Button>
-                      <Button onClick={() => deleteAddress(address.id)} size="sm" variant="destructive" className="h-8 rounded-full px-3">
+                      <Button
+                        onClick={() => deleteAddress(address.id)}
+                        size="sm"
+                        variant="destructive"
+                        className="h-8 rounded-full px-3"
+                      >
                         <Trash className="h-3 w-3" />
                       </Button>
                     </div>
@@ -506,7 +586,7 @@ export default function UserProfile() {
                   onChange={(e) =>
                     handleAddressChange('street', e.target.value)
                   }
-                  className="focus-visible:ring-1 focus-visible:ring-[#d1f86a] border-[#d1f86a]/40"
+                  className="border-[#d1f86a]/40 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -519,7 +599,7 @@ export default function UserProfile() {
                     onChange={(e) =>
                       handleAddressChange('city', e.target.value)
                     }
-                    className="focus-visible:ring-1 focus-visible:ring-[#d1f86a] border-[#d1f86a]/40"
+                    className="border-[#d1f86a]/40 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
                   />
                 </div>
                 <div>
@@ -531,7 +611,7 @@ export default function UserProfile() {
                     onChange={(e) =>
                       handleAddressChange('state', e.target.value)
                     }
-                    className="focus-visible:ring-1 focus-visible:ring-[#d1f86a] border-[#d1f86a]/40"
+                    className="border-[#d1f86a]/40 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
                   />
                 </div>
               </div>
@@ -544,14 +624,18 @@ export default function UserProfile() {
                   onChange={(e) =>
                     handleAddressChange('zipCode', e.target.value)
                   }
-                  className="focus-visible:ring-1 focus-visible:ring-[#d1f86a] border-[#d1f86a]/40"
+                  className="border-[#d1f86a]/40 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
                 />
               </div>
               <div className="flex gap-2">
                 <Button
                   onClick={addOrUpdateAddress}
                   className="flex items-center gap-2"
-                  style={{ backgroundColor: '#d1f86a', color: '#002a01', border: '1px solid #002a01' }}
+                  style={{
+                    backgroundColor: '#d1f86a',
+                    color: '#002a01',
+                    border: '1px solid #002a01',
+                  }}
                 >
                   {editingId ? (
                     <>

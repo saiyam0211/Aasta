@@ -395,7 +395,9 @@ body {
 }
 
 /* Fallback for environments without backdrop-filter (many WebViews) */
-@supports not ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+@supports not (
+  (backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))
+) {
   .glass-liquid {
     background: rgba(255, 255, 255, 0.96);
     border-color: rgba(0, 0, 0, 0.06);

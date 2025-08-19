@@ -49,6 +49,10 @@ interface SavedAddress {
   instructions?: string;
   type?: string;
   isDefault: boolean;
+  houseNumber?: string | null;
+  locality?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export default function CheckoutPage() {
@@ -56,6 +60,10 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { cart, clearCart } = useCartStore();
   const { currentLocation } = useLocationStore();
+  const {
+    selectedAddressId: storedSelectedId,
+    setSelectedAddressId: setStoredSelectedId,
+  } = useLocationStore();
   const latitude = currentLocation?.latitude || 0;
   const longitude = currentLocation?.longitude || 0;
 
@@ -79,6 +87,10 @@ export default function CheckoutPage() {
       fetchSavedAddresses();
     }
   }, [session]);
+
+  useEffect(() => {
+    if (storedSelectedId) setSelectedAddressId(storedSelectedId);
+  }, [storedSelectedId]);
 
   const fetchSavedAddresses = async () => {
     try {
@@ -165,6 +177,8 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           cart,
           deliveryAddress,
+          // Pass selected saved address id if any to avoid creating duplicates
+          addressId: selectedAddressId,
         }),
       });
 
@@ -241,6 +255,7 @@ export default function CheckoutPage() {
                       onValueChange={(value) => {
                         if (value === 'new') {
                           setSelectedAddressId(null);
+                          setStoredSelectedId(null);
                           setDeliveryAddress({
                             address: '',
                             latitude: currentLocation?.latitude || 0,
@@ -249,6 +264,7 @@ export default function CheckoutPage() {
                           });
                         } else if (value === 'current') {
                           setSelectedAddressId(null);
+                          setStoredSelectedId(null);
                           fetchCurrentAddress();
                         } else {
                           const selectedAddr = savedAddresses.find(
@@ -256,14 +272,23 @@ export default function CheckoutPage() {
                           );
                           if (selectedAddr) {
                             setSelectedAddressId(value);
+                            setStoredSelectedId(value);
+                            const summary = [
+                              selectedAddr.houseNumber,
+                              selectedAddr.locality,
+                              selectedAddr.street,
+                              selectedAddr.city,
+                            ]
+                              .filter(Boolean)
+                              .join(', ');
                             setDeliveryAddress({
-                              address: `${selectedAddr.street}, ${selectedAddr.city}, ${selectedAddr.state} ${selectedAddr.zipCode}`,
+                              address: summary,
                               latitude:
-                                (selectedAddr as any).latitude ??
+                                selectedAddr.latitude ??
                                 currentLocation?.latitude ??
                                 0,
                               longitude:
-                                (selectedAddr as any).longitude ??
+                                selectedAddr.longitude ??
                                 currentLocation?.longitude ??
                                 0,
                               instructions: selectedAddr.instructions || '',
@@ -325,6 +350,7 @@ export default function CheckoutPage() {
                           address: e.target.value,
                         }));
                         setSelectedAddressId(null); // Clear selection when manually editing
+                        setStoredSelectedId(null);
                       }}
                       className="mt-1"
                       rows={3}

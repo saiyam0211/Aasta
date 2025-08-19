@@ -36,7 +36,9 @@ export default withAuth(
     // Redirect unauthenticated users to sign in
     if (!token) {
       if (pathname.startsWith('/restaurant')) {
-        return NextResponse.redirect(new URL('/restaurant/auth/signin', req.url));
+        return NextResponse.redirect(
+          new URL('/restaurant/auth/signin', req.url)
+        );
       } else if (pathname.startsWith('/delivery')) {
         return NextResponse.redirect(new URL('/delivery/auth/signin', req.url));
       } else {

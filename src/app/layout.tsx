@@ -85,7 +85,7 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className="font-sans antialiased pt-safe pb-safe">
+      <body className="pt-safe pb-safe font-sans antialiased">
         <Providers>
           <ClientRoot>{children}</ClientRoot>
         </Providers>

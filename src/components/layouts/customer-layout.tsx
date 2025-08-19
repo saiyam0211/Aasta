@@ -183,7 +183,9 @@ export default function CustomerLayout({
       <div className="bg-primary-dark-green flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="bg-accent-leaf-green mx-auto flex h-16 w-16 items-center justify-center rounded-full shadow-lg">
-            <span className="text-brand text-primary-dark-green text-xl font-bold">A</span>
+            <span className="text-brand text-primary-dark-green text-xl font-bold">
+              A
+            </span>
           </div>
         </div>
       </div>
@@ -201,7 +203,6 @@ export default function CustomerLayout({
         </div>
       )}
 
-
       {/* Main Content */}
       <main className="flex-1 pb-20 md:pb-0">{children}</main>
 
@@ -210,8 +211,6 @@ export default function CustomerLayout({
         cartItemCount={cartItemCount}
         activeOrdersCount={0} // TODO: Get from active orders API
       />
-
-
     </div>
   );
 }

@@ -160,7 +160,7 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
             key={order.id}
             className={`cursor-pointer transition-shadow hover:shadow-lg ${
               active ? 'border-l-4 border-l-[#d1f86a]' : ''
-            } border border-[#002a01]/10 rounded-lg`}
+            } rounded-lg border border-[#002a01]/10`}
             onClick={() => router.push(`/customer/orders/${order.orderNumber}`)}
           >
             <CardHeader className="py-2">
@@ -179,7 +179,7 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
                   </span>
                 </div>
                 <Badge
-                  className={`${getStatusColor(order.status)} flex items-center gap-1 px-2 py-[2px] text-xs rounded-full`}
+                  className={`${getStatusColor(order.status)} flex items-center gap-1 rounded-full px-2 py-[2px] text-xs`}
                 >
                   <StatusIcon className="h-3 w-3" />
                   {order.status.replace('_', ' ')}
@@ -196,7 +196,7 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
                   </div>
                   <div className="h-1.5 w-full rounded-full bg-gray-200">
                     <div
-                      className="h-1.5 rounded-full transition-all duration-300 bg-[#d1f86a]"
+                      className="h-1.5 rounded-full bg-[#d1f86a] transition-all duration-300"
                       style={{ width: `${progress}%` }}
                     ></div>
                   </div>
@@ -205,7 +205,7 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
 
               {/* Order Items */}
               <div className="mb-2">
-                <span className="block text-sm text-gray-600 overflow-hidden whitespace-nowrap text-ellipsis">
+                <span className="block overflow-hidden text-sm text-ellipsis whitespace-nowrap text-gray-600">
                   {order.items
                     .map((item, index) => (
                       <span key={item.id}>
@@ -227,7 +227,7 @@ const OrdersList = ({ orders }: { orders: Order[] }) => {
                     <MapPin className="h-4 w-4" />
                     <span className="font-medium">Delivery to:</span>
                   </div>
-                  <p className="ml-6 text-gray-700 overflow-hidden whitespace-nowrap text-ellipsis">
+                  <p className="ml-6 overflow-hidden text-ellipsis whitespace-nowrap text-gray-700">
                     {order.deliveryAddress}
                   </p>
                 </div>
@@ -362,7 +362,10 @@ export default function OrdersPage() {
             estimatedDeliveryTime: order.estimatedDeliveryTime,
             estimatedPreparationTime: order.estimatedPreparationTime || 0,
             estimatedDeliveryDuration: order.estimatedDeliveryDuration || 0,
-            deliveryAddress: address?.street && address?.city ? `${address.street}, ${address.city}` : (address?.street || address?.city || ''),
+            deliveryAddress:
+              address?.street && address?.city
+                ? `${address.street}, ${address.city}`
+                : address?.street || address?.city || '',
             items: (order.orderItems || []).map((item: any) => ({
               id: item.id,
               menuItemId: item.menuItemId,
@@ -562,7 +565,7 @@ export default function OrdersPage() {
             <h1 className="text-2xl font-bold" style={{ color: '#002a01' }}>
               Your Orders
             </h1>
-            <p className="mt-1 text-gray-600 text-sm">
+            <p className="mt-1 text-sm text-gray-600">
               Track your current and past orders
             </p>
           </div>
@@ -621,7 +624,10 @@ export default function OrdersPage() {
                             {stats.total}
                           </p>
                         </div>
-                        <ShoppingBag className="h-8 w-8" style={{ color: '#002a01' }} />
+                        <ShoppingBag
+                          className="h-8 w-8"
+                          style={{ color: '#002a01' }}
+                        />
                       </div>
                     </CardContent>
                   </Card>
@@ -633,11 +639,17 @@ export default function OrdersPage() {
                           <p className="text-sm font-medium text-gray-600">
                             Active Orders
                           </p>
-                          <p className="text-xl font-bold" style={{ color: '#002a01' }}>
+                          <p
+                            className="text-xl font-bold"
+                            style={{ color: '#002a01' }}
+                          >
                             {stats.active}
                           </p>
                         </div>
-                        <Truck className="h-8 w-8" style={{ color: '#002a01' }} />
+                        <Truck
+                          className="h-8 w-8"
+                          style={{ color: '#002a01' }}
+                        />
                       </div>
                     </CardContent>
                   </Card>
@@ -649,11 +661,17 @@ export default function OrdersPage() {
                           <p className="text-sm font-medium text-gray-600">
                             Completed
                           </p>
-                          <p className="text-xl font-bold" style={{ color: '#002a01' }}>
+                          <p
+                            className="text-xl font-bold"
+                            style={{ color: '#002a01' }}
+                          >
                             {stats.completed}
                           </p>
                         </div>
-                        <CheckCircle className="h-8 w-8" style={{ color: '#002a01' }} />
+                        <CheckCircle
+                          className="h-8 w-8"
+                          style={{ color: '#002a01' }}
+                        />
                       </div>
                     </CardContent>
                   </Card>
@@ -672,7 +690,10 @@ export default function OrdersPage() {
                             ₹{stats.totalSpent.toFixed(0)}
                           </p>
                         </div>
-                        <TrendingUp className="h-8 w-8" style={{ color: '#002a01' }} />
+                        <TrendingUp
+                          className="h-8 w-8"
+                          style={{ color: '#002a01' }}
+                        />
                       </div>
                     </CardContent>
                   </Card>
@@ -688,13 +709,13 @@ export default function OrdersPage() {
                   placeholder="Search by order number or restaurant name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 focus-visible:ring-1 focus-visible:ring-[#d1f86a] border-[#d1f86a]/40"
+                  className="border-[#d1f86a]/40 pl-10 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
                 />
               </div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-md border border-[#d1f86a]/50 bg-white px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#d1f86a]"
+                className="rounded-md border border-[#d1f86a]/50 bg-white px-3 py-2 focus:ring-1 focus:ring-[#d1f86a] focus:outline-none"
               >
                 <option value="ALL">All Status</option>
                 <option value="PLACED">Placed</option>
@@ -713,14 +734,25 @@ export default function OrdersPage() {
               className="w-full"
             >
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="all" className="data-[state=active]:bg-[#d1f86a] data-[state=active]:text-[#002a01]">
+                <TabsTrigger
+                  value="all"
+                  className="data-[state=active]:bg-[#d1f86a] data-[state=active]:text-[#002a01]"
+                >
                   All Orders ({orders.length})
                 </TabsTrigger>
-                <TabsTrigger value="active" className="data-[state=active]:bg-[#d1f86a] data-[state=active]:text-[#002a01]">
-                  Active ({orders.filter((o) => isActiveOrder(o.status)).length})
+                <TabsTrigger
+                  value="active"
+                  className="data-[state=active]:bg-[#d1f86a] data-[state=active]:text-[#002a01]"
+                >
+                  Active ({orders.filter((o) => isActiveOrder(o.status)).length}
+                  )
                 </TabsTrigger>
-                <TabsTrigger value="completed" className="data-[state=active]:bg-[#d1f86a] data-[state=active]:text-[#002a01]">
-                  Completed ({orders.filter((o) => o.status === 'DELIVERED').length})
+                <TabsTrigger
+                  value="completed"
+                  className="data-[state=active]:bg-[#d1f86a] data-[state=active]:text-[#002a01]"
+                >
+                  Completed (
+                  {orders.filter((o) => o.status === 'DELIVERED').length})
                 </TabsTrigger>
               </TabsList>
 

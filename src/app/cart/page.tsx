@@ -53,7 +53,13 @@ export default function CartPage() {
   const { cart, updateQuantity, removeItem } = useCartStore();
   const router = useRouter();
 
-  const { currentAddress, currentLocation, setAddress } = useLocationStore();
+  const {
+    currentAddress,
+    currentLocation,
+    setAddress,
+    selectedAddressId,
+    setSelectedAddressId,
+  } = useLocationStore();
 
   const [mode, setMode] = useState<'delivery' | 'pickup'>('delivery');
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -121,6 +127,7 @@ export default function CartPage() {
                 longitude: currentLocation!.longitude,
                 instructions: '',
               },
+          addressId: selectedAddressId || null,
         }),
       });
       const createData = await createRes.json();
@@ -385,7 +392,7 @@ export default function CartPage() {
             </div>
           </div>
 
-          <div className="px-4 pb-32">
+          <div className="px-4">
             {/* Savings Banner */}
             {savings > 0 && (
               <div className="mb-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
@@ -393,127 +400,6 @@ export default function CartPage() {
                 <span className="text-sm font-medium text-green-700">
                   You saved ₹{Math.round(savings)} on this order!
                 </span>
-              </div>
-            )}
-
-            {/* Delivery Info */}
-            <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
-              {/* ETA */}
-              <div className="flex items-center justify-between px-4 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                    <Clock className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {mode === 'delivery' ? 'Delivery' : 'Pickup'}
-                      {etaText ? ` in ${etaText}` : ''}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {etaText ? 'Live estimate' : 'Time shown at checkout'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Address (only for delivery) */}
-              {mode === 'delivery' && (
-                <>
-                  <div className="border-t border-gray-100"></div>
-                  <button
-                    className="flex w-full items-center justify-between px-4 py-4 text-left hover:bg-white"
-                    onClick={() => setAddressSheetOpen(true)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                        <MapPinned className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          Deliver to Home
-                        </p>
-                        <p className="max-w-[250px] truncate text-xs text-gray-500">
-                          {currentAddress?.address ||
-                            'Set your delivery address'}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
-                  </button>
-                </>
-              )}
-
-              {/* Contact Info */}
-              {session?.user?.phone && (
-                <>
-                  <div className="border-t border-gray-100"></div>
-                  <div className="flex items-center gap-3 px-4 py-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-                      <Phone className="h-5 w-5 text-gray-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {session.user.name || 'You'}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {session.user.phone}
-                      </p>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Bill Summary */}
-              <div className="border-t border-gray-100"></div>
-              <button
-                className="flex w-full items-center justify-between px-4 py-4 hover:bg-white"
-                onClick={() => setBillOpen(true)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
-                    <Receipt className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-gray-900">
-                      Bill Details
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      View detailed bill breakdown
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900">
-                    ₹{Math.round(computedTotal)}
-                  </p>
-                  {savings > 0 && (
-                    <p className="text-xs text-green-600">
-                      Saved ₹{Math.round(savings)}
-                    </p>
-                  )}
-                </div>
-              </button>
-            </div>
-
-            {/* Address Editor */}
-            {mode === 'delivery' && isEditingAddress && (
-              <div className="mb-6 rounded-xl border border-orange-200 bg-orange-50 p-4">
-                <h3 className="mb-3 text-sm font-medium text-gray-900">
-                  Update delivery address
-                </h3>
-                <LocationInput
-                  onLocationSelect={(loc) => {
-                    setAddress({
-                      address: loc.address,
-                      city: loc.city,
-                      state: loc.state,
-                      zipCode: loc.zipCode,
-                    });
-                    toast.success('Address updated');
-                    setIsEditingAddress(false);
-                  }}
-                  placeholder="Search for your location"
-                />
               </div>
             )}
 
@@ -618,13 +504,133 @@ export default function CartPage() {
             {/* Add More Items */}
             <div className="mb-8 text-center">
               <button
-                onClick={() => router.push('/customer/discover')}
+                onClick={() => router.push('/')}
                 className="text-sm font-medium text-orange-500 hover:text-orange-600"
               >
                 + Add more items
               </button>
             </div>
           </div>
+
+          {/* Delivery Info */}
+          <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white pb-32">
+            {/* ETA */}
+            <div className="flex items-center justify-between px-4 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                  <Clock className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {mode === 'delivery' ? 'Delivery' : 'Pickup'}
+                    {etaText ? ` in ${etaText}` : ''}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {etaText ? 'Live estimate' : 'Time shown at checkout'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Address (only for delivery) */}
+            {mode === 'delivery' && (
+              <>
+                <div className="border-t border-gray-100"></div>
+                <button
+                  className="flex w-full items-center justify-between px-4 py-4 text-left hover:bg-white"
+                  onClick={() => setAddressSheetOpen(true)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                      <MapPinned className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        Deliver to Home
+                      </p>
+                      <p className="max-w-[250px] truncate text-xs text-gray-500">
+                        {currentAddress?.address || 'Set your delivery address'}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                </button>
+              </>
+            )}
+
+            {/* Contact Info */}
+            {session?.user?.phone && (
+              <>
+                <div className="border-t border-gray-100"></div>
+                <div className="flex items-center gap-3 px-4 py-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+                    <Phone className="h-5 w-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {session.user.name || 'You'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {session.user.phone}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Bill Summary */}
+            <div className="border-t border-gray-100"></div>
+            <button
+              className="flex w-full items-center justify-between px-4 py-4 hover:bg-white"
+              onClick={() => setBillOpen(true)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
+                  <Receipt className="h-5 w-5 text-purple-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-gray-900">
+                    Bill Details
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    View detailed bill breakdown
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-semibold text-gray-900">
+                  ₹{Math.round(computedTotal)}
+                </p>
+                {savings > 0 && (
+                  <p className="text-xs text-green-600">
+                    Saved ₹{Math.round(savings)}
+                  </p>
+                )}
+              </div>
+            </button>
+          </div>
+
+          {/* Address Editor */}
+          {mode === 'delivery' && isEditingAddress && (
+            <div className="mb-6 rounded-xl border border-orange-200 bg-orange-50 p-4">
+              <h3 className="mb-3 text-sm font-medium text-gray-900">
+                Update delivery address
+              </h3>
+              <LocationInput
+                onLocationSelect={(loc) => {
+                  setAddress({
+                    address: loc.address,
+                    city: loc.city,
+                    state: loc.state,
+                    zipCode: loc.zipCode,
+                  });
+                  toast.success('Address updated');
+                  setIsEditingAddress(false);
+                }}
+                placeholder="Search for your location"
+              />
+            </div>
+          )}
 
           {/* Sticky Checkout Bar */}
           <div className="glass-liquid shadow-t-lg fixed bottom-0 left-1/2 w-full max-w-md -translate-x-1/2 border-t border-gray-200 bg-white px-4 py-4">
@@ -675,6 +681,7 @@ export default function CartPage() {
                 state: addr.state || '',
                 zipCode: addr.zipCode || '',
               });
+              setSelectedAddressId(addr.id);
               setAddressSheetOpen(false);
               toast.success('Address selected');
             }}

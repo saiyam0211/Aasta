@@ -44,20 +44,41 @@ export async function GET(req: NextRequest) {
 
     try {
       // Basic counts
-      [totalRestaurants, activeRestaurants, totalCustomers, customersThisMonth, customersLastMonth] = await Promise.all([
+      [
+        totalRestaurants,
+        activeRestaurants,
+        totalCustomers,
+        customersThisMonth,
+        customersLastMonth,
+      ] = await Promise.all([
         prisma.restaurant.count(),
         prisma.restaurant.count({ where: { status: 'ACTIVE' } as any }),
         prisma.user.count({ where: { role: 'CUSTOMER' } as any }),
-        prisma.user.count({ where: { role: 'CUSTOMER', createdAt: { gte: thisMonth } } as any }),
-        prisma.user.count({ where: { role: 'CUSTOMER', createdAt: { gte: lastMonth, lt: thisMonth } } as any }),
+        prisma.user.count({
+          where: { role: 'CUSTOMER', createdAt: { gte: thisMonth } } as any,
+        }),
+        prisma.user.count({
+          where: {
+            role: 'CUSTOMER',
+            createdAt: { gte: lastMonth, lt: thisMonth },
+          } as any,
+        }),
       ]);
 
       // Orders counts
-      const [ordersTotalCount, ordersTodayCount, ordersYesterdayCount] = await Promise.all([
-        prisma.order.count(),
-        prisma.order.count({ where: { createdAt: { gte: today } } }),
-        prisma.order.count({ where: { createdAt: { gte: new Date(today.getTime() - 24 * 60 * 60 * 1000), lt: today } } }),
-      ]);
+      const [ordersTotalCount, ordersTodayCount, ordersYesterdayCount] =
+        await Promise.all([
+          prisma.order.count(),
+          prisma.order.count({ where: { createdAt: { gte: today } } }),
+          prisma.order.count({
+            where: {
+              createdAt: {
+                gte: new Date(today.getTime() - 24 * 60 * 60 * 1000),
+                lt: today,
+              },
+            },
+          }),
+        ]);
       totalOrders = ordersTotalCount;
       ordersToday = ordersTodayCount;
       ordersYesterday = ordersYesterdayCount;
@@ -65,8 +86,19 @@ export async function GET(req: NextRequest) {
       // Revenue aggregates (based on totalAmount actually charged)
       const [sumAll, sumToday, sumYesterday, avgAll] = await Promise.all([
         prisma.order.aggregate({ _sum: { totalAmount: true } }),
-        prisma.order.aggregate({ _sum: { totalAmount: true }, where: { createdAt: { gte: today } } }),
-        prisma.order.aggregate({ _sum: { totalAmount: true }, where: { createdAt: { gte: new Date(today.getTime() - 24 * 60 * 60 * 1000), lt: today } } }),
+        prisma.order.aggregate({
+          _sum: { totalAmount: true },
+          where: { createdAt: { gte: today } },
+        }),
+        prisma.order.aggregate({
+          _sum: { totalAmount: true },
+          where: {
+            createdAt: {
+              gte: new Date(today.getTime() - 24 * 60 * 60 * 1000),
+              lt: today,
+            },
+          },
+        }),
         prisma.order.aggregate({ _avg: { totalAmount: true } }),
       ]);
       revenueTotal = Number(sumAll._sum.totalAmount || 0);
@@ -98,11 +130,19 @@ export async function GET(req: NextRequest) {
           const [itemsMonth, orderCountMonth] = await Promise.all([
             prisma.orderItem.findMany({
               where: {
-                order: { is: { restaurantId: r.id, createdAt: { gte: thisMonth } } },
+                order: {
+                  is: { restaurantId: r.id, createdAt: { gte: thisMonth } },
+                },
               },
-              select: { totalOriginalPrice: true, originalUnitPrice: true, quantity: true },
+              select: {
+                totalOriginalPrice: true,
+                originalUnitPrice: true,
+                quantity: true,
+              },
             }),
-            prisma.order.count({ where: { restaurantId: r.id, createdAt: { gte: thisMonth } } }),
+            prisma.order.count({
+              where: { restaurantId: r.id, createdAt: { gte: thisMonth } },
+            }),
           ]);
           const gmvMonth = itemsMonth.reduce((acc, it) => {
             const fallback = (it.originalUnitPrice ?? 0) * (it.quantity ?? 0);
@@ -112,8 +152,19 @@ export async function GET(req: NextRequest) {
 
           // Weekly payout (Fri→Fri) using restaurant percentage on original GMV
           const itemsWeek = await prisma.orderItem.findMany({
-            where: { order: { is: { restaurantId: r.id, createdAt: { gte: lastFri, lt: nextFri } } } },
-            select: { totalOriginalPrice: true, originalUnitPrice: true, quantity: true },
+            where: {
+              order: {
+                is: {
+                  restaurantId: r.id,
+                  createdAt: { gte: lastFri, lt: nextFri },
+                },
+              },
+            },
+            select: {
+              totalOriginalPrice: true,
+              originalUnitPrice: true,
+              quantity: true,
+            },
           });
           const gmvWeek = itemsWeek.reduce((acc, it) => {
             const fallback = (it.originalUnitPrice ?? 0) * (it.quantity ?? 0);
@@ -123,7 +174,8 @@ export async function GET(req: NextRequest) {
           const weeklyPayout = gmvWeek * (r.restaurantPricePercentage || 0.4);
 
           // Aasta earnings: percentage on GMV (month) + platform fee ₹6 per order (month)
-          const aastaEarnings = gmvMonth * (r.aastaPricePercentage || 0.1) + 6 * orderCountMonth;
+          const aastaEarnings =
+            gmvMonth * (r.aastaPricePercentage || 0.1) + 6 * orderCountMonth;
 
           // Revenue (customer payments) for the month from grouped orders
           const revenueMonth = Number(g._sum.totalAmount || 0);
@@ -148,19 +200,24 @@ export async function GET(req: NextRequest) {
         .slice(0, 3);
 
       // Top delivery partners (by totalEarnings)
-      const deliveryPartnersWithDetails = await prisma.deliveryPartner.findMany({
-        take: 10,
-        include: {
-          user: { select: { name: true } },
-          orders: true,
-        },
-        orderBy: { totalEarnings: 'desc' },
-      });
+      const deliveryPartnersWithDetails = await prisma.deliveryPartner.findMany(
+        {
+          take: 10,
+          include: {
+            user: { select: { name: true } },
+            orders: true,
+          },
+          orderBy: { totalEarnings: 'desc' },
+        }
+      );
 
       const deliveryPartnersWithEarnings = await Promise.all(
         deliveryPartnersWithDetails.map(async (partner) => {
           const deliveredWeeklyOrders = partner.orders.filter(
-            (order) => new Date(order.createdAt) >= lastFri && new Date(order.createdAt) < nextFri && order.status === 'DELIVERED'
+            (order) =>
+              new Date(order.createdAt) >= lastFri &&
+              new Date(order.createdAt) < nextFri &&
+              order.status === 'DELIVERED'
           );
           const weeklyEarnings = deliveredWeeklyOrders.reduce(
             (acc, order) => acc + (order.deliveryFee || 50),
@@ -168,7 +225,9 @@ export async function GET(req: NextRequest) {
           );
 
           const [cancelledOrders, totalOrdersForPartner] = await Promise.all([
-            prisma.order.count({ where: { deliveryPartnerId: partner.id, status: 'CANCELLED' } }),
+            prisma.order.count({
+              where: { deliveryPartnerId: partner.id, status: 'CANCELLED' },
+            }),
             prisma.order.count({ where: { deliveryPartnerId: partner.id } }),
           ]);
 
@@ -202,7 +261,10 @@ export async function GET(req: NextRequest) {
     // Calculate growth percentages
     const customerGrowth =
       customersLastMonth > 0
-        ? (((customersThisMonth - customersLastMonth) / customersLastMonth) * 100).toFixed(1)
+        ? (
+            ((customersThisMonth - customersLastMonth) / customersLastMonth) *
+            100
+          ).toFixed(1)
         : '0';
 
     const orderGrowth =
@@ -212,7 +274,10 @@ export async function GET(req: NextRequest) {
 
     const revenueGrowth =
       revenueYesterday > 0
-        ? (((revenueToday - revenueYesterday) / revenueYesterday) * 100).toFixed(1)
+        ? (
+            ((revenueToday - revenueYesterday) / revenueYesterday) *
+            100
+          ).toFixed(1)
         : '0';
 
     const dashboardData = {

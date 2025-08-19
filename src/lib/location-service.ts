@@ -301,10 +301,60 @@ class LocationService {
     try {
       if (input.length < 3) return [];
 
+      // 1) Try Ola Maps via server proxy to avoid CORS
+      const ola = await this.fetchOlaSuggestions(input);
+      if (ola.length > 0) return ola;
+
+      // 2) Fallback: Google Places
       const { googleMapsService } = await import('./google-maps');
       return await googleMapsService.getPlacePredictions(input);
     } catch (error) {
       console.error('Error getting place suggestions:', error);
+      return [];
+    }
+  }
+
+  private async fetchOlaSuggestions(
+    input: string
+  ): Promise<LocationWithAddress[]> {
+    try {
+      const params = new URLSearchParams({ input, country: 'IN' });
+      const res = await fetch(
+        `/api/locations/autocomplete?${params.toString()}`,
+        {
+          method: 'GET',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+        }
+      );
+      if (!res.ok) return [];
+      const data = await res.json();
+      if (!data?.success || !Array.isArray(data?.data)) return [];
+
+      const suggestions = data.data as Array<{
+        description: string;
+        latitude: number | null;
+        longitude: number | null;
+      }>;
+
+      // Take top 5, geocode if coordinates missing
+      const top = suggestions.slice(0, 5);
+      const results: LocationWithAddress[] = [];
+      for (const s of top) {
+        if (typeof s.latitude === 'number' && typeof s.longitude === 'number') {
+          results.push({
+            address: s.description,
+            latitude: s.latitude,
+            longitude: s.longitude,
+          });
+          continue;
+        }
+        // Geocode description to get coordinates
+        const geocoded = await this.geocodeAddress(s.description);
+        if (geocoded) results.push(geocoded);
+      }
+      return results;
+    } catch {
       return [];
     }
   }

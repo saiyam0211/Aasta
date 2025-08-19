@@ -17,13 +17,15 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => ![CACHE_NAME, STATIC_CACHE].includes(k))
-          .map((k) => caches.delete(k))
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => ![CACHE_NAME, STATIC_CACHE].includes(k))
+            .map((k) => caches.delete(k))
+        )
       )
-    )
   );
   self.clients.claim();
 });
@@ -62,7 +64,9 @@ self.addEventListener('fetch', (event) => {
           cached ||
           fetch(request).then((res) => {
             const resClone = res.clone();
-            caches.open(STATIC_CACHE).then((cache) => cache.put(request, resClone));
+            caches
+              .open(STATIC_CACHE)
+              .then((cache) => cache.put(request, resClone));
             return res;
           })
         );
@@ -80,7 +84,12 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, resClone));
           return res;
         })
-        .catch(() => cached || (request.destination === 'document' && caches.match('/offline.html')));
+        .catch(
+          () =>
+            cached ||
+            (request.destination === 'document' &&
+              caches.match('/offline.html'))
+        );
       return cached || fetchPromise;
     })
   );
@@ -97,11 +106,16 @@ self.addEventListener('push', (event) => {
   try {
     notificationData = event.data ? event.data.json() : {};
   } catch (error) {
-    notificationData = { title: 'Aasta - Night Delivery', body: event.data ? event.data.text() : '' };
+    notificationData = {
+      title: 'Aasta - Night Delivery',
+      body: event.data ? event.data.text() : '',
+    };
   }
   if (
     (!notificationData.title || notificationData.title === 'undefined') &&
-    (!notificationData.body || notificationData.body === 'undefined' || notificationData.body === '')
+    (!notificationData.body ||
+      notificationData.body === 'undefined' ||
+      notificationData.body === '')
   ) {
     return;
   }
@@ -114,7 +128,12 @@ self.addEventListener('push', (event) => {
     requireInteraction: notificationData.requireInteraction || false,
     vibrate: notificationData.vibrate || [200, 100, 200],
   };
-  event.waitUntil(self.registration.showNotification(notificationData.title || 'Aasta - Night Delivery', options));
+  event.waitUntil(
+    self.registration.showNotification(
+      notificationData.title || 'Aasta - Night Delivery',
+      options
+    )
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {
@@ -158,5 +177,9 @@ async function syncOrders() {
   }
 }
 
-async function getOfflineOrders() { return []; }
-async function removeOfflineOrder(orderId) { console.log('Removing offline order:', orderId); }
+async function getOfflineOrders() {
+  return [];
+}
+async function removeOfflineOrder(orderId) {
+  console.log('Removing offline order:', orderId);
+}

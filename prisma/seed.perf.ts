@@ -6,23 +6,27 @@ const prisma = new PrismaClient({
 
 // Configuration — tweak with env if needed
 const RESTAURANT_COUNT = Number(process.env.SEED_RESTAURANTS ?? 45); // 40–50
-const CUSTOMERS_COUNT = Number(process.env.SEED_CUSTOMERS ?? 150);    // 100–200
+const CUSTOMERS_COUNT = Number(process.env.SEED_CUSTOMERS ?? 150); // 100–200
 const DELIVERY_PARTNERS_COUNT = Number(process.env.SEED_PARTNERS ?? 40);
 const MIN_ITEMS_PER_RESTAURANT = 10; // 10–15
 const MAX_ITEMS_PER_RESTAURANT = 15;
 
 // Simple random utilities
-const rand = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-const sample = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+const rand = (min: number, max: number) =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
+const sample = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const uniquePhone = (i: number) => `+91${(9000000000 + i).toString()}`; // deterministic unique phones
 
 // Location centroids around Bengaluru
-const locationCenters: Record<string, { lat: number; lng: number; address: string }[]> = {
+const locationCenters: Record<
+  string,
+  { lat: number; lng: number; address: string }[]
+> = {
   Koramangala: [
     { lat: 12.9352, lng: 77.6245, address: 'Koramangala, Bengaluru 560034' },
   ],
   Indiranagar: [
-    { lat: 12.9716, lng: 77.6400, address: 'Indiranagar, Bengaluru 560038' },
+    { lat: 12.9716, lng: 77.64, address: 'Indiranagar, Bengaluru 560038' },
   ],
   Whitefield: [
     { lat: 12.9698, lng: 77.7499, address: 'Whitefield, Bengaluru 560066' },
@@ -37,7 +41,7 @@ const locationCenters: Record<string, { lat: number; lng: number; address: strin
     { lat: 12.9558, lng: 77.7019, address: 'Marathahalli, Bengaluru 560037' },
   ],
   'Electronic City': [
-    { lat: 12.8390, lng: 77.6770, address: 'Electronic City, Bengaluru 560100' },
+    { lat: 12.839, lng: 77.677, address: 'Electronic City, Bengaluru 560100' },
   ],
 };
 
@@ -85,20 +89,124 @@ const restaurantNamesRight = [
   'Platter',
 ];
 
-const firstNames = ['Aarav', 'Vihaan', 'Ishan', 'Anaya', 'Diya', 'Kabir', 'Advait', 'Rhea', 'Aditi', 'Rohan', 'Riya', 'Neha', 'Kunal', 'Maya', 'Arjun', 'Ira', 'Meera', 'Nikhil', 'Saanvi', 'Anushka'];
-const lastNames = ['Sharma', 'Verma', 'Gupta', 'Iyer', 'Menon', 'Reddy', 'Patel', 'Rao', 'Khan', 'Kapoor', 'Mehta', 'Agarwal', 'Singh'];
+const firstNames = [
+  'Aarav',
+  'Vihaan',
+  'Ishan',
+  'Anaya',
+  'Diya',
+  'Kabir',
+  'Advait',
+  'Rhea',
+  'Aditi',
+  'Rohan',
+  'Riya',
+  'Neha',
+  'Kunal',
+  'Maya',
+  'Arjun',
+  'Ira',
+  'Meera',
+  'Nikhil',
+  'Saanvi',
+  'Anushka',
+];
+const lastNames = [
+  'Sharma',
+  'Verma',
+  'Gupta',
+  'Iyer',
+  'Menon',
+  'Reddy',
+  'Patel',
+  'Rao',
+  'Khan',
+  'Kapoor',
+  'Mehta',
+  'Agarwal',
+  'Singh',
+];
 
 const dishBank: Record<string, string[]> = {
-  'North Indian': ['Paneer Butter Masala', 'Dal Makhani', 'Butter Chicken', 'Aloo Paratha', 'Chole Bhature', 'Kadhai Paneer', 'Tandoori Chicken', 'Rajma Chawal'],
-  'South Indian': ['Masala Dosa', 'Idli Sambar', 'Medu Vada', 'Curd Rice', 'Lemon Rice', 'Pongal', 'Ghee Roast Dosa'],
-  Chinese: ['Veg Hakka Noodles', 'Chicken Manchurian', 'Chilli Paneer', 'Fried Rice', 'Spring Rolls', 'Schezwan Noodles'],
-  Italian: ['Penne Arrabbiata', 'Pesto Pasta', 'Alfredo Pasta', 'Bruschetta', 'Tiramisu'],
-  Pizza: ['Margherita Pizza', 'Farmhouse Pizza', 'Pepperoni Pizza', 'BBQ Chicken Pizza', 'Veggie Delight Pizza'],
-  Biryani: ['Veg Biryani', 'Chicken Biryani', 'Mutton Biryani', 'Egg Biryani', 'Hyderabadi Biryani'],
-  'Fast Food': ['Crispy Burger', 'Chicken Burger', 'Veggie Burger', 'French Fries', 'Cheese Sandwich', 'Grilled Sandwich'],
-  Rolls: ['Paneer Kathi Roll', 'Chicken Kathi Roll', 'Veg Roll', 'Egg Roll', 'Cheese Roll'],
-  Beverages: ['Fresh Lime Soda', 'Cold Coffee', 'Masala Chai', 'Iced Tea', 'Sweet Lassi', 'Mango Smoothie'],
-  Desserts: ['Gulab Jamun', 'Brownie', 'Cheesecake', 'Ice Cream Sundae', 'Rasgulla', 'Kulfi'],
+  'North Indian': [
+    'Paneer Butter Masala',
+    'Dal Makhani',
+    'Butter Chicken',
+    'Aloo Paratha',
+    'Chole Bhature',
+    'Kadhai Paneer',
+    'Tandoori Chicken',
+    'Rajma Chawal',
+  ],
+  'South Indian': [
+    'Masala Dosa',
+    'Idli Sambar',
+    'Medu Vada',
+    'Curd Rice',
+    'Lemon Rice',
+    'Pongal',
+    'Ghee Roast Dosa',
+  ],
+  Chinese: [
+    'Veg Hakka Noodles',
+    'Chicken Manchurian',
+    'Chilli Paneer',
+    'Fried Rice',
+    'Spring Rolls',
+    'Schezwan Noodles',
+  ],
+  Italian: [
+    'Penne Arrabbiata',
+    'Pesto Pasta',
+    'Alfredo Pasta',
+    'Bruschetta',
+    'Tiramisu',
+  ],
+  Pizza: [
+    'Margherita Pizza',
+    'Farmhouse Pizza',
+    'Pepperoni Pizza',
+    'BBQ Chicken Pizza',
+    'Veggie Delight Pizza',
+  ],
+  Biryani: [
+    'Veg Biryani',
+    'Chicken Biryani',
+    'Mutton Biryani',
+    'Egg Biryani',
+    'Hyderabadi Biryani',
+  ],
+  'Fast Food': [
+    'Crispy Burger',
+    'Chicken Burger',
+    'Veggie Burger',
+    'French Fries',
+    'Cheese Sandwich',
+    'Grilled Sandwich',
+  ],
+  Rolls: [
+    'Paneer Kathi Roll',
+    'Chicken Kathi Roll',
+    'Veg Roll',
+    'Egg Roll',
+    'Cheese Roll',
+  ],
+  Beverages: [
+    'Fresh Lime Soda',
+    'Cold Coffee',
+    'Masala Chai',
+    'Iced Tea',
+    'Sweet Lassi',
+    'Mango Smoothie',
+  ],
+  Desserts: [
+    'Gulab Jamun',
+    'Brownie',
+    'Cheesecake',
+    'Ice Cream Sundae',
+    'Rasgulla',
+    'Kulfi',
+  ],
 };
 
 function randomName() {
@@ -110,7 +218,7 @@ function randomRestaurantName() {
 }
 
 function operatingHoursJSON() {
-  return {  
+  return {
     monday: { open: '21:00', close: '00:00', isOpen: true },
     tuesday: { open: '21:00', close: '00:00', isOpen: true },
     wednesday: { open: '21:00', close: '00:00', isOpen: true },
@@ -147,7 +255,9 @@ async function ensureLocations() {
   return created;
 }
 
-async function seedOwnersAndRestaurants(locationIdByName: Record<string, string>) {
+async function seedOwnersAndRestaurants(
+  locationIdByName: Record<string, string>
+) {
   const restaurants: { id: string; name: string }[] = [];
   for (let i = 0; i < RESTAURANT_COUNT; i++) {
     const owner = await prisma.user.create({
@@ -176,7 +286,9 @@ async function seedOwnersAndRestaurants(locationIdByName: Record<string, string>
         phone: uniquePhone(20000 + i),
         email: `orders-${i}@aasta.dev`,
         imageUrl: `https://picsum.photos/seed/${Math.random()}/400/300`,
-        cuisineTypes: Array.from(new Set([sample(cuisines), sample(cuisines)])).slice(0, 2),
+        cuisineTypes: Array.from(
+          new Set([sample(cuisines), sample(cuisines)])
+        ).slice(0, 2),
         averagePreparationTime: rand(15, 30),
         minimumOrderAmount: rand(150, 300),
         deliveryRadius: rand(3, 6),
@@ -194,7 +306,6 @@ async function seedOwnersAndRestaurants(locationIdByName: Record<string, string>
   return restaurants;
 }
 
-
 function buildMenuItems(restaurantId: string) {
   const itemsCount = rand(MIN_ITEMS_PER_RESTAURANT, MAX_ITEMS_PER_RESTAURANT);
   const items: any[] = [];
@@ -209,7 +320,7 @@ function buildMenuItems(restaurantId: string) {
     items.push({
       restaurantId,
       name: dish,
-      description: `${dish} prepared fresh with quality ingredients` ,
+      description: `${dish} prepared fresh with quality ingredients`,
       price,
       originalPrice,
       category,
@@ -295,7 +406,9 @@ async function seedDeliveryPartners() {
 
 async function main() {
   console.log('🌱 Starting performance seed...');
-  console.log(`Plan → Restaurants: ${RESTAURANT_COUNT}, Customers: ${CUSTOMERS_COUNT}, Partners: ${DELIVERY_PARTNERS_COUNT}`);
+  console.log(
+    `Plan → Restaurants: ${RESTAURANT_COUNT}, Customers: ${CUSTOMERS_COUNT}, Partners: ${DELIVERY_PARTNERS_COUNT}`
+  );
 
   const locationIdByName = await ensureLocations();
 
@@ -315,7 +428,9 @@ async function main() {
   await seedDeliveryPartners();
   console.log(`✅ Created ${DELIVERY_PARTNERS_COUNT} delivery partners`);
 
-  console.log('🎯 Seed complete. You can now run performance tests against this dataset.');
+  console.log(
+    '🎯 Seed complete. You can now run performance tests against this dataset.'
+  );
 }
 
 main()
@@ -324,4 +439,4 @@ main()
     console.error('❌ Error during performance seed', e);
     await prisma.$disconnect();
     process.exit(1);
-  }); 
+  });

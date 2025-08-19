@@ -67,10 +67,10 @@ export async function POST(request: NextRequest) {
       latitude,
       longitude,
       isDefault,
-      // The following may not exist on older DB schemas; ignore safely
-      // houseNumber,
-      // locality,
-      // contactPhone,
+      // Newly supported fields for richer addresses
+      houseNumber,
+      locality,
+      contactPhone,
       city,
       state,
       zipCode,
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     const lat = typeof latitude === 'string' ? Number(latitude) : latitude;
     const lng = typeof longitude === 'string' ? Number(longitude) : longitude;
 
-    // Build whitelist of fields known to exist across older schemas
+    // Build whitelist of fields known to exist across schemas
     const addressData: any = {
       customerId: customer.id,
       street: street ?? undefined,
@@ -88,12 +88,19 @@ export async function POST(request: NextRequest) {
       instructions: instructions ?? undefined,
       type: (type as any) ?? 'HOME',
       latitude: typeof lat === 'number' && !Number.isNaN(lat) ? lat : undefined,
-      longitude: typeof lng === 'number' && !Number.isNaN(lng) ? lng : undefined,
+      longitude:
+        typeof lng === 'number' && !Number.isNaN(lng) ? lng : undefined,
       isDefault: !!isDefault,
+      // Newly persisted fields if present
+      houseNumber: (houseNumber as string | undefined) ?? undefined,
+      locality: (locality as string | undefined) ?? undefined,
+      contactPhone: (contactPhone as string | undefined) ?? undefined,
       city:
         (city as string | undefined) ?? process.env.DEFAULT_CITY ?? 'Bengaluru',
       state:
-        (state as string | undefined) ?? process.env.DEFAULT_STATE ?? 'Karnataka',
+        (state as string | undefined) ??
+        process.env.DEFAULT_STATE ??
+        'Karnataka',
       zipCode:
         (zipCode as string | undefined) ?? process.env.DEFAULT_ZIP ?? '560001',
     };
@@ -106,20 +113,56 @@ export async function POST(request: NextRequest) {
           data: { isDefault: false },
         });
       }
-      const a = await tx.address.create({ data: addressData });
-      if (isDefault) {
-        // Best-effort: update customer's defaultAddressId if column exists in DB
-        try {
-          await tx.customer.update({
-            where: { id: customer!.id },
-            data: { defaultAddressId: a.id } as any,
-          });
-        } catch (e) {
-          // Ignore if older schema doesn't have defaultAddressId
-          console.warn('defaultAddressId update skipped:', (e as any)?.code || e);
+      try {
+        // First attempt with full data
+        const a = await tx.address.create({ data: addressData });
+        if (isDefault) {
+          // Best-effort: update customer's defaultAddressId if column exists in DB
+          try {
+            await tx.customer.update({
+              where: { id: customer!.id },
+              data: { defaultAddressId: a.id } as any,
+            });
+          } catch (e) {
+            // Ignore if older schema doesn't have defaultAddressId
+            console.warn(
+              'defaultAddressId update skipped:',
+              (e as any)?.code || e
+            );
+          }
         }
+        return a;
+      } catch (e: any) {
+        // Fallback for older schemas that might not have the new columns
+        const fallbackData: any = {
+          customerId: customer!.id,
+          street: addressData.street,
+          landmark: addressData.landmark,
+          instructions: addressData.instructions,
+          type: addressData.type,
+          latitude: addressData.latitude,
+          longitude: addressData.longitude,
+          isDefault: addressData.isDefault,
+          city: addressData.city,
+          state: addressData.state,
+          zipCode: addressData.zipCode,
+        };
+        const a = await tx.address.create({ data: fallbackData });
+        if (isDefault) {
+          try {
+            await tx.customer.update({
+              where: { id: customer!.id },
+              data: { defaultAddressId: a.id } as any,
+            });
+          } catch (e2) {
+            console.warn(
+              'defaultAddressId update skipped:',
+              (e2 as any)?.code || e2
+            );
+          }
+        }
+        return a;
       }
-      return a;
     });
 
     return NextResponse.json({ success: true, address: created });

@@ -331,7 +331,10 @@ export async function GET(request: NextRequest) {
       }
 
       where.customerId = customer.id;
-    } else if (scope === 'restaurant' || session.user.role === 'RESTAURANT_OWNER') {
+    } else if (
+      scope === 'restaurant' ||
+      session.user.role === 'RESTAURANT_OWNER'
+    ) {
       const restaurant = await prisma.restaurant.findFirst({
         where: { ownerId: session.user.id },
       });
@@ -355,7 +358,10 @@ export async function GET(request: NextRequest) {
       }
 
       where.restaurantId = restaurant.id;
-    } else if (scope === 'delivery' || session.user.role === 'DELIVERY_PARTNER') {
+    } else if (
+      scope === 'delivery' ||
+      session.user.role === 'DELIVERY_PARTNER'
+    ) {
       const deliveryPartner = await prisma.deliveryPartner.findUnique({
         where: { userId: session.user.id },
       });

@@ -209,6 +209,7 @@ interface LocationState {
   permissionStatus: 'granted' | 'denied' | 'prompt' | null;
   isLoading: boolean;
   error: string | null;
+  selectedAddressId: string | null;
   setLocation: (location: { latitude: number; longitude: number }) => void;
   setAddress: (address: {
     address: string;
@@ -216,6 +217,7 @@ interface LocationState {
     state?: string;
     zipCode?: string;
   }) => void;
+  setSelectedAddressId: (id: string | null) => void;
   setPermissionStatus: (status: 'granted' | 'denied' | 'prompt') => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -231,8 +233,10 @@ export const useLocationStore = create<LocationState>()(
       permissionStatus: null,
       isLoading: false,
       error: null,
+      selectedAddressId: null,
       setLocation: (currentLocation) => set({ currentLocation }),
       setAddress: (currentAddress) => set({ currentAddress }),
+      setSelectedAddressId: (selectedAddressId) => set({ selectedAddressId }),
       setPermissionStatus: (permissionStatus) => set({ permissionStatus }),
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
@@ -310,6 +314,7 @@ export const useLocationStore = create<LocationState>()(
         currentLocation: state.currentLocation,
         currentAddress: state.currentAddress,
         permissionStatus: state.permissionStatus,
+        selectedAddressId: state.selectedAddressId,
       }),
     }
   )

@@ -117,7 +117,10 @@ export const authOptions: NextAuthOptions = {
               data: {
                 phone,
                 role: 'CUSTOMER',
-                name: providedName && providedName.length > 0 ? providedName : 'Aasta User',
+                name:
+                  providedName && providedName.length > 0
+                    ? providedName
+                    : 'Aasta User',
               } as any,
             });
             await prisma.customer.create({
@@ -169,16 +172,16 @@ export const authOptions: NextAuthOptions = {
 
         // When signing in with Google, ensure user exists (by email)
         if (account?.provider === 'google' && userHasEmail) {
-        const existingUser = await prisma.user.findUnique({
+          const existingUser = await prisma.user.findUnique({
             where: { email: user.email as string },
-        });
-        if (!existingUser) {
-          const newUser = await prisma.user.create({
-            data: {
+          });
+          if (!existingUser) {
+            const newUser = await prisma.user.create({
+              data: {
                 email: user.email!,
-              name: user.name,
-              image: user.image,
-              googleId: account?.providerAccountId,
+                name: user.name,
+                image: user.image,
+                googleId: account?.providerAccountId,
                 role: 'CUSTOMER',
               },
             });
@@ -186,8 +189,8 @@ export const authOptions: NextAuthOptions = {
               data: {
                 userId: newUser.id,
                 favoriteRestaurants: [],
-            },
-          });
+              },
+            });
           }
           return true;
         }
@@ -195,7 +198,9 @@ export const authOptions: NextAuthOptions = {
         // When signing in with phone credentials, ensure user exists (by phone)
         if (account?.provider === 'phone-otp' && userHasPhone) {
           const phone = (user as any).phone as string;
-          const existingByPhone = await prisma.user.findFirst({ where: { phone } as any });
+          const existingByPhone = await prisma.user.findFirst({
+            where: { phone } as any,
+          });
           if (!existingByPhone) {
             const newUser = await prisma.user.create({
               data: {
@@ -204,12 +209,12 @@ export const authOptions: NextAuthOptions = {
                 role: 'CUSTOMER',
               } as any,
             });
-          await prisma.customer.create({
-            data: {
-              userId: newUser.id,
-              favoriteRestaurants: [],
-            },
-          });
+            await prisma.customer.create({
+              data: {
+                userId: newUser.id,
+                favoriteRestaurants: [],
+              },
+            });
           }
           return true;
         }
@@ -236,45 +241,50 @@ export const authOptions: NextAuthOptions = {
       }
 
       // Handle admin token on subsequent requests
-      if (token.email === ADMIN_CREDENTIALS.email && (token as any).role === 'ADMIN') {
+      if (
+        token.email === ADMIN_CREDENTIALS.email &&
+        (token as any).role === 'ADMIN'
+      ) {
         return token;
       }
 
       // Always fetch fresh user data from database (by email or phone)
-        try {
+      try {
         const dbUser = await prisma.user.findFirst({
           where: {
             OR: [
               token.email ? { email: token.email as string } : undefined,
-              (token as any).phone ? { phone: (token as any).phone as string } : undefined,
+              (token as any).phone
+                ? { phone: (token as any).phone as string }
+                : undefined,
             ].filter(Boolean) as any,
           },
-            include: {
-              customer: true,
-              deliveryPartner: true,
-            },
-          });
+          include: {
+            customer: true,
+            deliveryPartner: true,
+          },
+        });
 
-          if (dbUser) {
+        if (dbUser) {
           (token as any).id = dbUser.id;
           (token as any).role = dbUser.role;
           (token as any).phone = (dbUser as any).phone;
           token.email = (dbUser.email as any) || '';
 
-            // Add role-specific data
-            if (dbUser.role === 'CUSTOMER' && dbUser.customer) {
+          // Add role-specific data
+          if (dbUser.role === 'CUSTOMER' && dbUser.customer) {
             (token as any).customerId = dbUser.customer.id;
-            } else if (
-              dbUser.role === 'DELIVERY_PARTNER' &&
-              dbUser.deliveryPartner
-            ) {
+          } else if (
+            dbUser.role === 'DELIVERY_PARTNER' &&
+            dbUser.deliveryPartner
+          ) {
             (token as any).deliveryPartnerId = dbUser.deliveryPartner.id;
-            } else if (dbUser.role === 'RESTAURANT_OWNER') {
-              const restaurant = await prisma.restaurant.findUnique({
-                where: { ownerId: dbUser.id },
-                select: { id: true },
-              });
-              if (restaurant) {
+          } else if (dbUser.role === 'RESTAURANT_OWNER') {
+            const restaurant = await prisma.restaurant.findUnique({
+              where: { ownerId: dbUser.id },
+              select: { id: true },
+            });
+            if (restaurant) {
               (token as any).restaurantId = restaurant.id;
             }
           }
@@ -292,8 +302,10 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).phone = (token as any).phone as string;
         session.user.email = (token as any).email as string;
         (session.user as any).customerId = (token as any).customerId as string;
-        (session.user as any).deliveryPartnerId = (token as any).deliveryPartnerId as string;
-        (session.user as any).restaurantId = (token as any).restaurantId as string;
+        (session.user as any).deliveryPartnerId = (token as any)
+          .deliveryPartnerId as string;
+        (session.user as any).restaurantId = (token as any)
+          .restaurantId as string;
       }
       return session;
     },

@@ -25,10 +25,14 @@ export default function LocationOnboarding() {
     setIsRequesting(true);
     setError(null);
     try {
-      const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.();
+      const isCapacitor =
+        typeof window !== 'undefined' &&
+        (window as any).Capacitor?.isNativePlatform?.();
       if (isCapacitor) {
         const { Geolocation } = await import('@capacitor/geolocation');
-        const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
+        const position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+        });
         setLocation(position.coords.latitude, position.coords.longitude);
         router.replace('/');
         return;
@@ -59,25 +63,33 @@ export default function LocationOnboarding() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#f0f9e8] pt-safe pb-safe flex flex-col items-center">
+    <div className="pt-safe pb-safe flex min-h-screen w-full flex-col items-center bg-[#f0f9e8]">
       <div className="w-full max-w-md px-6 pt-6">
         <div className="rounded-3xl bg-gradient-to-b from-[#d1f86a] to-[#b6ec54] p-6 shadow-xl">
-          <div className="rounded-2xl bg-white/60 glass-liquid px-4 py-2 inline-block text-sm font-semibold text-[#002a01]">
+          <div className="glass-liquid inline-block rounded-2xl bg-white/60 px-4 py-2 text-sm font-semibold text-[#002a01]">
             Location
           </div>
           <div className="mt-2">
-            <Lottie animationData={locationAnim as any} loop autoplay style={{ width: '100%', height: 260 }} />
+            <Lottie
+              animationData={locationAnim as any}
+              loop
+              autoplay
+              style={{ width: '100%', height: 260 }}
+            />
           </div>
-          <h1 className="mt-2 text-3xl font-extrabold text-[#002a01]">Location is Important</h1>
+          <h1 className="mt-2 text-3xl font-extrabold text-[#002a01]">
+            Location is Important
+          </h1>
           <p className="mt-2 text-[#053a03]/80">
-            Pick-ups and delivery estimates get faster and more accurate when we know where you are.
+            Pick-ups and delivery estimates get faster and more accurate when we
+            know where you are.
           </p>
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
           <div className="mt-6 space-y-3">
             <button
               onClick={requestLocation}
               disabled={isRequesting}
-              className="w-full rounded-full bg-[#00a651] py-4 text-white font-semibold shadow-md active:scale-[0.99]"
+              className="w-full rounded-full bg-[#00a651] py-4 font-semibold text-white shadow-md active:scale-[0.99]"
             >
               {isRequesting ? 'Requesting…' : 'Allow Location'}
             </button>
@@ -92,4 +104,4 @@ export default function LocationOnboarding() {
       </div>
     </div>
   );
-} 
+}

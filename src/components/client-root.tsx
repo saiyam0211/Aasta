@@ -2,11 +2,15 @@
 
 import NativeBridge from '@/components/native-bridge';
 
-export default function ClientRoot({ children }: { children: React.ReactNode }) {
+export default function ClientRoot({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <>
       <NativeBridge />
       {children}
     </>
   );
-} 
+}
