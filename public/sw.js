@@ -1,6 +1,7 @@
-const CACHE_NAME = 'aasta-night-delivery-v7';
-const STATIC_CACHE = 'static-v7';
+const CACHE_NAME = 'aasta-night-delivery-v8';
+const STATIC_CACHE = 'static-v8';
 const urlsToCache = [
+	'/splash.html',
 	'/',
 	'/manifest.json',
 	'/offline.html',
@@ -78,6 +79,25 @@ self.addEventListener('fetch', (event) => {
 
 	// Video splash asset: cache-first
 	if (url.pathname === '/logo.mp4') {
+		event.respondWith(
+			caches.match(request).then((cached) => {
+				return (
+					cached ||
+					fetch(request).then((res) => {
+						const resClone = res.clone();
+						caches
+							.open(STATIC_CACHE)
+							.then((cache) => cache.put(request, resClone));
+						return res;
+					})
+				);
+			})
+		);
+		return;
+	}
+
+	// Splash page: cache-first for instant load
+	if (url.pathname === '/splash.html') {
 		event.respondWith(
 			caches.match(request).then((cached) => {
 				return (

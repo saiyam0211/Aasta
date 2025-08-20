@@ -22,6 +22,15 @@ export const metadata: Metadata = {
   description:
     'Premium food delivery service operating from 9 PM to 12 AM, offering restaurant-quality meals at discounted prices.',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -50,34 +59,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${brandFont.variable}`}>
       <head>
-        <Script id="splash-screen-prevention" strategy="beforeInteractive">
-          {`
-            // Immediately hide any splash screen elements
-            (function() {
-              // Hide any potential splash screen images
-              const splashImages = document.querySelectorAll('img[src*="aasta_icon_logo"], img[src*="icon-192x192"], img[src*="icon-512x512"]');
-              splashImages.forEach(img => {
-                img.style.display = 'none';
-                img.style.opacity = '0';
-                img.style.visibility = 'hidden';
-              });
-              
-              // Set body background to transparent
-              document.body.style.background = 'transparent';
-              document.body.style.backgroundImage = 'none';
-              
-              // Check if this is a PWA launch
-              const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-              const isIOSStandalone = window.navigator.standalone === true;
-              
-              if (isStandalone || isIOSStandalone) {
-                // For PWA launches, ensure video overlay shows immediately
-                document.documentElement.style.background = 'black';
-                document.body.style.background = 'black';
-              }
-            })();
-          `}
-        </Script>
         <Script id="pwa-install-prompt" strategy="afterInteractive">
           {`
             let deferredPrompt;

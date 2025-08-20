@@ -90,7 +90,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Aggressive PWA Splash Screen Prevention */
+/* PWA Splash Screen Override */
 /* Hide any splash screen that might appear */
 @media (display-mode: standalone) {
   /* Ensure video overlay takes precedence */
@@ -103,41 +103,6 @@ body {
     z-index: 999999 !important;
     background: black !important;
   }
-  
-  /* Hide any potential splash screen elements */
-  img[src*="aasta_icon_logo"],
-  img[src*="icon-192x192"],
-  img[src*="icon-512x512"] {
-    display: none !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-  }
-}
-
-/* Prevent any splash screen from showing */
-body::before,
-body::after,
-html::before,
-html::after {
-  display: none !important;
-}
-
-/* Hide any background images that might be used for splash */
-body {
-  background: transparent !important;
-  background-image: none !important;
-}
-
-/* Ensure video overlay is always on top */
-.startup-video-overlay {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 2147483647 !important;
-  background: black !important;
-  pointer-events: auto !important;
 }
 
 /* Custom utility classes */

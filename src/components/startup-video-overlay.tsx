@@ -10,7 +10,8 @@ export default function StartupVideoOverlay() {
 	const timeoutRef = useRef<number | null>(null);
 
 	useEffect(() => {
-		// Show immediately for PWA launches
+		// Only show on the root route and only once per session
+		if (pathname !== "/") return;
 		if (typeof window === "undefined") return;
 		
 		// Check if this is a PWA launch (standalone mode)
@@ -18,17 +19,17 @@ export default function StartupVideoOverlay() {
 		const isIOSStandalone = (window.navigator as any).standalone === true;
 		const isPWALaunch = isStandalone || isIOSStandalone;
 		
-		// For PWA launches, always show the video immediately
-		// For browser visits, show only once per session on root route
-		if (isPWALaunch) {
-			setShow(true);
-		} else if (pathname === "/") {
-			const alreadyShown = sessionStorage.getItem("startupVideoShown");
-			if (!alreadyShown) {
-				sessionStorage.setItem("startupVideoShown", "1");
-				setShow(true);
-			}
+		// For PWA launches, always show the video
+		// For browser visits, show only once per session
+		const alreadyShown = sessionStorage.getItem("startupVideoShown");
+		if (!isPWALaunch && alreadyShown) return;
+		
+		// Mark as shown immediately to avoid flicker
+		if (!isPWALaunch) {
+			sessionStorage.setItem("startupVideoShown", "1");
 		}
+		
+		setShow(true);
 
 		// Safety timeout in case onended doesn't fire
 		timeoutRef.current = window.setTimeout(() => {
@@ -51,17 +52,6 @@ export default function StartupVideoOverlay() {
 			});
 		}
 	}, [show]);
-
-	// Show immediately for PWA launches
-	if (typeof window !== "undefined") {
-		const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-		const isIOSStandalone = (window.navigator as any).standalone === true;
-		const isPWALaunch = isStandalone || isIOSStandalone;
-		
-		if (isPWALaunch && !show) {
-			setShow(true);
-		}
-	}
 
 	if (!show) return null;
 
