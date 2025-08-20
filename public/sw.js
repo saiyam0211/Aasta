@@ -1,5 +1,5 @@
-const CACHE_NAME = 'aasta-night-delivery-v8';
-const STATIC_CACHE = 'static-v8';
+const CACHE_NAME = 'aasta-night-delivery-v9';
+const STATIC_CACHE = 'static-v9';
 const urlsToCache = [
 	'/splash.html',
 	'/',
@@ -11,23 +11,29 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', (event) => {
+	console.log('Service Worker installing...');
 	event.waitUntil(
-		caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+		caches.open(CACHE_NAME).then((cache) => {
+			console.log('Caching URLs:', urlsToCache);
+			return cache.addAll(urlsToCache);
+		})
 	);
 	self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
+	console.log('Service Worker activating...');
 	event.waitUntil(
 		caches
 			.keys()
-			.then((keys) =>
-				Promise.all(
+			.then((keys) => {
+				console.log('Clearing old caches:', keys);
+				return Promise.all(
 					keys
 						.filter((k) => ![CACHE_NAME, STATIC_CACHE].includes(k))
 						.map((k) => caches.delete(k))
-				)
-			)
+				);
+			})
 	);
 	self.clients.claim();
 });
@@ -37,6 +43,7 @@ self.addEventListener('fetch', (event) => {
 	if (request.method !== 'GET') return;
 
 	const url = new URL(request.url);
+	console.log('Fetching:', url.pathname);
 
 	// API: network first, fallback to cache
 	if (url.pathname.startsWith('/api/')) {
@@ -79,6 +86,7 @@ self.addEventListener('fetch', (event) => {
 
 	// Video splash asset: cache-first
 	if (url.pathname === '/logo.mp4') {
+		console.log('Serving video from cache');
 		event.respondWith(
 			caches.match(request).then((cached) => {
 				return (
@@ -98,6 +106,7 @@ self.addEventListener('fetch', (event) => {
 
 	// Splash page: cache-first for instant load
 	if (url.pathname === '/splash.html') {
+		console.log('Serving splash page from cache');
 		event.respondWith(
 			caches.match(request).then((cached) => {
 				return (
@@ -147,7 +156,7 @@ self.addEventListener('push', (event) => {
 		notificationData = event.data ? event.data.json() : {};
 	} catch (error) {
 		notificationData = {
-			title: 'Aasta - Night Delivery',
+			title: 'Aasta',
 			body: event.data ? event.data.text() : '',
 		};
 	}
@@ -170,7 +179,7 @@ self.addEventListener('push', (event) => {
 	};
 	event.waitUntil(
 		self.registration.showNotification(
-			notificationData.title || 'Aasta - Night Delivery',
+			notificationData.title || 'Aasta',
 			options
 		)
 	);

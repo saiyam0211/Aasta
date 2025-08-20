@@ -12,24 +12,72 @@
       .container { position: fixed; inset: 0; background: #000; }
       video { width: 100%; height: 100%; object-fit: cover; }
       .skip { position: absolute; right: 16px; top: 16px; z-index: 2; background: rgba(255,255,255,0.12); color: #fff; border: 0; border-radius: 8px; padding: 6px 10px; font: 600 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+      .debug { position: absolute; left: 16px; top: 16px; z-index: 2; color: #fff; font: 12px monospace; }
     </style>
   </head>
   <body>
     <div class="container">
+      <div class="debug" id="debug">Loading...</div>
       <button class="skip" id="skip">Skip</button>
       <video id="intro" src="/logo.mp4" autoplay playsinline muted></video>
     </div>
     <script>
-      const go = () => { location.replace('/'); };
+      console.log('Splash page loaded');
+      const debug = document.getElementById('debug');
+      const go = () => { 
+        console.log('Redirecting to app...');
+        location.replace('/'); 
+      };
       const v = document.getElementById('intro');
       const skip = document.getElementById('skip');
-      skip.addEventListener('click', go);
-      v.addEventListener('ended', go);
-      v.addEventListener('error', go);
+      
+      debug.textContent = 'Video element created';
+      
+      skip.addEventListener('click', () => {
+        console.log('Skip clicked');
+        go();
+      });
+      
+      v.addEventListener('loadstart', () => {
+        console.log('Video load started');
+        debug.textContent = 'Video loading...';
+      });
+      
+      v.addEventListener('canplay', () => {
+        console.log('Video can play');
+        debug.textContent = 'Video ready';
+      });
+      
+      v.addEventListener('play', () => {
+        console.log('Video started playing');
+        debug.textContent = 'Video playing';
+      });
+      
+      v.addEventListener('ended', () => {
+        console.log('Video ended');
+        go();
+      });
+      
+      v.addEventListener('error', (e) => {
+        console.error('Video error:', e);
+        debug.textContent = 'Video error - redirecting';
+        go();
+      });
+      
       // Safety timeout
-      setTimeout(go, 8000);
+      setTimeout(() => {
+        console.log('Safety timeout reached');
+        go();
+      }, 8000);
+      
       // Ensure autoplay even if promise rejection
-      setTimeout(() => { v.play && v.play().catch(() => {}); }, 0);
+      setTimeout(() => { 
+        console.log('Attempting to play video');
+        v.play && v.play().catch((e) => {
+          console.error('Autoplay failed:', e);
+          debug.textContent = 'Autoplay failed';
+        });
+      }, 100);
     </script>
   </body>
 </html> 
