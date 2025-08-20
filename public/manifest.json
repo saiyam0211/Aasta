@@ -3,7 +3,7 @@
   "short_name": "Aasta",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#002a01",
+  "background_color": "transparent",
   "theme_color": "#002a01",
   "orientation": "portrait-primary",
   "handle_links": "preferred",
@@ -44,14 +44,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "monochrome"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/aasta_icon_logo.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "narrow"
     }
   ]
 }

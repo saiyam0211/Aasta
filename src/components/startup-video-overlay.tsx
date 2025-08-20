@@ -6,17 +6,29 @@ import { usePathname } from "next/navigation";
 export default function StartupVideoOverlay() {
 	const pathname = usePathname();
 	const [show, setShow] = useState(false);
-	const [canAutoplay, setCanAutoplay] = useState(true);
+	const videoRef = useRef<HTMLVideoElement>(null);
 	const timeoutRef = useRef<number | null>(null);
 
 	useEffect(() => {
 		// Only show on the root route and only once per session
 		if (pathname !== "/") return;
 		if (typeof window === "undefined") return;
+		
+		// Check if this is a PWA launch (standalone mode)
+		const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+		const isIOSStandalone = (window.navigator as any).standalone === true;
+		const isPWALaunch = isStandalone || isIOSStandalone;
+		
+		// For PWA launches, always show the video
+		// For browser visits, show only once per session
 		const alreadyShown = sessionStorage.getItem("startupVideoShown");
-		if (alreadyShown) return;
-		// Mark as shown immediately to avoid flicker on route transitions
-		sessionStorage.setItem("startupVideoShown", "1");
+		if (!isPWALaunch && alreadyShown) return;
+		
+		// Mark as shown immediately to avoid flicker
+		if (!isPWALaunch) {
+			sessionStorage.setItem("startupVideoShown", "1");
+		}
+		
 		setShow(true);
 
 		// Safety timeout in case onended doesn't fire
@@ -31,11 +43,21 @@ export default function StartupVideoOverlay() {
 		};
 	}, [pathname]);
 
+	useEffect(() => {
+		if (show && videoRef.current) {
+			// Ensure video starts playing immediately
+			videoRef.current.play().catch((error) => {
+				console.log('Video autoplay failed:', error);
+				// If autoplay fails, still show the video but user may need to tap
+			});
+		}
+	}, [show]);
+
 	if (!show) return null;
 
 	return (
 		<div
-			className="fixed inset-0 z-[1000] bg-black"
+			className="startup-video-overlay fixed inset-0 z-[1000] bg-black"
 			role="dialog"
 			aria-label="Startup animation"
 		>
@@ -47,10 +69,11 @@ export default function StartupVideoOverlay() {
 				Skip
 			</button>
 			<video
+				ref={videoRef}
 				src="/logo.mp4"
 				autoPlay
 				playsInline
-				muted={canAutoplay}
+				muted
 				onEnded={() => setShow(false)}
 				onError={() => setShow(false)}
 				className="h-full w-full object-cover"
