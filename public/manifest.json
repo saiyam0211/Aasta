@@ -1,24 +1,87 @@
 {
-  "name": "Aasta - Night Delivery",
+  "name": "Aasta - Premium Night Delivery",
   "short_name": "Aasta",
   "start_url": "/splash.html",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#002a01",
+  "theme_color": "#002a01",
   "orientation": "portrait-primary",
   "handle_links": "preferred",
   "scope": "/",
-  "description": "Premium food delivery service operating from 9 PM to 12 AM",
-  "categories": ["food", "shopping", "lifestyle"],
+  "description": "Premium food delivery service operating from 9 PM to 12 AM. Order your favorite meals for late-night delivery.",
+  "categories": ["food", "shopping", "lifestyle", "productivity"],
   "display_override": ["standalone", "fullscreen", "minimal-ui"],
   "lang": "en",
   "dir": "ltr",
   "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
   "icons": [
-    { "src": "/aasta_icon_logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/aasta_icon_logo.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "/aasta_icon_logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/aasta_icon_logo.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "/aasta_icon_logo.png", "sizes": "512x512", "type": "image/png", "purpose": "monochrome" }
-  ]
+    { 
+      "src": "/icons/Aasta_Logos_72x72.png", 
+      "sizes": "72x72", 
+      "type": "image/png", 
+      "purpose": "any" 
+    },
+    { 
+      "src": "/icons/Aasta_Logos_96x96.png", 
+      "sizes": "96x96", 
+      "type": "image/png", 
+      "purpose": "any" 
+    },
+    { 
+      "src": "/icons/Aasta_Logos_128x128.png", 
+      "sizes": "128x128", 
+      "type": "image/png", 
+      "purpose": "any" 
+    },
+    { 
+      "src": "/icons/Aasta_Logos_144x144.png", 
+      "sizes": "144x144", 
+      "type": "image/png", 
+      "purpose": "any" 
+    },
+    { 
+      "src": "/icons/Aasta_Logos_152x152.png", 
+      "sizes": "152x152", 
+      "type": "image/png", 
+      "purpose": "any" 
+    },
+    { 
+      "src": "/icons/Aasta_Logos_192x192.png", 
+      "sizes": "192x192", 
+      "type": "image/png", 
+      "purpose": "any" 
+    },
+    { 
+      "src": "/icons/Aasta_Logos_384x384.png", 
+      "sizes": "384x384", 
+      "type": "image/png", 
+      "purpose": "any" 
+    },
+    { 
+      "src": "/icons/Aasta_Logos_512x512.png", 
+      "sizes": "512x512", 
+      "type": "image/png", 
+      "purpose": "any" 
+    },
+    { 
+      "src": "/icons/Aasta_Logos_192x192.maskable.png", 
+      "sizes": "192x192", 
+      "type": "image/png", 
+      "purpose": "maskable" 
+    },
+    { 
+      "src": "/icons/Aasta_Logos_512x512.maskable.png", 
+      "sizes": "512x512", 
+      "type": "image/png", 
+      "purpose": "maskable" 
+    }
+  ],
+  "offline_enabled": true,
+  "gcm_sender_id": "103953800507"
 }
