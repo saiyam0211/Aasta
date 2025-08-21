@@ -62,6 +62,11 @@ export function CartDock({ className }: CartDockProps) {
   // Always render the component but control visibility with AnimatePresence
   return (
     <>
+      {/* Always visible test element to confirm component is rendering */}
+      <div className="fixed top-4 left-4 z-50 bg-red-500 text-white px-4 py-2 rounded-lg text-sm">
+        CartDock Component Loaded
+      </div>
+
       {/* Temporary test button */}
       <div className="fixed top-4 right-4 z-50">
         <button
@@ -72,6 +77,9 @@ export function CartDock({ className }: CartDockProps) {
         </button>
         <div className="text-xs text-gray-600 mt-1">
           Cart: {cartItemCount} items
+        </div>
+        <div className="text-xs text-gray-600">
+          Visible: {isVisible ? 'Yes' : 'No'}
         </div>
       </div>
 
