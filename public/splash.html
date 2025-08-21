@@ -33,30 +33,30 @@
       
       debug.textContent = 'Video element created';
       
-      skip.addEventListener('click', () => {
-        console.log('Skip clicked');
-        go();
-      });
+      // skip.addEventListener('click', () => {
+      //   console.log('Skip clicked');
+      //   go();
+      // });
       
-      v.addEventListener('loadstart', () => {
-        console.log('Video load started');
-        debug.textContent = 'Video loading...';
-      });
+      // v.addEventListener('loadstart', () => {
+      //   console.log('Video load started');
+      //   debug.textContent = 'Video loading...';
+      // });
       
-      v.addEventListener('canplay', () => {
-        console.log('Video can play');
-        debug.textContent = 'Video ready';
-      });
+      // v.addEventListener('canplay', () => {
+      //   console.log('Video can play');
+      //   debug.textContent = 'Video ready';
+      // });
       
-      v.addEventListener('play', () => {
-        console.log('Video started playing');
-        debug.textContent = 'Video playing';
-      });
+      // v.addEventListener('play', () => {
+      //   console.log('Video started playing');
+      //   debug.textContent = 'Video playing';
+      // });
       
-      v.addEventListener('ended', () => {
-        console.log('Video ended');
-        go();
-      });
+      // v.addEventListener('ended', () => {
+      //   console.log('Video ended');
+      //   go();
+      // });
       
       v.addEventListener('error', (e) => {
         console.error('Video error:', e);
