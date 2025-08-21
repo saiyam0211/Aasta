@@ -68,6 +68,9 @@ export default function CustomerLayout({
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
 
+  // Debug logging for cart state
+  console.log('CustomerLayout cart state:', { cart, cartItemCount });
+
   // Register client with notification broadcaster
   useEffect(() => {
     if (session?.user?.id) {
