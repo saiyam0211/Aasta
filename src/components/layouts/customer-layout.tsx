@@ -31,7 +31,7 @@ import { useCartStore } from '@/lib/store';
 import { usePWA } from '@/hooks/usePWA';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { useNotificationListener } from '@/hooks/useNotificationListener';
-import { CartDock } from '@/components/ui/cart-dock';
+import { CartBottomNav } from '@/components/ui/cart-bottom-nav';
 
 interface CustomerLayoutProps {
   children: React.ReactNode;
@@ -67,9 +67,6 @@ export default function CustomerLayout({
 
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
-
-  // Debug logging for cart state
-  console.log('CustomerLayout cart state:', { cart, cartItemCount });
 
   // Register client with notification broadcaster
   useEffect(() => {
@@ -209,13 +206,11 @@ export default function CustomerLayout({
       {/* Main Content */}
       <main className="flex-1 pb-20 md:pb-0">{children}</main>
 
-      {/* Debug info */}
-      <div className="fixed top-20 left-4 z-50 bg-yellow-500 text-black px-4 py-2 rounded-lg text-sm">
-        Cart Items: {cartItemCount}
-      </div>
-
-      {/* Cart Dock - appears only when items are in cart */}
-      <CartDock />
+      {/* Cart Bottom Navigation - Only shows when cart has items */}
+      <CartBottomNav
+        cartItemCount={cartItemCount}
+        cartTotal={cart?.total || 0}
+      />
     </div>
   );
 }

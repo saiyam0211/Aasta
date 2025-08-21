@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { usePWA } from '@/hooks/usePWA';
 import { HomeHeader } from '@/components/ui/home-header';
 import { HomeProductCard } from '@/components/ui/home-product-card';
+import { MobileBottomNav } from '@/components/ui/mobile-bottom-nav';
 import { CheckCircle } from 'lucide-react';
 import type { Dish } from '@/types/dish';
 import {
@@ -497,6 +498,10 @@ export default function HomePage() {
         onAdd={addFromSheet}
       />
 
+      <MobileBottomNav
+        onHomeClick={handleHomeTap}
+        cartItemCount={cartItemCount}
+      />
     </div>
   );
 }
