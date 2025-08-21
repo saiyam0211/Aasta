@@ -19,7 +19,7 @@ const brandFont = localFont({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.aasta.food'),
-  title: 'Aasta - Premium Night Delivery',
+  title: 'Aasta',
   description:
     'Premium food delivery service operating from 9 PM to 12 AM. Order your favorite meals for late-night delivery with fast, reliable service.',
   keywords: 'night delivery, food delivery, late night food, premium delivery, restaurant delivery, midnight food',
@@ -91,7 +91,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://www.aasta.food',
-    title: 'Aasta - Premium Night Delivery',
+    title: 'Aasta',
     description: 'Premium food delivery service operating from 9 PM to 12 AM',
     siteName: 'Aasta',
     images: [
@@ -105,7 +105,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Aasta - Premium Night Delivery',
+    title: 'Aasta',
     description: 'Premium food delivery service operating from 9 PM to 12 AM',
     images: ['/icons/Aasta_Logos_512x512.png'],
   },
@@ -163,13 +163,13 @@ export default function RootLayout({
 
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:url" content="https://www.aasta.food" />
-        <meta name="twitter:title" content="Aasta - Premium Night Delivery" />
+        <meta name="twitter:title" content="Aasta" />
         <meta name="twitter:description" content="Premium food delivery service operating from 9 PM to 12 AM" />
         <meta name="twitter:image" content="/icons/Aasta_Logos_512x512.png" />
         <meta name="twitter:creator" content="@aasta" />
 
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Aasta - Premium Night Delivery" />
+        <meta property="og:title" content="Aasta" />
         <meta property="og:description" content="Premium food delivery service operating from 9 PM to 12 AM" />
         <meta property="og:site_name" content="Aasta" />
         <meta property="og:url" content="https://www.aasta.food" />
