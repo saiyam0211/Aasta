@@ -1,12 +1,14 @@
-const CACHE_NAME = 'aasta-night-delivery-v9';
-const STATIC_CACHE = 'static-v9';
+const CACHE_NAME = 'aasta-night-delivery-v10';
+const STATIC_CACHE = 'static-v10';
 const urlsToCache = [
 	'/splash.html',
 	'/',
 	'/manifest.json',
 	'/offline.html',
-	'/icons/icon-192x192.png',
-	'/icons/icon-512x512.png',
+	'/icons/Aasta_Logos_192x192.png',
+	'/icons/Aasta_Logos_512x512.png',
+	'/icons/Aasta_Logos_192x192.maskable.png',
+	'/icons/Aasta_Logos_512x512.maskable.png',
 	'/logo.mp4',
 ];
 
