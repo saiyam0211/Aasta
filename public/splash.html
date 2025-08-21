@@ -17,65 +17,32 @@
   </head>
   <body>
     <div class="container">
-      <!-- <div class="debug" id="debug">Loading...</div> -->
-      <!-- <button class="skip" id="skip">Skip</button> -->
       <video id="intro" src="/logo.mp4" autoplay playsinline muted></video>
     </div>
     <script>
       console.log('Splash page loaded');
-      const debug = document.getElementById('debug');
       const go = () => { 
         console.log('Redirecting to app...');
         location.replace('/'); 
       };
       const v = document.getElementById('intro');
-      const skip = document.getElementById('skip');
-      
-      // debug.textContent = 'Video element created';
-      
-      // skip.addEventListener('click', () => {
-      //   console.log('Skip clicked');
-      //   go();
-      // });
-      
-      // v.addEventListener('loadstart', () => {
-      //   console.log('Video load started');
-      //   debug.textContent = 'Video loading...';
-      // });
-      
-      // v.addEventListener('canplay', () => {
-      //   console.log('Video can play');
-      //   debug.textContent = 'Video ready';
-      // });
-      
-      // v.addEventListener('play', () => {
-      //   console.log('Video started playing');
-      //   debug.textContent = 'Video playing';
-      // });
-      
-      // v.addEventListener('ended', () => {
-      //   console.log('Video ended');
-      //   go();
-      // });
       
       v.addEventListener('error', (e) => {
         console.error('Video error:', e);
-        debug.textContent = 'Video error - redirecting';
         go();
       });
       
-      // Safety timeout
+      // 2-second timeout - redirect after 2 seconds regardless of video length
       setTimeout(() => {
-        console.log('Safety timeout reached');
+        console.log('2-second timeout reached - redirecting to app');
         go();
-      }, 8000);
+      }, 2000);
       
       // Ensure autoplay even if promise rejection
       setTimeout(() => { 
         console.log('Attempting to play video');
         v.play && v.play().catch((e) => {
           console.error('Autoplay failed:', e);
-          debug.textContent = 'Autoplay failed';
         });
       }, 100);
     </script>
