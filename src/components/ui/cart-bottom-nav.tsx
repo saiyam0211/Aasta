@@ -76,7 +76,7 @@ export function CartBottomNav({
           'before:absolute before:inset-0 before:rounded-[20px] before:shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)] before:pointer-events-none'
         )}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-5 justify-between">
           {/* Left side - Cart icon and item count */}
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -86,14 +86,6 @@ export function CartBottomNav({
                   {cartItemCount > 99 ? '99+' : cartItemCount}
                 </Badge>
               )}
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-600">
-                {cartItemCount} {cartItemCount === 1 ? 'item' : 'items'}
-              </span>
-              <span className="text-lg font-bold text-[#002A01]">
-                ₹{cartTotal.toFixed(2)}
-              </span>
             </div>
           </div>
 
