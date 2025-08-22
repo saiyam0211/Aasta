@@ -20,9 +20,15 @@ export function CartBottomNav({
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // Debug logging
+  console.log('CartBottomNav render:', { cartItemCount, cartTotal, isVisible, isAnimating });
+
   // Show/hide based on cart items
   useEffect(() => {
+    console.log('CartBottomNav effect:', { cartItemCount, isVisible });
+    
     if (cartItemCount > 0 && !isVisible) {
+      console.log('Showing cart nav - items added');
       setIsAnimating(true);
       // Small delay to ensure smooth animation
       const timer = setTimeout(() => {
@@ -31,6 +37,7 @@ export function CartBottomNav({
       }, 50);
       return () => clearTimeout(timer);
     } else if (cartItemCount === 0 && isVisible) {
+      console.log('Hiding cart nav - items removed');
       setIsAnimating(true);
       setIsVisible(false);
       // Wait for exit animation to complete
@@ -43,19 +50,24 @@ export function CartBottomNav({
 
   // Don't render if no items and not animating
   if (cartItemCount === 0 && !isAnimating) {
+    console.log('CartBottomNav returning null - no items');
     return null;
   }
 
+  // Always render if we have items, regardless of animation state
+  if (cartItemCount > 0) {
+    console.log('CartBottomNav rendering with items');
+  }
+
   const handleCartClick = () => {
-    if (pathname !== '/cart') {
-      router.push('/cart');
-    }
+    console.log('Cart clicked, navigating to /cart');
+    router.push('/cart');
   };
 
   return (
     <div
       className={cn(
-        'fixed bottom-6 left-1/2 z-50 w-[85%] max-w-md -translate-x-1/2 md:hidden',
+        'fixed bottom-6 right-4 z-50 w-auto max-w-xs md:hidden',
         'transition-all duration-300 ease-out',
         isVisible
           ? 'translate-y-0 opacity-100 scale-100'
@@ -75,7 +87,7 @@ export function CartBottomNav({
             'before:absolute before:inset-0 before:rounded-[20px] before:shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)] before:pointer-events-none'
           )}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-5 justify-between">
             {/* Left side - Cart icon and item count */}
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -85,14 +97,6 @@ export function CartBottomNav({
                     {cartItemCount > 99 ? '99+' : cartItemCount}
                   </Badge>
                 )}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-gray-600">
-                  {cartItemCount} {cartItemCount === 1 ? 'item' : 'items'}
-                </span>
-                <span className="text-lg font-bold text-[#002A01]">
-                  ₹{cartTotal.toFixed(2)}
-                </span>
               </div>
             </div>
 

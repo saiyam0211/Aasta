@@ -109,7 +109,7 @@ Monitor route health with:
 pm2 status
 
 # View route warming statistics
-pm2 logs night-delivery-route-warmer
+pm2 logs aasta-route-warmer
 ```
 
 ## Best Practices

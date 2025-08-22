@@ -267,7 +267,7 @@ export default function CustomerDashboard() {
       subtitle: 'Premium food delivery from 9 PM to 12 AM',
       description:
         'Get your favorite food delivered fresh to your doorstep during late night hours',
-      image: '/images/banners/night-delivery-banner.jpg',
+      image: '/images/banners/aasta-banner.jpg',
       backgroundColor: '#1a365d',
       textColor: 'text-white',
       ctaText: 'Order Now',

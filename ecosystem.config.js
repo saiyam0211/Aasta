@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'night-delivery-app',
+      name: 'aasta-app',
       script: 'npm',
       args: 'start',
       cwd: './',
@@ -33,7 +33,7 @@ module.exports = {
       health_check_fatal_exceptions: true,
     },
     {
-      name: 'night-delivery-route-warmer',
+      name: 'aasta-route-warmer',
       script: 'tsx',
       args: 'src/scripts/route-warmer.ts',
       cwd: './',
@@ -66,8 +66,8 @@ module.exports = {
       user: 'deploy',
       host: 'your-server.com',
       ref: 'origin/main',
-      repo: 'git@github.com:your-username/night-delivery.git',
-      path: '/var/www/night-delivery',
+      repo: 'git@github.com:your-username/aasta.git',
+      path: '/var/www/aasta',
       'pre-deploy-local': '',
       'post-deploy': 'npm install && npm run build && pm2 reload ecosystem.config.js --env production',
       'pre-setup': '',

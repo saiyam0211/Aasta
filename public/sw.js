@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aasta-night-delivery-v10';
+const CACHE_NAME = 'aasta-aasta-v10';
 const STATIC_CACHE = 'static-v10';
 const urlsToCache = [
 	'/splash.html',

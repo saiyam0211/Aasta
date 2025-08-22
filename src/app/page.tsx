@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/restaurant-card';
 import { ProductBottomSheet } from '@/components/ui/ProductBottomSheet';
 import { useCartStore } from '@/lib/store';
+import { CartBottomNav } from '@/components/ui/cart-bottom-nav';
 
 const brandFont = localFont({
   src: [
@@ -495,6 +496,12 @@ export default function HomePage() {
         dish={selectedDish}
         onOpenChange={setProductSheetOpen}
         onAdd={addFromSheet}
+      />
+
+      {/* Cart Bottom Navigation - Only shows when cart has items */}
+      <CartBottomNav
+        cartItemCount={cartItemCount}
+        cartTotal={cart?.total || 0}
       />
     </div>
   );

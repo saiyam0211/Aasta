@@ -36,7 +36,7 @@ export function SafeImage({
       ) {
         defaultFallback = '/images/dish-placeholder.svg';
       } else if (src.includes('banner')) {
-        defaultFallback = '/images/banners/night-delivery-banner.jpg';
+        defaultFallback = '/images/banners/aasta-banner.jpg';
       }
 
       setImageSrc(fallbackSrc || defaultFallback);
