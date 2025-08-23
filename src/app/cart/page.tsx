@@ -357,7 +357,7 @@ export default function CartPage() {
                 onClick={handleGoBack}
                 variant="ghost"
                 size="sm"
-                className="glass-liquid h-10 w-20 rounded-full bg-white/80 p-0 shadow-sm hover:bg-white"
+                className="h-10 w-20 rounded-full border border-white/20 bg-white/10 p-0 shadow-sm backdrop-blur-sm hover:bg-white"
               >
                 <ArrowLeft className="h-5 w-5" style={{ color: '#002a01' }} />{' '}
                 Back
@@ -513,7 +513,7 @@ export default function CartPage() {
           </div>
 
           {/* Delivery Info */}
-          <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white pb-32">
+          <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white pb-4">
             {/* ETA */}
             <div className="flex items-center justify-between px-4 py-4">
               <div className="flex items-center gap-3">
@@ -633,8 +633,8 @@ export default function CartPage() {
           )}
 
           {/* Sticky Checkout Bar */}
-          <div className="glass-liquid shadow-t-lg fixed bottom-0 left-1/2 w-full max-w-md -translate-x-1/2 border-t border-gray-200 bg-white px-4 py-4">
-            <div className="flex items-center justify-between pb-20">
+          <div className="shadow-t-lg fixed bottom-0 left-1/2 w-full max-w-md -translate-x-1/2 border border-t border-white/20 bg-white/10 px-4 py-4 backdrop-blur-md">
+            <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs tracking-wide text-gray-500 uppercase">
                   Total

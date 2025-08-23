@@ -3,14 +3,14 @@
 import NativeBridge from '@/components/native-bridge';
 
 export default function ClientRoot({
-	children,
+  children,
 }: {
-	children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-	return (
-		<>
-			<NativeBridge />
-			{children}
-		</>
-	);
+  return (
+    <>
+      <NativeBridge />
+      {children}
+    </>
+  );
 }

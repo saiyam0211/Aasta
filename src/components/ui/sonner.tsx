@@ -9,7 +9,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={theme as ToasterProps['theme']}
-      position={props.position ?? 'bottom-center'}
+      position={props.position ?? 'top-center'}
       closeButton={props.closeButton ?? true}
       duration={props.duration ?? 2000}
       className={`toaster group pointer-events-none z-[60] ${props.className ?? ''}`}
@@ -34,7 +34,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         ['--normal-text' as any]: 'var(--popover-foreground, #101113)',
         ['--normal-border' as any]: 'var(--border, rgba(0,0,0,0.1))',
         // nudge up from bottom nav
-        marginBottom: '16px',
+        marginTop: '20px',
       }}
       {...props}
     />

@@ -57,30 +57,30 @@ export function CartBottomNav({
   return (
     <div
       className={cn(
-        'fixed bottom-6 right-4 z-50 w-auto max-w-xs md:hidden',
+        'fixed right-4 bottom-6 z-50 w-auto max-w-xs md:hidden',
         'transition-all duration-300 ease-out',
         isVisible
-          ? 'translate-y-0 opacity-100 scale-100'
-          : 'translate-y-4 opacity-0 scale-95'
+          ? 'translate-y-0 scale-100 opacity-100'
+          : 'translate-y-4 scale-95 opacity-0'
       )}
     >
       {/* Main cart button - entire dock is clickable */}
       <button
         onClick={handleCartClick}
         className={cn(
-          'group relative w-full rounded-[20px] bg-white px-6 py-4 text-left shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all duration-300 ease-out',
-          'border border-gray-100 cursor-pointer',
-          'hover:shadow-[0_12px_40px_rgba(0,0,0,0.16)] hover:scale-[1.02]',
+          'group relative w-full rounded-[20px] border border-[#D2F86A] bg-white/10 px-6 py-4 text-left shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-sm transition-all duration-300 ease-out',
+          'cursor-pointer',
+          'hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.16)]',
           'active:scale-[0.98]',
           // Inner shadow effect
-          'before:absolute before:inset-0 before:rounded-[20px] before:shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)] before:pointer-events-none'
+          'before:pointer-events-none before:absolute before:inset-0 before:rounded-[20px] before:shadow-[inset_0_1px_3px_rgba(0,0,0,0.08)]'
         )}
       >
-        <div className="flex items-center gap-5 justify-between">
+        <div className="flex items-center justify-between gap-5">
           {/* Left side - Cart icon and item count */}
           <div className="flex items-center gap-3">
             <div className="relative">
-              <ShoppingCart className="h-6 w-6 text-[#002A01] transition-transform duration-200 group-hover:scale-110" />
+              <ShoppingCart className="h-6 w-6 font-black text-[#002A01] transition-transform duration-200 group-hover:scale-110" />
               {cartItemCount > 0 && (
                 <Badge className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center border-2 border-white bg-red-500 p-0 text-xs font-bold text-white shadow-sm">
                   {cartItemCount > 99 ? '99+' : cartItemCount}
@@ -91,9 +91,7 @@ export function CartBottomNav({
 
           {/* Right side - View cart text */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-[#002A01]">
-              View Cart
-            </span>
+            <span className="text-sm font-black text-[#002A01]">View Cart</span>
             <div className="h-4 w-4 rounded-full bg-[#002A01] p-0.5">
               <svg
                 className="h-full w-full text-white"
@@ -113,11 +111,11 @@ export function CartBottomNav({
         </div>
 
         {/* Subtle glow effect */}
-        <div className="absolute inset-0 rounded-[20px] bg-gradient-to-r from-[#002A01]/5 to-[#002A01]/10 blur-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div className="absolute inset-0 rounded-[20px] bg-gradient-to-r from-[#002A01]/5 to-[#002A01]/10 opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-100" />
       </button>
 
       {/* Safe area */}
       <div className="pb-safe h-0" />
     </div>
   );
-} 
+}

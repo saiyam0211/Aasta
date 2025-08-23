@@ -263,9 +263,9 @@ export function HomeHeader({
         <button
           type="button"
           onClick={onLocationClick}
-          className="glass-liquid flex items-center gap-2 rounded-full bg-[#002A01]/5 px-3 py-2"
+          className="flex items-center gap-2 rounded-full border border-white bg-[#002A01]/5 bg-white/30 px-3 py-2 backdrop-blur-sm"
         >
-          <div className="glass-liquid flex h-8 w-8 items-center justify-center rounded-full bg-black/10">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/50 bg-black/10 bg-white/40 backdrop-blur-sm">
             <MapPin className="h-4 w-4" />
           </div>
           <div className="max-w-[180px] text-left">
@@ -280,7 +280,7 @@ export function HomeHeader({
           <button
             type="button"
             onClick={onProfileClick}
-            className="glass-liquid flex h-10 w-10 items-center justify-center rounded-full bg-[#002A01]/5"
+            className="bg-white/10 backdrop-blur-sm border border-white/20 flex h-10 w-10 items-center justify-center rounded-full bg-[#002A01]/5"
           >
             <User className="h-5 w-5" />
           </button>
@@ -311,7 +311,7 @@ export function HomeHeader({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder={' '}
-            className="glass-liquid h-12 w-full rounded-full px-12 text-black outline-none placeholder:text-transparent"
+            className="h-12 w-full rounded-full border border-[#D2F86A] bg-white/40 px-12 text-black backdrop-blur-sm outline-none placeholder:text-transparent"
             onFocus={() => {
               setSuggestionsOpen(true);
             }}
@@ -481,7 +481,7 @@ export function HomeHeader({
         {/* <button
           type="button"
           onClick={onFilterClick}
-          className="glass-liquid flex h-12 w-12 items-center justify-center rounded-full"
+          className="bg-white/10 backdrop-blur-sm border border-white/20 flex h-12 w-12 items-center justify-center rounded-full"
           aria-label="Filter"
         >
           <SlidersHorizontal className="h-5 w-5 text-[#002A01]" />

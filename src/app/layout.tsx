@@ -22,7 +22,8 @@ export const metadata: Metadata = {
   title: 'Aasta',
   description:
     'Premium food delivery service operating from 9 PM to 12 AM. Order your favorite meals for late-night delivery with fast, reliable service.',
-  keywords: 'night delivery, food delivery, late night food, premium delivery, restaurant delivery, midnight food',
+  keywords:
+    'night delivery, food delivery, late night food, premium delivery, restaurant delivery, midnight food',
   authors: [{ name: 'Aasta Team' }],
   creator: 'Aasta',
   publisher: 'Aasta',
@@ -34,11 +35,23 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: [
-      { url: '/icons/Aasta_Logos_192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/Aasta_Logos_512x512.png', sizes: '512x512', type: 'image/png' },
+      {
+        url: '/icons/Aasta_Logos_192x192.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
+      {
+        url: '/icons/Aasta_Logos_512x512.png',
+        sizes: '512x512',
+        type: 'image/png',
+      },
     ],
     apple: [
-      { url: '/icons/Aasta_Logos_192x192.png', sizes: '192x192', type: 'image/png' },
+      {
+        url: '/icons/Aasta_Logos_192x192.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
     ],
     shortcut: '/icons/Aasta_Logos_192x192.png',
   },
@@ -49,31 +62,38 @@ export const metadata: Metadata = {
     startupImage: [
       {
         url: '/icons/apple-splash-2048-2732.jpg',
-        media: '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)',
+        media:
+          '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)',
       },
       {
         url: '/icons/apple-splash-1668-2388.jpg',
-        media: '(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)',
+        media:
+          '(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)',
       },
       {
         url: '/icons/apple-splash-1536-2048.jpg',
-        media: '(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)',
+        media:
+          '(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)',
       },
       {
         url: '/icons/apple-splash-1125-2436.jpg',
-        media: '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)',
+        media:
+          '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)',
       },
       {
         url: '/icons/apple-splash-1242-2688.jpg',
-        media: '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)',
+        media:
+          '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)',
       },
       {
         url: '/icons/apple-splash-750-1334.jpg',
-        media: '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)',
+        media:
+          '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)',
       },
       {
         url: '/icons/apple-splash-640-1136.jpg',
-        media: '(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)',
+        media:
+          '(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)',
       },
     ],
   },
@@ -144,9 +164,15 @@ export default function RootLayout({
       <head>
         <meta name="application-name" content="Aasta" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
         <meta name="apple-mobile-web-app-title" content="Aasta" />
-        <meta name="description" content="Premium night food delivery service" />
+        <meta
+          name="description"
+          content="Premium night food delivery service"
+        />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
@@ -155,22 +181,42 @@ export default function RootLayout({
         <meta name="theme-color" content="#002a01" />
 
         <link rel="apple-touch-icon" href="/icons/Aasta_Logos_192x192.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/icons/Aasta_Logos_192x192.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/icons/Aasta_Logos_192x192.png" />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/icons/Aasta_Logos_192x192.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/icons/Aasta_Logos_192x192.png"
+        />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="mask-icon" href="/icons/Aasta_Logos_192x192.png" color="#002a01" />
+        <link
+          rel="mask-icon"
+          href="/icons/Aasta_Logos_192x192.png"
+          color="#002a01"
+        />
         <link rel="shortcut icon" href="/icons/Aasta_Logos_192x192.png" />
 
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:url" content="https://www.aasta.food" />
         <meta name="twitter:title" content="Aasta" />
-        <meta name="twitter:description" content="Premium food delivery service operating from 9 PM to 12 AM" />
+        <meta
+          name="twitter:description"
+          content="Premium food delivery service operating from 9 PM to 12 AM"
+        />
         <meta name="twitter:image" content="/icons/Aasta_Logos_512x512.png" />
         <meta name="twitter:creator" content="@aasta" />
 
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Aasta" />
-        <meta property="og:description" content="Premium food delivery service operating from 9 PM to 12 AM" />
+        <meta
+          property="og:description"
+          content="Premium food delivery service operating from 9 PM to 12 AM"
+        />
         <meta property="og:site_name" content="Aasta" />
         <meta property="og:url" content="https://www.aasta.food" />
         <meta property="og:image" content="/icons/Aasta_Logos_512x512.png" />

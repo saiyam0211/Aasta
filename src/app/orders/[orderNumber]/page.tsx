@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,14 @@ import { useSearchParams } from 'next/navigation';
 import { socketClient } from '@/lib/socket-client';
 import { useSession } from 'next-auth/react';
 import localFont from 'next/font/local';
+import Lottie from 'lottie-react';
+import congratulationAnim from '../../../../public/lotties/congratulation.json';
+import placedAnim from '../../../../public/lotties/placed.json';
+import confirmedAnim from '../../../../public/lotties/confirmed.json';
+import preparingAnim from '../../../../public/lotties/preparing.json';
+import pickupAnim from '../../../../public/lotties/pickup.json';
+import deliveryAnim from '../../../../public/lotties/delivery.json';
+import deliveredAnim from '../../../../public/lotties/delivered.json';
 
 function formatEta(iso: string | null): string | null {
   if (!iso) return null;
@@ -97,42 +105,43 @@ interface Order {
   reviewSubmitted?: boolean; // Added for review submission status
 }
 
-const orderStatusSteps = {
-  PLACED: { label: 'Order Placed', icon: CheckCircle, completed: true },
-  CONFIRMED: { label: 'Confirmed', icon: CheckCircle, completed: false },
-  PREPARING: { label: 'Preparing', icon: ChefHat, completed: false },
+const orderStatusAnimations = {
+  PLACED: {
+    animation: placedAnim,
+    label: 'Order Placed',
+    color: 'text-blue-600',
+  },
+  CONFIRMED: {
+    animation: confirmedAnim,
+    label: 'Order Confirmed',
+    color: 'text-green-600',
+  },
+  PREPARING: {
+    animation: preparingAnim,
+    label: 'Preparing Your Order',
+    color: 'text-yellow-600',
+  },
   READY_FOR_PICKUP: {
+    animation: pickupAnim,
     label: 'Ready for Pickup',
-    icon: Package,
-    completed: false,
+    color: 'text-purple-600',
   },
   OUT_FOR_DELIVERY: {
+    animation: deliveryAnim,
     label: 'Out for Delivery',
-    icon: Truck,
-    completed: false,
+    color: 'text-orange-600',
   },
-  PICKED_UP: { label: 'Picked Up', icon: CheckCircle, completed: false },
-  DELIVERED: { label: 'Delivered', icon: Star, completed: false },
+  PICKED_UP: {
+    animation: pickupAnim,
+    label: 'Picked Up',
+    color: 'text-green-600',
+  },
+  DELIVERED: {
+    animation: deliveredAnim,
+    label: 'Delivered',
+    color: 'text-green-600',
+  },
 } as const;
-
-const getStatusSequence = (orderType?: string) => {
-  return orderType === 'PICKUP'
-    ? ([
-        'PLACED',
-        'CONFIRMED',
-        'PREPARING',
-        'READY_FOR_PICKUP',
-        'PICKED_UP',
-      ] as const)
-    : ([
-        'PLACED',
-        'CONFIRMED',
-        'PREPARING',
-        'READY_FOR_PICKUP',
-        'OUT_FOR_DELIVERY',
-        'DELIVERED',
-      ] as const);
-};
 
 const brandFont = localFont({
   src: [
@@ -156,7 +165,13 @@ export default function OrderTrackingPage() {
   const [copied, setCopied] = useState(false);
   const [isProcessingRefund, setIsProcessingRefund] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showLottie, setShowLottie] = useState(false);
   const [partner, setPartner] = useState<any | null>(null);
+  const lottieRef = useRef<any>(null);
+  const [currentStatusAnimation, setCurrentStatusAnimation] =
+    useState<string>('');
+  const [isAnimating, setIsAnimating] = useState(false);
+  const statusLottieRef = useRef<any>(null);
 
   useEffect(() => {
     // Ensure socket connected and authenticated so we join user_* room
@@ -226,7 +241,10 @@ export default function OrderTrackingPage() {
 
   useEffect(() => {
     const p = searchParams?.get('payment');
-    if (p === 'success') setShowCelebration(true);
+    if (p === 'success') {
+      setShowCelebration(true);
+      setShowLottie(true); // Show Lottie animation immediately
+    }
   }, [searchParams]);
 
   const fetchOrder = async () => {
@@ -273,11 +291,6 @@ export default function OrderTrackingPage() {
       default:
         return 'bg-gray-100 text-gray-800';
     }
-  };
-
-  const sequence = getStatusSequence(order?.orderType);
-  const getCurrentStepIndex = (status: string) => {
-    return sequence.indexOf(status as any);
   };
 
   const getPaymentStatusColor = (paymentStatus: string) => {
@@ -332,6 +345,32 @@ export default function OrderTrackingPage() {
     } finally {
       setIsProcessingRefund(false);
     }
+  };
+
+  // Function to handle status animation changes
+  const updateStatusAnimation = (newStatus: string) => {
+    if (currentStatusAnimation !== newStatus) {
+      setIsAnimating(true);
+      setCurrentStatusAnimation(newStatus);
+
+      // Reset animation after a short delay to ensure smooth transition
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 300);
+    }
+  };
+
+  // Effect to update animation when order status changes
+  useEffect(() => {
+    if (order?.status) {
+      updateStatusAnimation(order.status);
+    }
+  }, [order?.status]);
+
+  // Helper function to get current animation data
+  const getCurrentAnimationData = () => {
+    if (!order?.status) return null;
+    return (orderStatusAnimations as any)[order.status] || null;
   };
 
   // Rating UI state (post-completion)
@@ -480,28 +519,44 @@ export default function OrderTrackingPage() {
           <div className="flex flex-col pb-6">
             <div>
               <div className="flex items-center gap-3">
-                <h1
+                {/* <h1
                   className={`text-[20px] font-semibold`}
                   style={{ color: '#002a01' }}
                 >
                   Order #{order.orderNumber}
-                </h1>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={copyOrderNumber}
-                  className="flex items-center gap-1 rounded-lg"
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                  {/* {copied ? 'Copied!' : 'Copy'} */}
-                </Button>
+                </h1> */}
+                {order.deliveryFee > 0 ? (
+                  <div className="flex w-full items-center justify-between rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900">
+                    <div className="flex">
+                      <Clock className="mr-2 h-4 w-4" /> ETA{' '}
+                      {formatEta(order.estimatedDeliveryTime) || 'Soon'}
+                    </div>
+                    <div>
+                      <Badge className={`bg-yellow-50 px-3 py-1`}>
+                        OTP: {order.verificationCode}
+                      </Badge>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex w-full items-center justify-between rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900">
+                    <div className="flex">
+                      <ChefHat className="mr-2 h-4 w-4" /> Avg prep time{' '}
+                      {Math.max(
+                        10,
+                        (order as any).estimatedPreparationTime || 20
+                      )}{' '}
+                      mins
+                    </div>
+                    <div>
+                      <Badge className={`bg-yellow-50 px-3 py-1`}>
+                        OTP: {order.verificationCode}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="mt-4 flex gap-2">
+            {/* <div className="mt-4 flex gap-2">
               <Badge className={`${getStatusColor(order.status)} px-3 py-1`}>
                 {order.status.replace('_', ' ')}
               </Badge>
@@ -518,16 +573,30 @@ export default function OrderTrackingPage() {
                         ? 'Refunded'
                         : 'Payment Status'}
               </Badge>
-              <Badge className={`bg-yellow-50 px-3 py-1`}>
-                {order.verificationCode}
-              </Badge>
+
               <Badge className={`bg-red-50 px-3 py-1`}>{order.orderType}</Badge>
-            </div>
+            </div> */}
           </div>
         </div>
         {/* Celebration Popup */}
         {showCelebration && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            {/* Lottie Animation - positioned absolutely from bottom */}
+            {showLottie && (
+              <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10">
+                <Lottie
+                  lottieRef={lottieRef}
+                  animationData={congratulationAnim}
+                  loop={false}
+                  autoplay={true}
+                  style={{ width: '150%', height: 'auto' }}
+                  onComplete={() => {
+                    setShowLottie(false);
+                  }}
+                />
+              </div>
+            )}
+
             <div className="relative w-[90%] max-w-md overflow-hidden rounded-3xl border border-[#002a01]/10 bg-white shadow-2xl">
               {/* Brand header */}
               <div className="bg-[#002a01] px-6 pt-6 pb-4 text-center">
@@ -593,95 +662,16 @@ export default function OrderTrackingPage() {
                 )}
               </div>
 
-              <div className="border-t px-6 py-4">
+              <div className="border-t border-gray-100 px-6 py-4">
                 <Button
                   className="h-10 w-full rounded-xl bg-[#fd6923] text-white"
-                  onClick={() => setShowCelebration(false)}
+                  onClick={() => {
+                    setShowCelebration(false);
+                    setShowLottie(false);
+                  }}
                 >
                   Continue
                 </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {isCompleted && (
-          <div className="px-4 pt-6">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#002a01] via-[#002a01]/95 to-[#002a01]"></div>
-              <div className="relative rounded-3xl border border-[#fcfefe]/15 p-6 text-center text-[#fcfefe]">
-                {order.reviewSubmitted || hasSubmittedReview ? (
-                  <div className="space-y-3">
-                    <h3 className="text-xl font-bold">Thank you! 💚</h3>
-                    <p className="text-sm text-[#fcfefe]/85">{thankQuote}</p>
-                    <div className="mt-3 flex items-center justify-center gap-3">
-                      <Button
-                        onClick={() => router.push('/')}
-                        className="rounded-xl bg-[#d1f86a] text-[#002a01]"
-                      >
-                        Explore more
-                      </Button>
-                      {/* <Button variant="outline" onClick={() => router.push('/customer/orders')} className="rounded-xl border-[#fcfefe]/30 text-[#fcfefe]">
-                        View my orders
-                      </Button> */}
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <h3 className="mb-1 text-xl font-bold">Enjoy your meal!</h3>
-                    <p className="mb-4 text-sm text-[#fcfefe]/80">
-                      We’d love your feedback
-                    </p>
-
-                    {order.orderType === 'DELIVERY' ? (
-                      <div className="mb-4 flex flex-col items-center justify-center">
-                        <p className="mb-2 text-sm">
-                          Rate your delivery partner experience
-                        </p>
-                        <RatingStars
-                          value={deliveryRating}
-                          onChange={setDeliveryRating}
-                        />
-                      </div>
-                    ) : (
-                      <div className="mb-4 flex flex-col items-center justify-center">
-                        <p className="mb-2 text-sm">
-                          Rate your pickup experience
-                        </p>
-                        <RatingStars
-                          value={restaurantRating}
-                          onChange={setRestaurantRating}
-                        />
-                      </div>
-                    )}
-
-                    <div className="mb-4 flex flex-col items-center justify-center">
-                      <p className="mb-2 text-sm">How's the food quality?</p>
-                      <RatingStars
-                        value={mealRating}
-                        onChange={setMealRating}
-                      />
-                    </div>
-
-                    <div className="mb-6 flex flex-col items-center justify-center">
-                      <p className="mb-2 text-sm">
-                        How's your overall experience with Aasta?
-                      </p>
-                      <RatingStars
-                        value={aastaRating}
-                        onChange={setAastaRating}
-                      />
-                    </div>
-
-                    <Button
-                      className="h-10 w-full rounded-xl bg-[#d1f86a] text-[#002a01]"
-                      disabled={submittingReview}
-                      onClick={submitReview}
-                    >
-                      {submittingReview ? 'Submitting…' : 'Submit review'}
-                    </Button>
-                  </>
-                )}
               </div>
             </div>
           </div>
@@ -701,103 +691,132 @@ export default function OrderTrackingPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="-mt-5 space-y-4">
-                  {sequence.map((status, index) => {
-                    const step = (orderStatusSteps as any)[status];
-                    const Icon = step.icon;
-                    const isCompleted =
-                      index <= getCurrentStepIndex(order.status);
-                    const isCurrent =
-                      index === getCurrentStepIndex(order.status);
+                <div className="-mt-5 flex flex-col items-center justify-center py-8">
+                  {/* Dynamic Lottie Animation */}
+                  {getCurrentAnimationData() && (
+                    <div
+                      className={`transition-all duration-500 ease-in-out ${isAnimating ? 'scale-95 opacity-50' : 'scale-100 opacity-100'}`}
+                    >
+                      <Lottie
+                        lottieRef={statusLottieRef}
+                        animationData={getCurrentAnimationData()?.animation}
+                        loop={true}
+                        autoplay={true}
+                        style={{
+                          width: '400px',
+                          height: '400px',
+                          maxWidth: '100%',
+                        }}
+                      />
+                    </div>
+                  )}
 
-                    return (
-                      <div key={status} className="flex items-center gap-4">
-                        <div
-                          className={`rounded-full p-2 ${
-                            isCompleted
-                              ? 'bg-green-100 text-green-600'
-                              : 'bg-gray-100 text-gray-400'
-                          }`}
-                        >
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1">
-                          <p
-                            className={`font-medium ${
-                              isCurrent
-                                ? 'text-green-600'
-                                : isCompleted
-                                  ? 'text-gray-900'
-                                  : 'text-gray-500'
-                            }`}
-                          >
-                            {step.label}
-                          </p>
-                          {isCurrent && (
-                            <p className="text-sm text-gray-500">
-                              Current status
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {/* Status Label */}
+                  {getCurrentAnimationData() && (
+                    <div
+                      className={`mt-4 text-center transition-all duration-500 ease-in-out ${isAnimating ? 'opacity-50' : 'opacity-100'}`}
+                    >
+                      <h3
+                        className={`text-2xl font-bold ${getCurrentAnimationData()?.color}`}
+                      >
+                        {getCurrentAnimationData()?.label}
+                      </h3>
+                      <p className="mt-2 text-sm text-gray-500">
+                        Current status
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Environmental Impact / Motivation Card (admin gradient style) */}
-            <div className="relative mt-8 px-4">
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#002a01] via-[#002a01]/95 to-[#002a01]"></div>
-              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMiIgZmlsbD0iIzAwZmY0MCIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPC9zdmc+')] opacity-10"></div>
-              <Card className="relative border-0 bg-transparent">
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-3">
-                    <div className="space-y-3 lg:col-span-2">
-                      <div className="flex items-center justify-center space-x-3">
-                        <h3 className="text-xl font-bold text-[#d1f86a]">
-                          {order.deliveryFee > 0
-                            ? 'Make it greener next time'
-                            : 'High five for a green choice!'}
-                        </h3>
-                      </div>
-                      <p className="text-center text-sm text-[#fcfefe]/85">
-                        {order.deliveryFee > 0
-                          ? `This delivery travelled about ${(order.deliveryDistance ?? 0).toFixed(1)} km and took ~${(order as any).estimatedDeliveryDuration ?? 0} mins. That’s roughly ${carbonSavedKg(order.deliveryDistance ?? 0).toFixed(2)} kg CO₂ emitted. Next time, pick up to save the delivery fee and the planet.`
-                          : `You walked in and saved roughly ${carbonSavedKg(order.deliveryDistance ?? 0).toFixed(2)} kg CO₂ that would have been emitted for delivery — and probably a few minutes too. Great choice!`}
-                      </p>
-                    </div>
-                    <div className="relative">
-                      <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#d1f86a]/20 to-[#ffd500]/20 blur-2xl"></div>
-                      <div className="relative rounded-3xl border border-[#fcfefe]/20 bg-[#fcfefe]/10 p-5 text-center backdrop-blur-sm">
-                        <div className="mt-3">
-                          <p className="text-sm font-medium text-[#fcfefe]/70">
-                            Your impact
-                          </p>
-                          <p className="mt-1 text-2xl font-bold text-[#fcfefe]">
-                            {order.deliveryFee > 0
-                              ? `${carbonSavedKg(order.deliveryDistance ?? 0).toFixed(2)} kg CO₂ emitted`
-                              : `${carbonSavedKg(order.deliveryDistance ?? 0).toFixed(2)} kg CO₂ saved`}
-                          </p>
-                          {typeof (order as any).savings === 'number' &&
-                            (order as any).savings > 0 && (
-                              <p className="mt-1 text-2xl font-bold text-[#fcfefe]">
-                                ₹{((order as any).savings as number).toFixed(0)}{' '}
-                                saved today
-                              </p>
-                            )}
-                          <p className="mt-2 text-xs text-[#fcfefe]/75 italic">
-                            {order.deliveryFee > 0
-                              ? '“Small choices add up. Choose pickup to tread lighter.”'
-                              : '“Every step counts. Thanks for walking the green path.”'}
-                          </p>
+            {isCompleted && (
+              <div className="px-4 pt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#002a01] via-[#002a01]/95 to-[#002a01]"></div>
+                  <div className="relative rounded-3xl border border-[#fcfefe]/15 p-6 text-center text-[#fcfefe]">
+                    {order.reviewSubmitted || hasSubmittedReview ? (
+                      <div className="space-y-3">
+                        <h3 className="text-xl font-bold">Thank you! 💚</h3>
+                        <p className="text-sm text-[#fcfefe]/85">
+                          {thankQuote}
+                        </p>
+                        <div className="mt-3 flex items-center justify-center gap-3">
+                          <Button
+                            onClick={() => router.push('/')}
+                            className="rounded-xl bg-[#d1f86a] text-[#002a01]"
+                          >
+                            Explore more
+                          </Button>
+                          {/* <Button variant="outline" onClick={() => router.push('/customer/orders')} className="rounded-xl border-[#fcfefe]/30 text-[#fcfefe]">
+                        View my orders
+                      </Button> */}
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <h3 className="mb-1 text-xl font-bold">
+                          Enjoy your meal!
+                        </h3>
+                        <p className="mb-4 text-sm text-[#fcfefe]/80">
+                          We’d love your feedback
+                        </p>
+
+                        {order.orderType === 'DELIVERY' ? (
+                          <div className="mb-4 flex flex-col items-center justify-center">
+                            <p className="mb-2 text-sm">
+                              Rate your delivery partner experience
+                            </p>
+                            <RatingStars
+                              value={deliveryRating}
+                              onChange={setDeliveryRating}
+                            />
+                          </div>
+                        ) : (
+                          <div className="mb-4 flex flex-col items-center justify-center">
+                            <p className="mb-2 text-sm">
+                              Rate your pickup experience
+                            </p>
+                            <RatingStars
+                              value={restaurantRating}
+                              onChange={setRestaurantRating}
+                            />
+                          </div>
+                        )}
+
+                        <div className="mb-4 flex flex-col items-center justify-center">
+                          <p className="mb-2 text-sm">
+                            How's the food quality?
+                          </p>
+                          <RatingStars
+                            value={mealRating}
+                            onChange={setMealRating}
+                          />
+                        </div>
+
+                        <div className="mb-6 flex flex-col items-center justify-center">
+                          <p className="mb-2 text-sm">
+                            How's your overall experience with Aasta?
+                          </p>
+                          <RatingStars
+                            value={aastaRating}
+                            onChange={setAastaRating}
+                          />
+                        </div>
+
+                        <Button
+                          className="h-10 w-full rounded-xl bg-[#d1f86a] text-[#002a01]"
+                          disabled={submittingReview}
+                          onClick={submitReview}
+                        >
+                          {submittingReview ? 'Submitting…' : 'Submit review'}
+                        </Button>
+                      </>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            )}
 
             {/* Restaurant & Delivery Info */}
             <Card className="rounded-2xl border border-gray-100 shadow-sm">
@@ -831,7 +850,7 @@ export default function OrderTrackingPage() {
                 </div>
 
                 {order.orderType === 'DELIVERY' && (
-                  <div className="border-t pt-4">
+                  <div className="border-t border-gray-100 pt-4">
                     <div className="flex items-start gap-2">
                       <MapPin className="mt-0.5 h-5 w-5 text-gray-400" />
                       <div>
@@ -844,7 +863,7 @@ export default function OrderTrackingPage() {
                   </div>
                 )}
 
-                <div className="border-t pt-4">
+                <div className="border-t border-gray-100 pt-4">
                   <div className="flex items-center gap-2">
                     <Clock className="h-5 w-5 text-gray-400" />
                     {order.orderType === 'DELIVERY' ? (
@@ -865,7 +884,7 @@ export default function OrderTrackingPage() {
 
                 {/* Delivery Partner Details (Delivery only) */}
                 {order.orderType === 'DELIVERY' && (
-                  <div className="border-t pt-4">
+                  <div className="border-t border-gray-100 pt-4">
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="font-medium">Delivery Partner</p>
@@ -893,7 +912,7 @@ export default function OrderTrackingPage() {
                 )}
 
                 {order.verificationCode && (
-                  <div className="border-t pt-4">
+                  <div className="border-t border-gray-100 pt-4">
                     <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                       <h5 className="mb-2 font-semibold text-yellow-800">
                         Verification Code
@@ -907,6 +926,59 @@ export default function OrderTrackingPage() {
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Environmental Impact / Motivation Card (admin gradient style) */}
+          <div className="relative mt-8 px-4">
+            <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#002a01] via-[#002a01]/95 to-[#002a01]"></div>
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMiIgZmlsbD0iIzAwZmY0MCIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPC9zdmc+')] opacity-10"></div>
+            <Card className="relative border-0 bg-transparent">
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-3">
+                  <div className="space-y-3 lg:col-span-2">
+                    <div className="flex items-center justify-center space-x-3">
+                      <h3 className="text-xl font-bold text-[#d1f86a]">
+                        {order.deliveryFee > 0
+                          ? 'Make it greener next time'
+                          : 'High five for a green choice!'}
+                      </h3>
+                    </div>
+                    <p className="text-center text-sm text-[#fcfefe]/85">
+                      {order.deliveryFee > 0
+                        ? `This delivery travelled about ${(order.deliveryDistance ?? 0).toFixed(1)} km and took ~${(order as any).estimatedDeliveryDuration ?? 0} mins. That’s roughly ${carbonSavedKg(order.deliveryDistance ?? 0).toFixed(2)} kg CO₂ emitted. Next time, pick up to save the delivery fee and the planet.`
+                        : `You walked in and saved roughly ${carbonSavedKg(order.deliveryDistance ?? 0).toFixed(2)} kg CO₂ that would have been emitted for delivery — and probably a few minutes too. Great choice!`}
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#d1f86a]/20 to-[#ffd500]/20 blur-2xl"></div>
+                    <div className="relative rounded-3xl border border-[#fcfefe]/20 bg-[#fcfefe]/10 p-5 text-center backdrop-blur-sm">
+                      <div className="mt-3">
+                        <p className="text-sm font-medium text-[#fcfefe]/70">
+                          Your impact
+                        </p>
+                        <p className="mt-1 text-2xl font-bold text-[#fcfefe]">
+                          {order.deliveryFee > 0
+                            ? `${carbonSavedKg(order.deliveryDistance ?? 0).toFixed(2)} kg CO₂ emitted`
+                            : `${carbonSavedKg(order.deliveryDistance ?? 0).toFixed(2)} kg CO₂ saved`}
+                        </p>
+                        {typeof (order as any).savings === 'number' &&
+                          (order as any).savings > 0 && (
+                            <p className="mt-1 text-2xl font-bold text-[#fcfefe]">
+                              ₹{((order as any).savings as number).toFixed(0)}{' '}
+                              saved today
+                            </p>
+                          )}
+                        <p className="mt-2 text-xs text-[#fcfefe]/75 italic">
+                          {order.deliveryFee > 0
+                            ? '“Small choices add up. Choose pickup to tread lighter.”'
+                            : '“Every step counts. Thanks for walking the green path.”'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -947,7 +1019,7 @@ export default function OrderTrackingPage() {
                 </div>
 
                 {/* Totals */}
-                <div className="space-y-2 border-t pt-4">
+                <div className="space-y-2 border-t border-gray-100 pt-4">
                   <div className="flex justify-between text-sm">
                     <span>Subtotal</span>
                     <span>₹{order.subtotal.toFixed(2)}</span>
@@ -969,7 +1041,7 @@ export default function OrderTrackingPage() {
                         </span>
                       </div>
                     )}
-                  <div className="flex justify-between border-t pt-2 text-lg font-bold">
+                  <div className="flex justify-between border-t border-gray-100 pt-2 text-lg font-bold">
                     <span>Total</span>
                     <span style={{ color: '#002a01' }}>
                       ₹{order.total.toFixed(2)}
@@ -1036,7 +1108,7 @@ export default function OrderTrackingPage() {
                     Reorder
                   </Button>
 
-                  {order.status === 'DELIVERED' && (
+                  {/* {order.status === 'DELIVERED' && (
                     <Button
                       className="w-full"
                       style={{
@@ -1048,7 +1120,7 @@ export default function OrderTrackingPage() {
                       <Star className="mr-2 h-4 w-4" />
                       Rate Order
                     </Button>
-                  )}
+                  )} */}
                 </div>
               </CardContent>
             </Card>
