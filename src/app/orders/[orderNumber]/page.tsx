@@ -39,8 +39,22 @@ import pickupAnim from '../../../../public/lotties/pickup.json';
 import deliveryAnim from '../../../../public/lotties/delivery.json';
 import deliveredAnim from '../../../../public/lotties/delivered.json';
 
-function formatEta(iso: string | null): string | null {
+function formatEta(iso: string | null, orderStatus?: string, estimatedDeliveryDuration?: number): string | null {
   if (!iso) return null;
+  
+  // If order is out for delivery and we have estimated delivery duration, use that + 4 mins
+  if (orderStatus === 'OUT_FOR_DELIVERY' && estimatedDeliveryDuration) {
+    const totalMins = estimatedDeliveryDuration + 4;
+    const target = new Date();
+    target.setMinutes(target.getMinutes() + totalMins);
+    const timeStr = target.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    return `${totalMins} mins • ~${timeStr}`;
+  }
+  
+  // Default calculation for other statuses
   const target = new Date(iso);
   const now = new Date();
   const mins = Math.max(
@@ -172,6 +186,7 @@ export default function OrderTrackingPage() {
     useState<string>('');
   const [isAnimating, setIsAnimating] = useState(false);
   const statusLottieRef = useRef<any>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     // Ensure socket connected and authenticated so we join user_* room
@@ -313,7 +328,7 @@ export default function OrderTrackingPage() {
   };
 
   const handleGoBack = () => {
-    router.back();
+    router.push('/');
   };
 
   const handleRefund = async () => {
@@ -372,6 +387,28 @@ export default function OrderTrackingPage() {
     if (!order?.status) return null;
     return (orderStatusAnimations as any)[order.status] || null;
   };
+
+  // Reactive ETA calculation that updates automatically
+  const currentEta = useMemo(() => {
+    if (!order) return null;
+    
+    return formatEta(
+      order.estimatedDeliveryTime,
+      order.status,
+      (order as any).estimatedDeliveryDuration
+    );
+  }, [order?.status, order?.estimatedDeliveryTime, (order as any)?.estimatedDeliveryDuration, currentTime]);
+
+  // Timer to update ETA every minute for OUT_FOR_DELIVERY status
+  useEffect(() => {
+    if (order?.status === 'OUT_FOR_DELIVERY') {
+      const interval = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 60000); // Update every minute
+      
+      return () => clearInterval(interval);
+    }
+  }, [order?.status]);
 
   // Rating UI state (post-completion)
   const [deliveryRating, setDeliveryRating] = useState(0);
@@ -525,19 +562,19 @@ export default function OrderTrackingPage() {
                 >
                   Order #{order.orderNumber}
                 </h1> */}
-                {order.deliveryFee > 0 ? (
-                  <div className="flex w-full items-center justify-between rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900">
-                    <div className="flex">
-                      <Clock className="mr-2 h-4 w-4" /> ETA{' '}
-                      {formatEta(order.estimatedDeliveryTime) || 'Soon'}
+                                  {order.deliveryFee > 0 ? (
+                    <div className="flex w-full items-center justify-between rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900">
+                      <div className="flex">
+                        <Clock className="mr-2 h-4 w-4" /> ETA{' '}
+                        {currentEta || 'Soon'}
+                      </div>
+                      <div>
+                        <Badge className={`bg-yellow-50 px-3 py-1`}>
+                          OTP: {order.verificationCode}
+                        </Badge>
+                      </div>
                     </div>
-                    <div>
-                      <Badge className={`bg-yellow-50 px-3 py-1`}>
-                        OTP: {order.verificationCode}
-                      </Badge>
-                    </div>
-                  </div>
-                ) : (
+                  ) : (
                   <div className="flex w-full items-center justify-between rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900">
                     <div className="flex">
                       <ChefHat className="mr-2 h-4 w-4" /> Avg prep time{' '}
@@ -618,7 +655,7 @@ export default function OrderTrackingPage() {
                 {order.deliveryFee > 0 ? (
                   <div className="flex items-center justify-center rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900">
                     <Clock className="mr-2 h-4 w-4" /> ETA{' '}
-                    {formatEta(order.estimatedDeliveryTime) || 'Soon'}
+                    {currentEta || 'Soon'}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900">

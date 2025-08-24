@@ -98,6 +98,7 @@ export default function CartPage() {
         const addrText = currentAddress?.address;
         if (!addrText || addrText.trim().length === 0) {
           toast.error('Please select an address');
+          setAddressSheetOpen(true); // Open address sheet modal
           return;
         }
       }
@@ -513,7 +514,7 @@ export default function CartPage() {
           </div>
 
           {/* Delivery Info */}
-          <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white pb-4">
+          <div className=" overflow-hidden rounded-xl border border-gray-200 bg-white mb-14">
             {/* ETA */}
             <div className="flex items-center justify-between px-4 py-4">
               <div className="flex items-center gap-3">
@@ -633,7 +634,7 @@ export default function CartPage() {
           )}
 
           {/* Sticky Checkout Bar */}
-          <div className="shadow-t-lg fixed bottom-0 left-1/2 w-full max-w-md -translate-x-1/2 border border-t border-white/20 bg-white/10 px-4 py-4 backdrop-blur-md">
+          <div className="shadow-t-lg fixed bottom-5 left-1/2 w-[90%] max-w-md rounded-3xl -translate-x-1/2 border border-[#D2F86A] bg-white/10 px-4 py-4 backdrop-blur-md">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs tracking-wide text-gray-500 uppercase">

@@ -93,12 +93,6 @@ export default function LocationOnboarding() {
             >
               {isRequesting ? 'Requesting…' : 'Allow Location'}
             </button>
-            <button
-              onClick={goManual}
-              className="w-full rounded-full border-2 border-[#002a01] bg-white py-4 font-semibold text-[#002a01]"
-            >
-              Enter Location
-            </button>
           </div>
         </div>
       </div>

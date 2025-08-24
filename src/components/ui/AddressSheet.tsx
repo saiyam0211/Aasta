@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Plus, MapPin, Phone, Home, Building2, Check } from 'lucide-react';
+import { X, Plus, MapPin, Phone, Home, Building2, Check, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocationStore } from '@/lib/store';
 import { toast } from 'sonner';
@@ -39,6 +39,7 @@ export default function AddressSheet({
   const requestLocation = useLocationStore((s) => s.requestLocation);
   const currentLocation = useLocationStore((s) => s.currentLocation);
   const [loading, setLoading] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
   const [addresses, setAddresses] = React.useState<AddressRecord[]>([]);
   const [mode, setMode] = React.useState<'list' | 'form'>('list');
   const [form, setForm] = React.useState({
@@ -125,6 +126,8 @@ export default function AddressSheet({
   };
 
   const saveAddress = async () => {
+    console.log('Save address clicked, saving state:', saving);
+    
     // Validate required fields and live location
     const missing: string[] = [];
     if (!currentLocation?.latitude || !currentLocation?.longitude)
@@ -139,30 +142,42 @@ export default function AddressSheet({
       return;
     }
 
-    const payload: any = {
-      type: form.type,
-      street: form.street || undefined,
-      landmark: form.landmark || undefined,
-      instructions: form.instructions || undefined,
-      latitude: currentLocation?.latitude,
-      longitude: currentLocation?.longitude,
-      houseNumber: form.houseNumber || undefined,
-      locality: form.locality || undefined,
-      contactPhone: form.contactPhone || undefined,
-      isDefault: addresses.length === 0 ? true : undefined,
-    };
-    const res = await fetch('/api/user/address', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (data?.success) {
-      toast.success('Address saved');
-      setMode('list');
-      await fetchAddresses();
-    } else {
+    try {
+      console.log('Setting saving to true');
+      setSaving(true);
+      const payload: any = {
+        type: form.type,
+        street: form.street || undefined,
+        landmark: form.landmark || undefined,
+        instructions: form.instructions || undefined,
+        latitude: currentLocation?.latitude,
+        longitude: currentLocation?.longitude,
+        houseNumber: form.houseNumber || undefined,
+        locality: form.locality || undefined,
+        contactPhone: form.contactPhone || undefined,
+        isDefault: addresses.length === 0 ? true : undefined,
+      };
+      console.log('Sending payload:', payload);
+      const res = await fetch('/api/user/address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      console.log('Response:', data);
+      if (data?.success) {
+        toast.success('Address saved');
+        setMode('list');
+        await fetchAddresses();
+      } else {
+        toast.error('Failed to save address');
+      }
+    } catch (error) {
+      console.error('Error saving address:', error);
       toast.error('Failed to save address');
+    } finally {
+      console.log('Setting saving to false');
+      setSaving(false);
     }
   };
 
@@ -417,11 +432,12 @@ export default function AddressSheet({
                     </div>
                   </div>
                   <button
-                    className="mt-4 w-full rounded-xl bg-[#fd6923] px-4 py-3 text-white"
+                    className="mt-4 w-full rounded-xl bg-[#fd6923] px-4 py-3 text-white disabled:opacity-60 flex items-center justify-center gap-2"
                     onClick={saveAddress}
-                    disabled={loading}
+                    disabled={loading || saving}
                   >
-                    Save address
+                    {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {saving ? 'Saving address...' : 'Save address'}
                   </button>
                 </div>
               </div>
