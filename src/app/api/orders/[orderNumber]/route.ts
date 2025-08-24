@@ -80,38 +80,88 @@ export async function GET(
     );
     const itemsTotal = (order as any).orderItems.reduce(
       (sum: number, item: any) => {
-        const total = item.totalPrice ?? item.unitPrice * item.quantity;
-        return sum + Number(total || 0);
+        // Try multiple ways to get the item total
+        let total = 0;
+        if (item.totalPrice) {
+          total = Number(item.totalPrice);
+        } else if (item.unitPrice && item.quantity) {
+          total = Number(item.unitPrice) * Number(item.quantity);
+        } else if (item.price) {
+          total = Number(item.price) * Number(item.quantity);
+        }
+        
+        const itemTotal = Number(total || 0);
+        console.log('Item calculation:', {
+          itemName: item.menuItem?.name,
+          unitPrice: item.unitPrice,
+          price: item.price,
+          quantity: item.quantity,
+          totalPrice: item.totalPrice,
+          calculatedTotal: itemTotal
+        });
+        return sum + itemTotal;
       },
       0
     );
     const savings = Math.max(0, Math.round(itemsTotalOriginal - itemsTotal));
+    
+    // Calculate proper totals
+    const subtotal = itemsTotal;
+    const taxes = (order as any).taxes || 0;
+    const deliveryFee = (order as any).deliveryFee || 0;
+    const total = subtotal + taxes + deliveryFee;
+    
+    console.log('Order calculation debug:', {
+      orderNumber: order.orderNumber,
+      itemsTotal,
+      itemsTotalOriginal,
+      subtotal,
+      taxes,
+      deliveryFee,
+      total,
+      totalAmount: (order as any).totalAmount,
+      orderItems: (order as any).orderItems.length
+    });
+    
     const transformedOrder = {
       id: order.id,
       orderNumber: order.orderNumber,
       status: order.status,
       paymentStatus: order.paymentStatus,
-      total: (order as any).totalAmount,
-      subtotal: (order as any).subtotal,
-      taxes: (order as any).taxes,
-      deliveryFee: (order as any).deliveryFee,
+      total: total,
+      subtotal: subtotal,
+      taxes: taxes,
+      deliveryFee: deliveryFee,
       deliveryAddress: `${(order as any).deliveryAddress.street}, ${(order as any).deliveryAddress.city}, ${(order as any).deliveryAddress.state} ${(order as any).deliveryAddress.zipCode}`,
       estimatedDeliveryTime:
         order.estimatedDeliveryTime ||
         new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       createdAt: order.createdAt.toISOString(),
       verificationCode: order.verificationCode || undefined,
-      items: (order as any).orderItems.map((item: any) => ({
-        id: item.id,
-        menuItemId: item.menuItemId,
-        quantity: item.quantity,
-        price: item.unitPrice,
-        itemName: item.menuItem.name,
-        menuItem: {
-          name: item.menuItem.name,
-          imageUrl: item.menuItem.imageUrl,
-        },
-      })),
+      items: (order as any).orderItems.map((item: any) => {
+        // Calculate item total
+        let itemTotal = 0;
+        if (item.totalPrice) {
+          itemTotal = Number(item.totalPrice);
+        } else if (item.unitPrice && item.quantity) {
+          itemTotal = Number(item.unitPrice) * Number(item.quantity);
+        } else if (item.price && item.quantity) {
+          itemTotal = Number(item.price) * Number(item.quantity);
+        }
+        
+        return {
+          id: item.id,
+          menuItemId: item.menuItemId,
+          quantity: item.quantity,
+          price: item.unitPrice || item.price || 0,
+          total: itemTotal,
+          itemName: item.menuItem.name,
+          menuItem: {
+            name: item.menuItem.name,
+            imageUrl: item.menuItem.imageUrl,
+          },
+        };
+      }),
       restaurant: (order as any).restaurant,
       deliveryPartner: (order as any).deliveryPartner
         ? {

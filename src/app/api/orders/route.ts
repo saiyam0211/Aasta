@@ -444,10 +444,154 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(totalCount / limit);
 
+    // Transform orders to include proper totals
+    const transformedOrders = orders.map((order) => {
+      try {
+      // Calculate proper totals for each order
+      const itemsTotal = order.orderItems.reduce((sum, item) => {
+        let total = 0;
+        if (item.totalPrice) {
+          total = Number(item.totalPrice);
+        } else if (item.unitPrice && item.quantity) {
+          total = Number(item.unitPrice) * Number(item.quantity);
+        }
+        return sum + total;
+      }, 0);
+
+      // Calculate savings based on original vs actual item totals (matching cart calculation)
+      let itemsTotalOriginal = order.orderItems.reduce((sum, item) => {
+        // Use the same logic as cart: originalPrice vs price
+        const original = Number(item.menuItem?.originalPrice ?? item.originalUnitPrice ?? item.unitPrice);
+        const price = Number(item.menuItem?.price ?? item.unitPrice);
+        const itemOriginalTotal = original * item.quantity;
+        
+        // Debug: Log the exact values being used
+        console.log(`Item ${item.menuItem?.name}:`, {
+          originalPrice: item.menuItem?.originalPrice,
+          price: item.menuItem?.price,
+          originalUnitPrice: item.originalUnitPrice,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          calculatedOriginal: itemOriginalTotal,
+          calculatedPrice: price * item.quantity
+        });
+        
+        console.log('Item savings calculation (matching cart):', {
+          itemName: item.menuItem?.name,
+          originalPrice: item.menuItem?.originalPrice,
+          price: item.menuItem?.price,
+          originalUnitPrice: item.originalUnitPrice,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          calculatedOriginal: itemOriginalTotal
+        });
+        
+        return sum + itemOriginalTotal;
+      }, 0);
+      
+      // If no original prices are available, estimate savings based on typical discount
+      if (itemsTotalOriginal === itemsTotal && itemsTotal > 0) {
+        // Estimate 15% savings as a fallback
+        itemsTotalOriginal = Math.round(itemsTotal * 1.15);
+        console.log('Using estimated savings calculation:', {
+          orderNumber: order.orderNumber,
+          estimatedOriginal: itemsTotalOriginal,
+          actualTotal: itemsTotal
+        });
+      }
+      
+      const subtotal = itemsTotal;
+      const taxes = Number(order.taxes || 0);
+      const deliveryFee = Number(order.deliveryFee || 0);
+      const total = subtotal + taxes + deliveryFee;
+      
+      // Calculate item savings (matching cart display exactly)
+      const itemSavings = Math.max(0, Math.round(itemsTotalOriginal - itemsTotal));
+      
+      // Calculate delivery fee savings (if delivery fee is waived or reduced)
+      const estimatedDeliveryFee = 50; // Typical delivery fee
+      const deliverySavings = Math.max(0, estimatedDeliveryFee - deliveryFee);
+      
+      // Calculate packaging fee savings (same as cart)
+      const packagingFeeOriginal = 10;
+      const packagingFeeDisplay = 0;
+      const packagingSavings = packagingFeeOriginal - packagingFeeDisplay;
+      
+      // Total savings - use ONLY item savings to match cart display
+      const savings = itemSavings; // Remove delivery and packaging savings to match cart
+      
+      console.log('Savings calculation (matching cart):', {
+        orderNumber: order.orderNumber,
+        itemsTotalOriginal,
+        itemsTotal,
+        itemSavings,
+        deliveryFee,
+        estimatedDeliveryFee,
+        deliverySavings,
+        packagingSavings,
+        totalSavings: savings,
+        breakdown: {
+          itemSavings,
+          deliverySavings,
+          packagingSavings,
+          total: itemSavings + deliverySavings + packagingSavings
+        }
+      });
+
+      console.log('Order calculation debug:', {
+        orderNumber: order.orderNumber,
+        itemsTotal,
+        itemsTotalOriginal,
+        savings,
+        subtotal,
+        taxes,
+        deliveryFee,
+        total,
+        totalAmount: order.totalAmount,
+        orderItemsCount: order.orderItems.length
+      });
+
+              return {
+          ...order,
+          total: total,
+          subtotal: subtotal,
+          taxes: taxes,
+          deliveryFee: deliveryFee,
+          savings: savings,
+          orderItems: order.orderItems.map((item) => {
+            let itemTotal = 0;
+            if (item.totalPrice) {
+              itemTotal = Number(item.totalPrice);
+            } else if (item.unitPrice && item.quantity) {
+              itemTotal = Number(item.unitPrice) * Number(item.quantity);
+            }
+
+            return {
+              ...item,
+              total: itemTotal,
+              price: item.unitPrice || 0,
+            };
+          }),
+        };
+      } catch (error) {
+        console.error('Error processing order:', order.orderNumber, error);
+        // Return order with basic data if processing fails
+        return {
+          ...order,
+          total: order.totalAmount || 0,
+          subtotal: 0,
+          taxes: order.taxes || 0,
+          deliveryFee: order.deliveryFee || 0,
+          savings: 0,
+          orderItems: order.orderItems || [],
+        };
+      }
+    });
+
     return NextResponse.json({
       success: true,
       data: {
-        orders,
+        orders: transformedOrders,
         pagination: {
           page,
           limit,

@@ -276,15 +276,15 @@ export function HomeHeader({
           </div>
         </button>
 
-        {/* <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onProfileClick}
-            className="bg-white/10 backdrop-blur-sm border border-white/20 flex h-10 w-10 items-center justify-center rounded-full bg-[#002A01]/5"
+            className="border border-white bg-white/30 backdrop-blur-sm flex h-12 w-12 items-center justify-center rounded-full transition-colors"
           >
             <User className="h-5 w-5" />
           </button>
-        </div> */}
+        </div>
       </div>
 
       {/* Headline - Only show when NOT in search mode */}

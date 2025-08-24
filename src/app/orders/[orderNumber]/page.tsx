@@ -31,6 +31,7 @@ import { socketClient } from '@/lib/socket-client';
 import { useSession } from 'next-auth/react';
 import localFont from 'next/font/local';
 import Lottie from 'lottie-react';
+import { useCartStore } from '@/lib/store';
 import congratulationAnim from '../../../../public/lotties/congratulation.json';
 import placedAnim from '../../../../public/lotties/placed.json';
 import confirmedAnim from '../../../../public/lotties/confirmed.json';
@@ -80,6 +81,7 @@ interface OrderItem {
   menuItemId: string;
   quantity: number;
   price: number;
+  total: number;
   itemName: string;
   menuItem?: {
     name: string;
@@ -174,6 +176,7 @@ export default function OrderTrackingPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { clearCart } = useCartStore();
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -189,11 +192,20 @@ export default function OrderTrackingPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
+    // Clear cart when order page loads (after successful order placement)
+    // Only clear if we're coming from a successful order (check URL params)
+    const isFromOrderSuccess = searchParams.get('success') === 'true' || 
+                              searchParams.get('payment') === 'success' ||
+                              !searchParams.get('from'); // If no 'from' param, assume it's a fresh order
+    if (isFromOrderSuccess) {
+      clearCart();
+    }
+    
     // Ensure socket connected and authenticated so we join user_* room
     const token = session?.user?.id || '';
-    if (token) {
+    if (token && typeof token === 'string') {
       socketClient.connect(token);
-      socketClient.authenticate(session!.user!.id, token);
+      socketClient.authenticate(token, token);
     }
     if (params?.orderNumber) {
       fetchOrder();
@@ -265,14 +277,28 @@ export default function OrderTrackingPage() {
   const fetchOrder = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/orders/${params?.orderNumber}`);
+      const orderNumber = decodeURIComponent(params?.orderNumber || '');
+      console.log('Fetching order:', orderNumber);
+      console.log('Order number type:', typeof orderNumber);
+      console.log('Session user ID:', session?.user?.id);
+      
+      const response = await fetch(`/api/orders/${orderNumber}`);
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
       const data = await response.json();
+      console.log('Order API response:', data);
 
       if (data.success) {
+        console.log('Order data received:', data.order);
+        console.log('Order total:', data.order.total);
+        console.log('Order items:', data.order.items);
         setOrder(data.order);
       } else {
+        console.error('Order not found:', data.error);
+        console.error('Response data:', data);
         toast.error('Order not found');
-        router.push('/customer/orders');
+        router.push('/profile');
       }
     } catch (error) {
       console.error('Failed to fetch order:', error);
@@ -714,60 +740,11 @@ export default function OrderTrackingPage() {
           </div>
         )}
 
+        
+
         <div className="grid grid-cols-1 gap-8 px-4 lg:grid-cols-3">
-          {/* Order Status & Timeline */}
-          <div className="space-y-6 lg:col-span-2">
-            <Card className="rounded-3xl border border-gray-100 shadow-sm">
-              <CardHeader>
-                <CardTitle
-                  className={`${brandFont.className} -mt-5 text-[50px] text-[#002a01]`}
-                  style={{ letterSpacing: '-0.08em' }}
-                >
-                  Order Status
-                  <span className="ml-1 text-[60px] text-[#fd6923]">.</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="-mt-5 flex flex-col items-center justify-center py-8">
-                  {/* Dynamic Lottie Animation */}
-                  {getCurrentAnimationData() && (
-                    <div
-                      className={`transition-all duration-500 ease-in-out ${isAnimating ? 'scale-95 opacity-50' : 'scale-100 opacity-100'}`}
-                    >
-                      <Lottie
-                        lottieRef={statusLottieRef}
-                        animationData={getCurrentAnimationData()?.animation}
-                        loop={true}
-                        autoplay={true}
-                        style={{
-                          width: '400px',
-                          height: '400px',
-                          maxWidth: '100%',
-                        }}
-                      />
-                    </div>
-                  )}
 
-                  {/* Status Label */}
-                  {getCurrentAnimationData() && (
-                    <div
-                      className={`mt-4 text-center transition-all duration-500 ease-in-out ${isAnimating ? 'opacity-50' : 'opacity-100'}`}
-                    >
-                      <h3
-                        className={`text-2xl font-bold ${getCurrentAnimationData()?.color}`}
-                      >
-                        {getCurrentAnimationData()?.label}
-                      </h3>
-                      <p className="mt-2 text-sm text-gray-500">
-                        Current status
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {isCompleted && (
+        {isCompleted && (
               <div className="px-4 pt-6">
                 <div className="relative">
                   <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#002a01] via-[#002a01]/95 to-[#002a01]"></div>
@@ -854,6 +831,57 @@ export default function OrderTrackingPage() {
                 </div>
               </div>
             )}
+          {/* Order Status & Timeline */}
+          <div className="space-y-6 lg:col-span-2">
+            <Card className="rounded-3xl border border-gray-100 shadow-sm">
+              <CardHeader>
+                <CardTitle
+                  className={`${brandFont.className} -mt-5 text-[50px] text-[#002a01]`}
+                  style={{ letterSpacing: '-0.08em' }}
+                >
+                  Order Status
+                  <span className="ml-1 text-[60px] text-[#fd6923]">.</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="-mt-5 flex flex-col items-center justify-center py-8">
+                  {/* Dynamic Lottie Animation */}
+                  {getCurrentAnimationData() && (
+                    <div
+                      className={`transition-all duration-500 ease-in-out ${isAnimating ? 'scale-95 opacity-50' : 'scale-100 opacity-100'}`}
+                    >
+                      <Lottie
+                        lottieRef={statusLottieRef}
+                        animationData={getCurrentAnimationData()?.animation}
+                        loop={true}
+                        autoplay={true}
+                        style={{
+                          width: '400px',
+                          height: '400px',
+                          maxWidth: '100%',
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Status Label */}
+                  {getCurrentAnimationData() && (
+                    <div
+                      className={`mt-4 text-center transition-all duration-500 ease-in-out ${isAnimating ? 'opacity-50' : 'opacity-100'}`}
+                    >
+                      <h3
+                        className={`text-2xl font-bold ${getCurrentAnimationData()?.color}`}
+                      >
+                        {getCurrentAnimationData()?.label}
+                      </h3>
+                      <p className="mt-2 text-sm text-gray-500">
+                        Current status
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Restaurant & Delivery Info */}
             <Card className="rounded-2xl border border-gray-100 shadow-sm">

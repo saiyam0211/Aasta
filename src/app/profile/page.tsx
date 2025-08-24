@@ -1,668 +1,414 @@
 'use client';
 
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import CustomerLayout from '@/components/layouts/customer-layout';
-import { useLocationStore } from '@/hooks/useLocation';
-import { toast } from 'sonner';
-import AddressSheet from '@/components/ui/AddressSheet';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
-  MapPin,
-  Home,
-  Building,
-  Plus,
-  Edit,
-  Trash,
-  Phone,
   User,
-  Mail,
-  Loader2,
-  Save,
-  Leaf,
-  PiggyBank,
+  Phone,
+  Clock,
+  MapPin,
+  Truck,
+  Store,
+  Star,
+  ArrowRight,
+  ArrowLeft,
+  Package,
+  ChefHat,
+  CheckCircle,
 } from 'lucide-react';
+import localFont from 'next/font/local';
+import { toast } from 'sonner';
 
-// Address Interface
-interface Address {
+const brandFont = localFont({
+  src: [
+    {
+      path: '../../../public/fonts/Tanjambore_bysaiyam-Regular.ttf',
+      weight: '400',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-brand',
+  display: 'swap',
+});
+
+interface Order {
   id: string;
-  street: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  landmark?: string;
-  instructions?: string;
-  type?: string;
-  isDefault: boolean;
+  orderNumber?: string;
+  status?: string;
+  total?: number;
+  totalAmount?: number;
+  subtotal?: number;
+  taxes?: number;
+  deliveryFee?: number;
+  savings?: number;
+  createdAt?: string;
+  orderType?: string;
+  restaurant?: {
+    name?: string;
+  };
+  orderItems?: Array<{
+    menuItem?: {
+      name?: string;
+    };
+    quantity?: number;
+    unitPrice?: number;
+    totalPrice?: number;
+    total?: number;
+  }>;
 }
 
-export default function UserProfile() {
-  const { data: session } = useSession();
-  const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [newAddress, setNewAddress] = useState({
-    street: '',
-    city: '',
-    state: '',
-    zipCode: '',
-  });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [stats, setStats] = useState<{
-    totalSaved: number;
-    co2SavedKg: number;
-  }>({ totalSaved: 0, co2SavedKg: 0 });
-  const [loadingStats, setLoadingStats] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [savedPhone, setSavedPhone] = useState<string>('');
-  const [addressSheetOpen, setAddressSheetOpen] = useState(false);
+export default function ProfilePage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Calculate total savings across all orders
+  const totalSavings = useMemo(() => {
+    const total = orders.reduce((sum, order) => {
+      const savings = (order as any).savings || 0;
+      return sum + savings;
+    }, 0);
+    
+    // Debug logging
+    console.log('Total savings calculation:', {
+      totalOrders: orders.length,
+      individualSavings: orders.map(order => ({
+        orderNumber: order.orderNumber,
+        savings: (order as any).savings || 0
+      })),
+      totalSavings: total
+    });
+    
+    return total;
+  }, [orders]);
 
   useEffect(() => {
-    if (session) {
-      setLoading(false);
-      setUserName(session.user.name || '');
-      setPhone(session.user.phone || '');
-      fetchUserProfile();
-      fetchOrderStats();
-    } else {
+    if (status === 'loading') return;
+    
+    if (!session) {
       router.push('/auth/signin');
-    }
-  }, [session]);
-
-  const fetchUserProfile = async () => {
-    try {
-      const res = await fetch('/api/user/profile');
-      const data = await res.json();
-      if (data.success) {
-        setAddresses(data.profile.addresses);
-        if (typeof data.profile.name === 'string')
-          setUserName(data.profile.name || '');
-        if (typeof data.profile.phone === 'string') {
-          setPhone(data.profile.phone || '');
-          setSavedPhone(data.profile.phone || '');
-        }
-      } else {
-        setError('Failed to fetch profile.');
-      }
-    } catch (err) {
-      console.error('Profile fetch error:', err);
-      setError('An error occurred while fetching the profile.');
-    }
-  };
-
-  // Aggregate money saved and CO2 saved across all customer orders
-  const fetchOrderStats = async () => {
-    try {
-      setLoadingStats(true);
-      const res = await fetch('/api/orders?as=customer&limit=1000');
-      if (!res.ok) {
-        setLoadingStats(false);
-        return;
-      }
-      const data = await res.json();
-      const orders = (data?.data?.orders || []) as any[];
-      let totalSaved = 0;
-      let co2SavedKg = 0;
-      const EMISSION_PER_KM = 0.12; // kg CO₂ per km (approx. low-emission 2-wheeler)
-      for (const order of orders) {
-        // Compute savings from items if original prices present
-        const items = order.orderItems || [];
-        const savedForOrder = items.reduce((sum: number, item: any) => {
-          const originalUnit = (item.originalUnitPrice ?? item.unitPrice) || 0;
-          const totalOriginal =
-            (item.totalOriginalPrice ?? originalUnit * item.quantity) || 0;
-          const actual =
-            (item.totalPrice ?? item.unitPrice * item.quantity) || 0;
-          const saved = Math.max(0, Number(totalOriginal) - Number(actual));
-          return sum + saved;
-        }, 0);
-        totalSaved += savedForOrder;
-
-        // CO2 saved only for pickup orders
-        if (order.orderType === 'PICKUP') {
-          const distanceKm = Number(order.deliveryDistance || 0);
-          if (!Number.isNaN(distanceKm) && distanceKm > 0) {
-            co2SavedKg += distanceKm * EMISSION_PER_KM;
-          }
-        }
-      }
-      setStats({
-        totalSaved: Math.round(totalSaved),
-        co2SavedKg: Number(co2SavedKg.toFixed(2)),
-      });
-    } catch (e) {
-      console.error('Failed to fetch order stats', e);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
-  const handleAddressChange = (field: string, value: string) => {
-    setNewAddress({ ...newAddress, [field]: value });
-  };
-
-  // Check for duplicate address
-  const isDuplicateAddress = (newAddr: any) => {
-    return addresses.some(
-      (addr) =>
-        addr.street.toLowerCase().trim() ===
-          newAddr.street.toLowerCase().trim() &&
-        addr.city.toLowerCase().trim() === newAddr.city.toLowerCase().trim() &&
-        addr.state.toLowerCase().trim() ===
-          newAddr.state.toLowerCase().trim() &&
-        addr.zipCode === newAddr.zipCode
-    );
-  };
-
-  const addOrUpdateAddress = async () => {
-    try {
-      setError('');
-      setSuccess('');
-
-      // Validate required fields
-      if (
-        !newAddress.street ||
-        !newAddress.city ||
-        !newAddress.state ||
-        !newAddress.zipCode
-      ) {
-        setError('All fields are required.');
-        return;
-      }
-
-      if (editingId) {
-        // Update existing address
-        const res = await fetch(`/api/user/address/${editingId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newAddress),
-        });
-        const data = await res.json();
-        if (data.success) {
-          setAddresses(
-            addresses.map((addr) =>
-              addr.id === editingId ? data.address : addr
-            )
-          );
-          setNewAddress({ street: '', city: '', state: '', zipCode: '' });
-          setEditingId(null);
-          setSuccess('Address updated successfully!');
-        } else {
-          setError(data.message || 'Failed to update address.');
-        }
-      } else {
-        // Check for duplicate before adding
-        if (isDuplicateAddress(newAddress)) {
-          setError(
-            'This address already exists. Please add a different address.'
-          );
-          return;
-        }
-
-        // Add new address
-        const res = await fetch('/api/user/address', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newAddress),
-        });
-        const data = await res.json();
-        if (data.success) {
-          setAddresses([...addresses, data.address]);
-          setNewAddress({ street: '', city: '', state: '', zipCode: '' });
-          setSuccess('Address added successfully!');
-        } else {
-          setError(data.message || 'Failed to add address.');
-        }
-      }
-    } catch (err) {
-      console.error('Address operation error:', err);
-      setError('An error occurred while processing the address.');
-    }
-  };
-
-  const editAddress = (address: Address) => {
-    setNewAddress({
-      street: address.street,
-      city: address.city,
-      state: address.state,
-      zipCode: address.zipCode,
-    });
-    setEditingId(address.id);
-    setError('');
-    setSuccess('');
-
-    // Scroll to the edit form
-    setTimeout(() => {
-      const editForm = document.getElementById('address-form');
-      if (editForm) {
-        editForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
-  };
-
-  const cancelEdit = () => {
-    setNewAddress({ street: '', city: '', state: '', zipCode: '' });
-    setEditingId(null);
-    setError('');
-    setSuccess('');
-  };
-
-  const deleteAddress = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this address?')) {
       return;
     }
 
-    try {
-      setError('');
-      setSuccess('');
-      const res = await fetch(`/api/user/address/${id}`, {
-        method: 'DELETE',
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAddresses(addresses.filter((address) => address.id !== id));
-        setSuccess('Address deleted successfully!');
-        // If we were editing this address, cancel the edit
-        if (editingId === id) {
-          cancelEdit();
-        }
-      } else {
-        setError(data.message || 'Failed to delete address.');
-      }
-    } catch (err) {
-      console.error('Delete address error:', err);
-      setError('An error occurred while deleting the address.');
-    }
-  };
+    fetchRecentOrders();
+  }, [session, status, router]);
 
-  const saveProfile = async () => {
+  const fetchRecentOrders = async () => {
     try {
-      setError('');
-      setSuccess('');
-      setIsSaving(true);
-      const payload: any = {};
-      if (userName && userName !== (session?.user?.name || ''))
-        payload.name = userName;
-      if (phone && phone !== savedPhone) {
-        const digitsOnly = phone.replace(/\D/g, '');
-        if (!/^\d{10}$/.test(digitsOnly)) {
-          toast.error('Enter a valid 10-digit phone number');
-          setIsSaving(false);
-          return;
-        }
-        payload.phone = digitsOnly;
-      }
-      if (Object.keys(payload).length === 0) {
-        setSuccess('Nothing to update');
-        toast.info('Nothing to update');
-        setIsSaving(false);
-        return;
-      }
-      const res = await fetch('/api/user/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      setLoading(true);
+      const response = await fetch('/api/orders?limit=10');
+      const data = await response.json();
+      
+      console.log('Orders API response:', data);
+      
       if (data.success) {
-        setSuccess('Profile saved');
-        toast.success('Profile saved');
-        if (data.user?.name) setUserName(data.user.name);
-        if (data.user?.phone) {
-          setPhone(data.user.phone);
-          setSavedPhone(data.user.phone);
-        }
+        const orders = data.data?.orders || [];
+        console.log('Orders found:', orders.length);
+        orders.forEach((order: any, index: number) => {
+          console.log(`Order ${index + 1}:`, {
+            orderNumber: order.orderNumber,
+            total: order.total,
+            totalAmount: order.totalAmount,
+            subtotal: order.subtotal,
+            taxes: order.taxes,
+            deliveryFee: order.deliveryFee,
+            savings: order.savings,
+            orderItems: order.orderItems?.length || 0,
+            orderItemsDetails: order.orderItems?.map((item: any) => ({
+              name: item.menuItem?.name,
+              unitPrice: item.unitPrice,
+              originalUnitPrice: item.originalUnitPrice,
+              totalPrice: item.totalPrice,
+              totalOriginalPrice: item.totalOriginalPrice,
+              quantity: item.quantity
+            }))
+          });
+        });
+        setOrders(orders);
       } else {
-        setError(data.message || 'Failed to save profile');
-        toast.error(data.message || 'Failed to save profile');
+        console.error('API returned error:', data);
+        toast.error('Failed to load orders');
       }
-    } catch (e) {
-      console.error('Profile save error', e);
-      setError('Failed to save profile');
-      toast.error('Failed to save profile');
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast.error('Failed to load orders');
     } finally {
-      setIsSaving(false);
+      setLoading(false);
     }
   };
 
-  if (loading) return <p>Loading...</p>;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PLACED':
+        return 'bg-blue-100 text-blue-800';
+      case 'CONFIRMED':
+        return 'bg-green-100 text-green-800';
+      case 'PREPARING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'READY_FOR_PICKUP':
+        return 'bg-purple-100 text-purple-800';
+      case 'OUT_FOR_DELIVERY':
+        return 'bg-orange-100 text-orange-800';
+      case 'DELIVERED':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleGoBack = () => {
+    router.back();
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'PLACED':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'CONFIRMED':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'PREPARING':
+        return <ChefHat className="h-4 w-4" />;
+      case 'READY_FOR_PICKUP':
+        return <Package className="h-4 w-4" />;
+      case 'OUT_FOR_DELIVERY':
+        return <Truck className="h-4 w-4" />;
+      case 'DELIVERED':
+        return <Star className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  if (status === 'loading') {
+    return (
+      <CustomerLayout>
+        <div className="mx-auto max-w-4xl px-4 py-6">
+          <div className="animate-pulse space-y-8">
+            <div className="h-40 rounded-3xl bg-gradient-to-r from-gray-200 to-gray-100"></div>
+            <div className="h-80 rounded-3xl bg-gradient-to-r from-gray-200 to-gray-100"></div>
+          </div>
+        </div>
+      </CustomerLayout>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
 
   return (
-    <CustomerLayout>
-      <div className="mx-auto max-w-4xl px-4 py-6">
-        <h1 className="mb-2 text-2xl font-bold" style={{ color: '#002a01' }}>
-          User Profile
-        </h1>
-        <p className="mb-5 text-sm text-gray-600">
-          Manage your details, addresses, and track your positive impact
-        </p>
-
-        {/* Profile header card */}
-        <Card className="mb-5 border border-[#002a01]/10">
-          <CardContent className="flex items-center justify-between p-4">
-            <div>
-              <p className="text-sm text-gray-600">Signed in as</p>
-              <p className="text-lg font-semibold" style={{ color: '#002a01' }}>
-                {userName || '—'}
-              </p>
-              <p className="text-sm text-gray-600">
-                {phone || 'Add your phone for quicker delivery updates'}
-              </p>
-            </div>
+      <div className="">
+        <div className="sticky top-0 z-50 px-4 py-4 bg-white">
+          <div className="flex items-center justify-between mb-2 ">
             <Button
-              onClick={saveProfile}
-              disabled={isSaving}
-              className="rounded-xl"
-              style={{
-                backgroundColor: '#d1f86a',
-                color: '#002a01',
-                border: '1px solid #002a01',
-              }}
+              onClick={handleGoBack}
+              variant="ghost"
+              size="sm"
+              className="h-10 w-20 rounded-full border border-[#D2F86A] bg-white/10 p-0 shadow-sm backdrop-blur-sm hover:bg-white"
             >
-              {isSaving ? 'Saving…' : 'Save Profile'}
+              <ArrowLeft className="h-5 w-5" style={{ color: '#002a01' }} />{' '}
+              Back
             </Button>
+            
+            {/* Total Savings Display */}
+            {totalSavings > 0 && (
+              <div className="flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-4 py-2">
+                <div className="flex items-center gap-1">
+                  <span className="text-lg font-bold text-green-600">₹</span>
+                  <span className="text-lg font-bold text-green-600">
+                    {totalSavings.toFixed(0)}
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-green-700">
+                  Total Saved
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* User Profile Section */}
+        <Card className="mb-8 rounded-t-3xl rounded-b-[60px] border-0 shadow-t-xl bg-gradient-to-br from-white via-[#D2F86A]-50/30 to-white overflow-hidden relative">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#D2F86A]/5 to-[#002a01]/5"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#002a01]/10 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
+        
+          <CardContent className="relative z-10">
+            <div className="flex items-center gap-8">
+              {/* Enhanced User Info */}
+              <div className="flex-1 space-y-4">
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-1">
+                    {session.user?.name || 'User'}
+                  </h2>
+                  <p className="text-sm text-gray-500 font-medium">Aasta's Member</p>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-gray-700 bg-white/60 backdrop-blur-sm px-4 py-3 rounded-xl border border-gray-100 shadow-sm">
+                    <div className="p-2 bg-[#002a01]/10 rounded-lg">
+                      <Phone className="h-4 w-4 text-[#002a01]" />
+                    </div>
+                    <span className="font-medium">{session.user?.phone || 'No phone'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Editable fields */}
-        <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Name</label>
-            <Input
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              className="border-[#d1f86a]/40 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
-            />
-          </div>
-          {!savedPhone && (
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                Phone Number
-              </label>
-              <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="border-[#d1f86a]/40 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Impact + Savings */}
-        <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-          <Card className="border border-[#002a01]/10">
-            <CardContent className="flex items-center justify-between p-4">
-              <div>
-                <p className="text-sm text-gray-600">Total Saved</p>
-                <p className="text-xl font-bold" style={{ color: '#002a01' }}>
-                  ₹{stats.totalSaved.toFixed(0)}
-                </p>
-              </div>
-              <PiggyBank className="h-7 w-7" style={{ color: '#002a01' }} />
-            </CardContent>
-          </Card>
-          <Card className="border border-[#002a01]/10">
-            <CardContent className="flex items-center justify-between p-4">
-              <div>
-                <p className="text-sm text-gray-600">CO₂ Saved</p>
-                <p className="text-xl font-bold" style={{ color: '#002a01' }}>
-                  {stats.co2SavedKg.toFixed(2)} kg
-                </p>
-              </div>
-              <Leaf className="h-7 w-7" style={{ color: '#002a01' }} />
-            </CardContent>
-          </Card>
-          <Card className="border border-[#002a01]/10">
-            <CardContent className="flex items-center justify-between p-4">
-              <div>
-                <p className="text-sm text-gray-600">Saved Addresses</p>
-                <p className="text-xl font-bold" style={{ color: '#002a01' }}>
-                  {addresses.length}
-                </p>
-              </div>
-              <Button
-                onClick={() => setAddressSheetOpen(true)}
-                className="rounded-full"
-                variant="outline"
+        {/* Recent Orders Section */}
+        <Card className="rounded-t-[60px] border-0 shadow-t-xl bg-gradient-to-br from-white via-gray-200 to-white overflow-hidden relative">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#D2F86A]5 to-[#002a01]/5"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#002a01]/10 to-transparent rounded-full translate-y-12 -translate-x-12"></div>
+          
+          <CardHeader className="relative z-10">
+            <div className="flex items-center justify-center">
+              <CardTitle
+                className={`${brandFont.className} text-[70px] text-[#002a01] flex items-center gap-3`}
+                style={{ letterSpacing: '-0.08em' }}
               >
-                View
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Playful CO2 card */}
-        <div className="mb-6 px-1">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#002a01] via-[#002a01]/95 to-[#002a01]"></div>
-            <div className="relative rounded-3xl border border-[#fcfefe]/15 p-5 text-[#fcfefe]">
-              <h3 className="text-lg font-bold">
-                You’re making a difference 🌿
-              </h3>
-              <p className="mt-1 text-sm text-[#fcfefe]/85">
-                By choosing pickups, you’ve avoided delivery emissions.
-              </p>
-              <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#d1f86a] px-3 py-1 text-[#002a01]">
-                <Leaf className="h-4 w-4" />
-                <span className="font-semibold">
-                  {stats.co2SavedKg.toFixed(2)} kg CO₂ saved
-                </span>
+                Recent Orders
+                <span className="-ml-2 text-[60px] text-[#002a01]">.</span>
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-32 rounded-2xl bg-gradient-to-r from-gray-200 to-gray-100"></div>
+                  </div>
+                ))}
               </div>
-              <p className="mt-3 text-sm text-[#fcfefe]/75">
-                “Small steps today, greener tomorrows.”
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h2
-            className="mb-3 text-xl font-semibold"
-            style={{ color: '#002a01' }}
-          >
-            Saved Addresses
-          </h2>
-
-          {/* Success/Error Messages */}
-          {success && (
-            <div className="mb-4 rounded border border-green-400 bg-green-100 px-4 py-3 text-green-700">
-              {success}
-            </div>
-          )}
-          {error && (
-            <div className="mb-4 rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* Address List */}
-          {addresses.length === 0 ? (
-            <div className="mb-6 text-gray-500">
-              <p>No addresses saved yet. Add your first address below.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {addresses.map((address) => (
-                <div
-                  key={address.id}
-                  className="rounded-2xl border border-[#d1f86a]/50 bg-[#f6ffe6] p-3"
+            ) : orders.length === 0 ? (
+              <div className="py-16 text-center">
+                <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-[#D2F86A]10 to-[#002a01]/10">
+                  <Package className="h-12 w-12 text-[#002a01]" />
+                </div>
+                <h3 className="mb-3 text-2xl font-bold text-gray-900">
+                  No orders yet
+                </h3>
+                <p className="mb-8 text-gray-600 max-w-md mx-auto">
+                  Start ordering delicious food to see your order history here. Your first order will appear right here!
+                </p>
+                <Button
+                  onClick={() => router.push('/')}
+                  className="rounded-xl bg-gradient-to-r from-[#002a01] to-[#002a01] text-white hover:from-[#D2F86A]90 hover:to-[#002a01]/90 shadow-lg hover:shadow-xl transition-all duration-200 px-8 py-3"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-[#002a01]" />
-                        <span className="font-medium text-[#002a01]">
-                          {address.type || 'Home'}
-                        </span>
-                        {address.isDefault && (
-                          <span className="rounded-full border border-[#002a01]/20 bg-white px-2 py-[2px] text-xs text-[#002a01]">
-                            Default
-                          </span>
-                        )}
+                  Order Now
+                </Button>     
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orders.map((order) => (
+                  <div
+                  key={order.id}
+                  className="group rounded-2xl border-r-1 border-[#002a01] bg-white/80 backdrop-blur-sm p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer relative overflow-hidden"
+                  onClick={() => router.push(`/orders/${order.orderNumber}`)}
+                >
+                    {/* Hover Effect Background */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#D2F86A] to-[#002a01]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    
+                    <div className="relative z-10">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-3 rounded-xl border ${
+                            ((order as any).savings || 0) > 50 
+                              ? 'bg-gradient-to-br from-yellow-100 to-orange-100 border-yellow-200 animate-pulse' 
+                              : 'bg-gradient-to-br from-green-100 to-emerald-100 border-green-200'
+                          }`}>
+                            <div className="w-6 h-6 flex items-center justify-center">
+                              <span className={`font-bold text-lg ${
+                                ((order as any).savings || 0) > 50 ? 'text-orange-600' : 'text-green-600'
+                              }`}>₹</span>
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className={`font-bold text-xl ${
+                              ((order as any).savings || 0) > 50 ? 'text-orange-600' : 'text-green-600'
+                            }`}>
+                              ₹{((order as any).savings || 0).toFixed(2)}
+                            </h3>
+                            <p className={`text-xs font-medium ${
+                              ((order as any).savings || 0) > 50 ? 'text-orange-500' : 'text-green-500'
+                            }`}>
+                              {((order as any).savings || 0) > 50 ? 'Great Savings!' : 'Money Saved'}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <p className="truncate text-sm text-[#002a01]/90">
-                        {address.street}, {address.city}, {address.state}{' '}
-                        {address.zipCode}
-                      </p>
-                      {address.landmark && (
-                        <p className="mt-1 truncate text-xs text-[#002a01]/70">
-                          Landmark: {address.landmark}
+                      
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg border-l-1 border-t-1 border-[#002a01]">
+                          <div className="p-1 bg-[#002a01]/10 rounded">
+                            <MapPin className="h-3 w-3 text-[#002a01]" />
+                          </div>
+                          <span className="font-medium truncate">{order.restaurant?.name || 'Unknown Restaurant'}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-4">
+                        <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-lg border-l-1 border-b-1 border-[#002a01]">
+                          {(order.orderItems || []).slice(0, 2).map(item => 
+                            `${item.menuItem?.name || 'Unknown Item'} (${item.quantity || 0})`
+                          ).join(', ')}
+                          {(order.orderItems || []).length > 2 && ` +${(order.orderItems || []).length - 2} more`}
                         </p>
-                      )}
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg shadow-sm">
+                            <Clock className="h-3 w-3" />
+                            <span>{order.createdAt ? formatDate(order.createdAt) : 'N/A'}</span>
+                            <span>, {order.createdAt ? formatTime(order.createdAt) : 'N/A'}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-[#002a01]">
+                            ₹{(order.total || order.totalAmount || 0).toFixed(2)}
+                          </p>
+                          <p className="text-xs text-gray-500">Total Amount</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="ml-3 flex shrink-0 gap-2">
-                      <Button
-                        onClick={() => editAddress(address)}
-                        size="sm"
-                        variant="outline"
-                        className="h-8 rounded-full px-3"
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        onClick={() => deleteAddress(address.id)}
-                        size="sm"
-                        variant="destructive"
-                        className="h-8 rounded-full px-3"
-                      >
-                        <Trash className="h-3 w-3" />
-                      </Button>
+                    
+                    {/* Arrow Icon */}
+                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="p-2 bg-[#002a01] rounded-full shadow-lg">
+                        <ArrowRight className="h-4 w-4 text-white" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Add/Edit Address Form */}
-          <Card id="address-form" className="mt-5 border border-[#002a01]/10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {editingId ? (
-                  <Edit className="h-5 w-5" />
-                ) : (
-                  <Plus className="h-5 w-5" />
-                )}
-                {editingId ? 'Edit Address' : 'Add New Address'}
-              </CardTitle>
-              {editingId && (
-                <CardDescription>
-                  You are editing an existing address. Click cancel to stop
-                  editing.
-                </CardDescription>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="street">Street Address</Label>
-                <Input
-                  id="street"
-                  placeholder="123 Main Street"
-                  value={newAddress.street}
-                  onChange={(e) =>
-                    handleAddressChange('street', e.target.value)
-                  }
-                  className="border-[#d1f86a]/40 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
-                />
+                ))}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    placeholder="New York"
-                    value={newAddress.city}
-                    onChange={(e) =>
-                      handleAddressChange('city', e.target.value)
-                    }
-                    className="border-[#d1f86a]/40 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    placeholder="NY"
-                    value={newAddress.state}
-                    onChange={(e) =>
-                      handleAddressChange('state', e.target.value)
-                    }
-                    className="border-[#d1f86a]/40 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="zipCode">ZIP Code</Label>
-                <Input
-                  id="zipCode"
-                  placeholder="10001"
-                  value={newAddress.zipCode}
-                  onChange={(e) =>
-                    handleAddressChange('zipCode', e.target.value)
-                  }
-                  className="border-[#d1f86a]/40 focus-visible:ring-1 focus-visible:ring-[#d1f86a]"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={addOrUpdateAddress}
-                  className="flex items-center gap-2"
-                  style={{
-                    backgroundColor: '#d1f86a',
-                    color: '#002a01',
-                    border: '1px solid #002a01',
-                  }}
-                >
-                  {editingId ? (
-                    <>
-                      <Save className="h-4 w-4" /> Update Address
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4" /> Add Address
-                    </>
-                  )}
-                </Button>
-                {editingId && (
-                  <Button onClick={cancelEdit} variant="outline">
-                    Cancel
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
-      {/* Address drawer using AddressSheet */}
-      <AddressSheet
-        open={addressSheetOpen}
-        onOpenChange={setAddressSheetOpen}
-        onSelect={() => setAddressSheetOpen(false)}
-      />
-    </CustomerLayout>
   );
 }

@@ -91,15 +91,32 @@ export default function CartPage() {
       }
       const isPickup = mode === 'pickup';
       if (!isPickup) {
-        if (!currentLocation) {
-          toast.error('Please set your live location');
+        // Check if we have current location
+        const hasCurrentLocation = currentLocation?.latitude && currentLocation?.longitude;
+        
+        // Check if we have a valid address
+        const hasValidAddress = currentAddress?.address && currentAddress.address.trim().length > 0;
+        
+        // If we have a selected address ID, assume it's valid (coordinates will be validated on server)
+        const hasSelectedAddress = selectedAddressId;
+        
+        if (!hasCurrentLocation && !hasSelectedAddress) {
+          toast.error('Please set your live location or select a saved address');
+          setAddressSheetOpen(true); // Open address sheet modal
           return;
         }
-        const addrText = currentAddress?.address;
-        if (!addrText || addrText.trim().length === 0) {
+        
+        if (!hasValidAddress && !hasSelectedAddress) {
           toast.error('Please select an address');
           setAddressSheetOpen(true); // Open address sheet modal
           return;
+        }
+        
+        // If we have a selected address, we're good to go
+        if (hasSelectedAddress) {
+          console.log('Using saved address with ID:', selectedAddressId);
+          console.log('Current location state:', currentLocation);
+          console.log('Current address state:', currentAddress);
         }
       }
 
@@ -124,8 +141,8 @@ export default function CartPage() {
               }
             : {
                 address: currentAddress?.address,
-                latitude: currentLocation!.latitude,
-                longitude: currentLocation!.longitude,
+                latitude: selectedAddressId ? 0 : (currentLocation?.latitude || 0),
+                longitude: selectedAddressId ? 0 : (currentLocation?.longitude || 0),
                 instructions: '',
               },
           addressId: selectedAddressId || null,
@@ -205,8 +222,8 @@ export default function CartPage() {
     const fillFromLocation = async () => {
       if (!currentAddress && currentLocation) {
         const addr = await locationService.reverseGeocode(
-          currentLocation.latitude,
-          currentLocation.longitude
+          currentLocation?.latitude || 0,
+          currentLocation?.longitude || 0
         );
         if (addr) {
           setAddress({
@@ -231,12 +248,13 @@ export default function CartPage() {
       }
       const hasCoords =
         typeof r.latitude === 'number' && typeof r.longitude === 'number';
-      if (hasCoords && currentLocation) {
+      const hasCurrentLocation = currentLocation?.latitude && currentLocation?.longitude;
+      if (hasCoords && hasCurrentLocation) {
         const minutes = await locationService.getETA(
           { latitude: r.latitude as number, longitude: r.longitude as number },
           {
-            latitude: currentLocation.latitude,
-            longitude: currentLocation.longitude,
+            latitude: currentLocation?.latitude || 0,
+            longitude: currentLocation?.longitude || 0,
           },
           Number(r.averagePreparationTime || 0)
         );
@@ -270,7 +288,7 @@ export default function CartPage() {
                   Discover delicious food and add items to your cart
                 </p>
                 <Button
-                  onClick={() => router.push('/customer/discover')}
+                  onClick={() => router.push('/')}
                   className="h-11 w-full rounded-xl bg-orange-500 font-medium text-white hover:bg-orange-600"
                 >
                   Discover Restaurants
@@ -325,13 +343,37 @@ export default function CartPage() {
   ]);
 
   const savings = useMemo(() => {
-    return cart.items.reduce((sum, item) => {
+    // Calculate item savings (same as orders API)
+    const itemSavings = cart.items.reduce((sum, item) => {
       const original = Number(item.menuItem?.originalPrice ?? 0);
       const price = Number(item.menuItem?.price ?? 0);
       const diff = Math.max(0, original - price);
       return sum + diff * item.quantity;
     }, 0);
-  }, [cart.items]);
+    
+    // Calculate delivery fee savings (same as orders API)
+    const estimatedDeliveryFee = 50; // Typical delivery fee
+    const actualDeliveryFee = mode === 'delivery' ? (cart.deliveryFee || 0) : 0;
+    const deliverySavings = Math.max(0, estimatedDeliveryFee - actualDeliveryFee);
+    
+    // Calculate packaging fee savings
+    const packagingSavings = packagingFeeOriginal - packagingFeeDisplay; // 10 - 0 = 10
+    
+    // Total savings (matching orders API)
+    const totalSavings = itemSavings + deliverySavings + packagingSavings;
+    
+    // Debug logging
+    console.log('Cart savings breakdown:', {
+      itemSavings,
+      deliverySavings,
+      packagingSavings,
+      totalSavings,
+      mode,
+      deliveryFee: cart.deliveryFee
+    });
+    
+    return totalSavings;
+  }, [cart.items, mode, cart.deliveryFee]);
 
   // etaText is computed in effect above
 
@@ -354,7 +396,7 @@ export default function CartPage() {
           {/* Back button */}
           <div className="sticky top-0 z-10 bg-white px-4 pt-4">
             <div className="mb-4 flex justify-between">
-              <Button
+            <Button
                 onClick={handleGoBack}
                 variant="ghost"
                 size="sm"
