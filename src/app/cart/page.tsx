@@ -362,6 +362,7 @@ export default function CartPage() {
     // Total savings (matching orders API)
     const totalSavings = itemSavings + deliverySavings + packagingSavings;
     
+    
     // Debug logging
     console.log('Cart savings breakdown:', {
       itemSavings,

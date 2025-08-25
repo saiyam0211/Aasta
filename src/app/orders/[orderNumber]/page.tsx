@@ -277,7 +277,7 @@ export default function OrderTrackingPage() {
   const fetchOrder = async () => {
     try {
       setIsLoading(true);
-      const orderNumber = decodeURIComponent(params?.orderNumber || '');
+      const orderNumber = decodeURIComponent(Array.isArray(params?.orderNumber) ? params.orderNumber[0] : params?.orderNumber || '');
       console.log('Fetching order:', orderNumber);
       console.log('Order number type:', typeof orderNumber);
       console.log('Session user ID:', session?.user?.id);

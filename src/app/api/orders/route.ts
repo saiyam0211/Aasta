@@ -430,6 +430,8 @@ export async function GET(request: NextRequest) {
                   name: true,
                   description: true,
                   imageUrl: true,
+                  price: true,
+                  originalPrice: true,
                 },
               },
             },
