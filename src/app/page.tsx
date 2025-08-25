@@ -20,7 +20,7 @@ import { ProductBottomSheet } from '@/components/ui/ProductBottomSheet';
 import { useCartStore } from '@/lib/store';
 import { CartBottomNav } from '@/components/ui/cart-bottom-nav';
 import { useCacheStore } from '@/lib/cache-store';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+// import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 const brandFont = localFont({
   src: [
@@ -69,7 +69,7 @@ export default function HomePage() {
   // Product sheet state
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [productSheetOpen, setProductSheetOpen] = useState(false);
-  const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+  // const [isPullRefreshing, setIsPullRefreshing] = useState(false);
 
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
@@ -82,20 +82,20 @@ export default function HomePage() {
 
   // Function to refresh data (can be called from header)
   const refreshData = async () => {
-    setIsPullRefreshing(true);
+    // setIsPullRefreshing(true);
     try {
       await loadPopularContent();
     } finally {
-      setIsPullRefreshing(false);
+      // setIsPullRefreshing(false);
     }
   };
 
   // Pull-to-refresh functionality
-  const pullToRefreshRef = usePullToRefresh({
-    onRefresh: refreshData,
-    threshold: 80,
-    resistance: 2.5,
-  });
+  // const pullToRefreshRef = usePullToRefresh({
+  //   onRefresh: refreshData,
+  //   threshold: 80,
+  //   resistance: 2.5,
+  // });
 
   // Resolve human-readable address when coordinates are present
   useEffect(() => {
@@ -413,17 +413,17 @@ export default function HomePage() {
       />
 
       {/* Pull-to-refresh indicator */}
-      {isPullRefreshing && (
+      {/* {isPullRefreshing && (
         <div className="fixed top-20 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/80 px-4 py-2 text-white">
           <div className="flex items-center gap-2">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
             <span className="text-sm">Refreshing...</span>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Inline Search Results or Popular Sections */}
-      <div ref={pullToRefreshRef} className="px-4 pt-8 pb-28">
+      <div className="px-4 pt-8 pb-28">
         {searchQuery ? (
           <>
             {/* Dishes */}
