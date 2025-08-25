@@ -30,6 +30,7 @@ import type { Dish } from '@/types/dish';
 import { HomeProductCard } from '@/components/ui/home-product-card';
 import { HomeProductCardHorizontal } from '@/components/ui/home-product-card-horizontal';
 import { HomeProductCardList } from '@/components/ui/home-product-card-vertical';
+import AastaLoader from '@/components/ui/AastaLoader';
 
 const brandFont = localFont({
   src: [
@@ -288,12 +289,7 @@ export default function RestaurantDetailPage() {
   if (isLoading) {
     return (
       <CustomerLayout hideHeader hideFooter>
-        <div className="flex min-h-screen items-center justify-center">
-          <div
-            className="h-32 w-32 animate-spin rounded-full border-b-2"
-            style={{ borderColor: '#002a01' }}
-          />
-        </div>
+        <AastaLoader backgroundColor="#002a01" size={400} segmentSeconds={2} />
       </CustomerLayout>
     );
   }

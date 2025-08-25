@@ -19,6 +19,8 @@ import {
 import { ProductBottomSheet } from '@/components/ui/ProductBottomSheet';
 import { useCartStore } from '@/lib/store';
 import { CartBottomNav } from '@/components/ui/cart-bottom-nav';
+import { useCacheStore } from '@/lib/cache-store';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 const brandFont = localFont({
   src: [
@@ -37,6 +39,14 @@ export default function HomePage() {
   const { isInstalled } = usePWA();
   const { latitude, longitude, setLocation } = useLocationStore();
   const { cart, addItem } = useCartStore();
+  const { 
+    setRestaurants: setCachedRestaurants, 
+    setDishes: setCachedDishes, 
+    isCacheValid, 
+    getCachedRestaurants, 
+    getCachedDishes,
+    invalidateCache
+  } = useCacheStore();
 
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [selectedLocationLabel, setSelectedLocationLabel] =
@@ -59,6 +69,7 @@ export default function HomePage() {
   // Product sheet state
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [productSheetOpen, setProductSheetOpen] = useState(false);
+  const [isPullRefreshing, setIsPullRefreshing] = useState(false);
 
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
@@ -68,6 +79,23 @@ export default function HomePage() {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+
+  // Function to refresh data (can be called from header)
+  const refreshData = async () => {
+    setIsPullRefreshing(true);
+    try {
+      await loadPopularContent();
+    } finally {
+      setIsPullRefreshing(false);
+    }
+  };
+
+  // Pull-to-refresh functionality
+  const pullToRefreshRef = usePullToRefresh({
+    onRefresh: refreshData,
+    threshold: 80,
+    resistance: 2.5,
+  });
 
   // Resolve human-readable address when coordinates are present
   useEffect(() => {
@@ -90,6 +118,13 @@ export default function HomePage() {
     resolveAddress();
   }, [latitude, longitude]);
 
+  // Invalidate cache when location changes significantly
+  useEffect(() => {
+    if (latitude && longitude) {
+      invalidateCache({ latitude, longitude });
+    }
+  }, [latitude, longitude, invalidateCache]);
+
   useEffect(() => {
     if (status === 'loading') return;
     if (!session) {
@@ -103,13 +138,33 @@ export default function HomePage() {
       return;
     }
 
-    // Load popular content on initial mount and when location becomes available
-    loadPopularContent();
+    // Check cache first for instant loading
+    const location = { latitude, longitude };
+    const cachedRestaurants = getCachedRestaurants(location);
+    const cachedDishes = getCachedDishes(location);
+    
+    if (cachedRestaurants && cachedDishes) {
+      // Use cached data immediately for instant loading
+      setPopularRestaurants(cachedRestaurants);
+      setPopularDishes(cachedDishes);
+      setPopularLoading(false);
+      
+      // Refresh in background if cache is stale
+      if (!isCacheValid(location)) {
+        loadPopularContent(true); // true = background refresh
+      }
+    } else {
+      // No cache available, load fresh data
+      loadPopularContent();
+    }
   }, [session, status, latitude, longitude]);
 
-  const loadPopularContent = async () => {
+  const loadPopularContent = async (backgroundRefresh = false) => {
     try {
-      setPopularLoading(true);
+      if (!backgroundRefresh) {
+        setPopularLoading(true);
+      }
+      
       const [dishesRes, restaurantsRes] = await Promise.all([
         fetch(
           `/api/featured-dishes?limit=8${latitude && longitude ? `&lat=${latitude}&lng=${longitude}` : ''}`
@@ -123,14 +178,20 @@ export default function HomePage() {
             ),
       ]);
 
+      let dishesData: any[] = [];
+      let restaurantsData: RestaurantSummary[] = [];
+
       if (dishesRes.ok) {
-        const dishesData = await dishesRes.json();
-        setPopularDishes(dishesData.data || []);
+        const dishesResponse = await dishesRes.json();
+        dishesData = dishesResponse.data || [];
+        if (!backgroundRefresh) {
+          setPopularDishes(dishesData);
+        }
       }
 
       if (restaurantsRes.ok) {
         const r = await restaurantsRes.json();
-        const mapped: RestaurantSummary[] = (r.data || []).map((x: any) => ({
+        restaurantsData = (r.data || []).map((x: any) => ({
           id: x.id,
           name: x.name,
           imageUrl: x.image, // API returns `image`
@@ -143,15 +204,41 @@ export default function HomePage() {
           isOpen: x.isOpen,
           featuredItems: Array.isArray(x.featuredItems) ? x.featuredItems : [],
         }));
-        setPopularRestaurants(mapped);
+        
+        if (!backgroundRefresh) {
+          setPopularRestaurants(restaurantsData);
+        }
       }
+
+      // Cache the results for future use
+      if (latitude && longitude) {
+        const location = { latitude, longitude };
+        setCachedDishes(dishesData, location);
+        setCachedRestaurants(restaurantsData, location);
+      }
+      
     } catch (e) {
       console.error(e);
-      toast.error('Failed to load home content');
+      if (!backgroundRefresh) {
+        toast.error('Failed to load home content');
+      }
     } finally {
-      setPopularLoading(false);
+      if (!backgroundRefresh) {
+        setPopularLoading(false);
+      }
     }
   };
+
+  // Debounced search function
+  const debouncedSearch = useMemo(() => {
+    let timeoutId: NodeJS.Timeout;
+    return (query: string) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        performInlineSearch(query);
+      }, 300); // 300ms debounce
+    };
+  }, [latitude, longitude]);
 
   const performInlineSearch = async (query: string) => {
     const trimmed = query.trim();
@@ -316,16 +403,27 @@ export default function HomePage() {
       <HomeHeader
         locationLabel={selectedLocationLabel}
         onLocationClick={() => router.push('/onboarding/location?reselect=1')}
-        onSearch={(q) => performInlineSearch(q)}
+        onSearch={(q) => debouncedSearch(q)}
         onFilterClick={() => router.push('/search')}
         onCartClick={() => router.push('/cart')}
         onProfileClick={() => router.push('/profile')}
+        onRefresh={refreshData}
         className="z-10"
         resetSignal={headerResetSignal}
       />
 
+      {/* Pull-to-refresh indicator */}
+      {isPullRefreshing && (
+        <div className="fixed top-20 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/80 px-4 py-2 text-white">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+            <span className="text-sm">Refreshing...</span>
+          </div>
+        </div>
+      )}
+
       {/* Inline Search Results or Popular Sections */}
-      <div className="px-4 pt-8 pb-28">
+      <div ref={pullToRefreshRef} className="px-4 pt-8 pb-28">
         {searchQuery ? (
           <>
             {/* Dishes */}

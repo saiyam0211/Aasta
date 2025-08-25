@@ -8,6 +8,7 @@ import {
   Search,
   TrendingUp,
   History,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -20,6 +21,7 @@ interface HomeHeaderProps {
   onFilterClick?: () => void;
   onCartClick?: () => void;
   onProfileClick?: () => void;
+  onRefresh?: () => void;
   className?: string;
   // Add new prop to control search mode
   isSearchMode?: boolean;
@@ -34,6 +36,7 @@ export function HomeHeader({
   onFilterClick,
   onCartClick,
   onProfileClick,
+  onRefresh,
   className,
   isSearchMode = false,
   resetSignal,
@@ -67,6 +70,7 @@ export function HomeHeader({
     'Burger',
     'Momos',
   ]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -277,6 +281,24 @@ export function HomeHeader({
         </button>
 
         <div className="flex items-center gap-3">
+          {/* {onRefresh && (
+            <button
+              type="button"
+              onClick={async () => {
+                setIsRefreshing(true);
+                try {
+                  await onRefresh();
+                } finally {
+                  setIsRefreshing(false);
+                }
+              }}
+              disabled={isRefreshing}
+              className="border border-white bg-white/30 backdrop-blur-sm flex h-12 w-12 items-center justify-center rounded-full transition-colors hover:bg-white/40 disabled:opacity-50"
+              title="Refresh"
+            >
+              <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+          )} */}
           <button
             type="button"
             onClick={onProfileClick}
