@@ -102,7 +102,7 @@ export default function ProfilePage() {
   const fetchRecentOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/orders?limit=10');
+      const response = await fetch('/api/orders?limit=10&paymentStatus=COMPLETED');
       const data = await response.json();
       
       console.log('Orders API response:', data);

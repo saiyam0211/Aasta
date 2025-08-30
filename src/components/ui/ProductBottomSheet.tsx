@@ -7,6 +7,8 @@ import type { Dish } from '@/types/dish';
 import { cn } from '@/lib/utils';
 import { SafeImage } from '@/components/ui/safe-image';
 import { useCartStore } from '@/lib/store';
+import { shareContent, generateProductShareData } from '@/lib/share-utils';
+import { toast } from 'sonner';
 
 interface ProductBottomSheetProps {
   open: boolean;
@@ -81,6 +83,25 @@ export function ProductBottomSheet({
     updateQuantity(dish.id, existingQuantity - 1);
   };
 
+  const handleShare = async () => {
+    if (!dish) return;
+    
+    const shareData = generateProductShareData(
+      dish.name,
+      dish.description || `Delicious ${dish.name}`,
+      dish.price,
+      dish.restaurant,
+      dish.id
+    );
+    
+    const success = await shareContent(shareData);
+    if (success) {
+      toast.success('Shared successfully!');
+    } else {
+      toast.error('Failed to share');
+    }
+  };
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -128,8 +149,9 @@ export function ProductBottomSheet({
                       <Bookmark className="w-5 h-5" />
                     </button> */}
                     <button
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100"
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                       aria-label="Share"
+                      onClick={handleShare}
                     >
                       <Share2 className="h-5 w-5" />
                     </button>

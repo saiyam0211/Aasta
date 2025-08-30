@@ -20,6 +20,7 @@ import { ProductBottomSheet } from '@/components/ui/ProductBottomSheet';
 import { useCartStore } from '@/lib/store';
 import { CartBottomNav } from '@/components/ui/cart-bottom-nav';
 import { useCacheStore } from '@/lib/cache-store';
+import { FoodHacksPromo } from '@/components/ui/food-hacks-promo';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 const brandFont = localFont({
@@ -588,6 +589,9 @@ export default function HomePage() {
           </>
         )}
       </div>
+
+      {/* Food Hacks Promotional Section */}
+      <FoodHacksPromo />
 
       <ProductBottomSheet
         open={productSheetOpen}

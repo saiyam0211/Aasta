@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { NotificationNav } from '@/components/ui/NotificationNav';
 import OperationsLayout from '@/components/layouts/operations-layout';
 import { Bell, Send, Users, Smartphone, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,6 +14,7 @@ export default function Notifications() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showEnhancedLink, setShowEnhancedLink] = useState(true);
   const [stats, setStats] = useState({
     totalClients: 0,
     pwaClients: 0,
@@ -207,6 +209,8 @@ export default function Notifications() {
   return (
     <OperationsLayout type="restaurant">
       <div className="mx-auto max-w-2xl">
+        <NotificationNav />
+        
         <div className="mb-8">
           <h1 className="flex items-center gap-3 text-3xl font-bold text-[#002a01]">
             <Bell className="h-8 w-8" />

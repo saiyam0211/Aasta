@@ -172,10 +172,13 @@ self.addEventListener('push', (event) => {
     body: notificationData.body || 'New notification',
     icon: notificationData.icon || '/icons/icon-192x192.png',
     badge: notificationData.badge || '/icons/icon-72x72.png',
+    image: notificationData.image, // Support for rich notifications with images
     data: notificationData.data || {},
     actions: notificationData.actions || [],
     requireInteraction: notificationData.requireInteraction || false,
     vibrate: notificationData.vibrate || [200, 100, 200],
+    tag: notificationData.tag, // Support for notification grouping
+    silent: notificationData.silent || false,
   };
   event.waitUntil(
     self.registration.showNotification(

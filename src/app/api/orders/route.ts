@@ -6,6 +6,7 @@ import {
   generateOrderNumber,
   generateVerificationCode,
 } from '@/lib/order-utils';
+import { enhancedNotificationService } from '@/lib/enhanced-notification-service';
 
 interface CreateOrderRequest {
   restaurantId: string;
@@ -266,6 +267,27 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Send instant order confirmation notification
+    try {
+      const estimatedDeliveryTime = new Date(
+        Date.now() + (restaurant.averagePreparationTime + 30) * 60000
+      ).toLocaleTimeString('en-IN', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+
+      await enhancedNotificationService.sendOrderConfirmation(
+        session.user.id,
+        orderNumber,
+        restaurant.name,
+        totalAmount,
+        estimatedDeliveryTime
+      );
+    } catch (notificationError) {
+      console.error('Failed to send order confirmation notification:', notificationError);
+      // Don't fail the order creation if notification fails
+    }
+
     return NextResponse.json(
       {
         success: true,
@@ -300,6 +322,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const status = searchParams.get('status');
+    const paymentStatus = searchParams.get('paymentStatus');
     const restaurantId = searchParams.get('restaurantId');
     const scope = searchParams.get('as'); // 'customer' | 'restaurant' | 'delivery'
 
@@ -397,6 +420,14 @@ export async function GET(request: NextRequest) {
       where.status = status;
     }
 
+    if (paymentStatus) {
+      // Filter for completed payments only - hardcode to COMPLETED
+      where.paymentStatus = 'COMPLETED';
+      console.log('Payment status filter applied: COMPLETED only');
+    }
+
+    console.log('Final where clause for orders query:', JSON.stringify(where, null, 2));
+    
     const [orders, totalCount] = await Promise.all([
       prisma.order.findMany({
         where,
@@ -444,10 +475,23 @@ export async function GET(request: NextRequest) {
       prisma.order.count({ where }),
     ]);
 
-    const totalPages = Math.ceil(totalCount / limit);
+    console.log('Orders returned from database:', orders.map(order => ({
+      orderNumber: order.orderNumber,
+      paymentStatus: order.paymentStatus,
+      status: order.status
+    })));
+    
+    // Double-check: filter out any pending orders that might have slipped through
+    const filteredOrders = orders.filter(order => order.paymentStatus === 'COMPLETED');
+    if (filteredOrders.length !== orders.length) {
+      console.log('WARNING: Found orders with non-COMPLETED payment status:', 
+        orders.filter(order => order.paymentStatus !== 'COMPLETED').map(o => o.orderNumber));
+    }
 
-    // Transform orders to include proper totals
-    const transformedOrders = orders.map((order) => {
+    const totalPages = Math.ceil(filteredOrders.length / limit);
+
+    // Transform orders to include proper totals (only COMPLETED orders)
+    const transformedOrders = filteredOrders.map((order) => {
       try {
       // Calculate proper totals for each order
       const itemsTotal = order.orderItems.reduce((sum, item) => {
@@ -597,7 +641,7 @@ export async function GET(request: NextRequest) {
         pagination: {
           page,
           limit,
-          total: totalCount,
+          total: filteredOrders.length,
           totalPages,
           hasNext: page < totalPages,
           hasPrev: page > 1,

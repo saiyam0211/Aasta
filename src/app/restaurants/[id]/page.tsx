@@ -27,6 +27,7 @@ import { useLocationStore } from '@/hooks/useLocation';
 import { googleMapsService } from '@/lib/google-maps';
 import { ProductBottomSheet } from '@/components/ui/ProductBottomSheet';
 import type { Dish } from '@/types/dish';
+import { shareContent, generateRestaurantShareData } from '@/lib/share-utils';
 import { HomeProductCard } from '@/components/ui/home-product-card';
 import { HomeProductCardHorizontal } from '@/components/ui/home-product-card-horizontal';
 import { HomeProductCardList } from '@/components/ui/home-product-card-vertical';
@@ -286,6 +287,25 @@ export default function RestaurantDetailPage() {
     router.back();
   };
 
+  const handleShareRestaurant = async () => {
+    if (!restaurant) return;
+    
+    const shareData = generateRestaurantShareData(
+      restaurant.name,
+      restaurant.description || `Delicious food at ${restaurant.name}`,
+      ratingValue,
+      locationText,
+      restaurant.id
+    );
+    
+    const success = await shareContent(shareData);
+    if (success) {
+      toast.success('Restaurant shared successfully!');
+    } else {
+      toast.error('Failed to share restaurant');
+    }
+  };
+
   if (isLoading) {
     return (
       <CustomerLayout hideHeader hideFooter>
@@ -341,7 +361,8 @@ export default function RestaurantDetailPage() {
             <Button
               size="sm"
               variant="outline"
-              className="glass-liquid h-10 w-10 rounded-full"
+              className="glass-liquid h-10 w-10 rounded-full hover:bg-white/90 transition-colors"
+              onClick={handleShareRestaurant}
             >
               <Share2 className="h-4 w-4" />
             </Button>
