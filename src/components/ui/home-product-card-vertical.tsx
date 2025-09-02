@@ -170,7 +170,7 @@ export function HomeProductCard({
         </div>
         <div className="absolute -bottom-5 left-35 -translate-x-1/2 border-10 border-white">
           {quantity > 0 ? (
-            <div className="-gap-2 glass-liquid inline-flex h-9 items-center rounded-md border border-green-600/30 bg-white shadow">
+            <div className="-gap-2 inline-flex h-9 items-center rounded-md border border-green-600/30 bg-white shadow">
               <button
                 onClick={handleDecrease}
                 className="h-6 w-6 rounded-md text-lg text-[#002a01]"

@@ -85,7 +85,7 @@ export function ProductBottomSheet({
 
   const handleShare = async () => {
     if (!dish) return;
-    
+
     const shareData = generateProductShareData(
       dish.name,
       dish.description || `Delicious ${dish.name}`,
@@ -93,7 +93,7 @@ export function ProductBottomSheet({
       dish.restaurant,
       dish.id
     );
-    
+
     const success = await shareContent(shareData);
     if (success) {
       toast.success('Shared successfully!');
@@ -149,7 +149,7 @@ export function ProductBottomSheet({
                       <Bookmark className="w-5 h-5" />
                     </button> */}
                     <button
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 transition-colors hover:bg-gray-200"
                       aria-label="Share"
                       onClick={handleShare}
                     >

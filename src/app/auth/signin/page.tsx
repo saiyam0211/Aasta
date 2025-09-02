@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import Lottie from 'lottie-react';
 import step1 from '../../../../public/lotties/step1.json';
 import step2 from '../../../../public/lotties/step2.json';
@@ -21,32 +21,6 @@ export default function SignInPage() {
   const [error, setError] = useState('');
   const verifierRef = useRef<RecaptchaVerifier | null>(null);
 
-  useEffect(() => {
-    // When entering the phone step, reset and create a fresh verifier
-    if (step === 5) {
-      try {
-        // Clear any stale verifier first
-        if (
-          verifierRef.current &&
-          typeof (verifierRef.current as any).clear === 'function'
-        ) {
-          (verifierRef.current as any).clear();
-        }
-        verifierRef.current = null;
-        const size =
-          process.env.NEXT_PUBLIC_RECAPTCHA_SIZE === 'normal'
-            ? 'normal'
-            : 'invisible';
-        verifierRef.current = createInvisibleRecaptcha(
-          'recaptcha-container',
-          size
-        );
-      } catch (e) {
-        console.error('Failed to (re)create reCAPTCHA verifier', e);
-      }
-    }
-  }, [step]);
-
   async function startPhoneFlow() {
     setError('');
     try {
@@ -54,17 +28,15 @@ export default function SignInPage() {
       const formatted = phone.trim().startsWith('+')
         ? phone.trim()
         : `+91${phone.trim()}`;
-      // Ensure verifier is present
+
+      // Create invisible reCAPTCHA verifier only when needed
       if (!verifierRef.current) {
-        const size =
-          process.env.NEXT_PUBLIC_RECAPTCHA_SIZE === 'normal'
-            ? 'normal'
-            : 'invisible';
         verifierRef.current = createInvisibleRecaptcha(
           'recaptcha-container',
-          size
+          'invisible'
         );
       }
+
       const result = await sendOtp(formatted, verifierRef.current);
       setConfirmation(result);
       // Move to OTP step
@@ -72,6 +44,16 @@ export default function SignInPage() {
     } catch (e: any) {
       console.error(e);
       setError(e?.message || 'Failed to send OTP');
+
+      // Clear verifier on error to allow retry
+      if (verifierRef.current) {
+        try {
+          (verifierRef.current as any).clear();
+        } catch (clearError) {
+          console.warn('Failed to clear verifier:', clearError);
+        }
+        verifierRef.current = null;
+      }
     } finally {
       setIsLoading(false);
     }
@@ -102,9 +84,50 @@ export default function SignInPage() {
     }
   }
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+
+    // Remove the +91 prefix if it exists to get clean digits
+    if (value.startsWith('+91 ')) {
+      value = value.slice(4);
+    }
+
+    // Remove all non-digit characters
+    value = value.replace(/\D/g, '');
+
+    // Limit to max 10 digits (for Indian numbers)
+    if (value.length > 10) value = value.slice(0, 10);
+
+    // Format with dashes only if there are digits
+    let formatted = '';
+    if (value.length === 0) {
+      formatted = '';
+    } else if (value.length <= 3) {
+      formatted = `+91 ${value}`;
+    } else if (value.length <= 6) {
+      formatted = `+91 ${value.slice(0, 3)}-${value.slice(3)}`;
+    } else {
+      formatted = `+91 ${value.slice(0, 3)}-${value.slice(3, 6)}-${value.slice(6)}`;
+    }
+
+    setPhone(formatted);
+  };
+
+  // Cleanup function for verifier
+  const cleanupVerifier = () => {
+    if (verifierRef.current) {
+      try {
+        (verifierRef.current as any).clear();
+      } catch (e) {
+        console.warn('Failed to clear verifier:', e);
+      }
+      verifierRef.current = null;
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-white">
-      <div className="mx-auto flex min-h-screen max-w-md flex-col px-5 pt-[50%] pb-8">
+      <div className="mx-auto flex min-h-screen max-w-md flex-col px-5 pt-[45%] pb-8">
         <div
           key={step}
           className="animate-slide-up transition-all duration-300 ease-out"
@@ -120,18 +143,17 @@ export default function SignInPage() {
                 />
               </div>
               <h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">
-                Tired of endless scrolling?
+                Smarter bites, happier you.
               </h2>
               <p className="mx-auto max-w-sm text-base text-[#475569]">
-                Too many apps, too many fake deals. Finding food shouldn’t feel
-                like a chore.
+                Wholesome meals without hidden costs.
               </p>
               <div className="mt-6 w-full">
                 <button
                   onClick={() => setStep(2)}
-                  className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white"
+                  className="mx-auto flex w-full items-center justify-center rounded-3xl bg-black px-5 py-7 text-xl text-white"
                 >
-                  Skip the scroll →
+                  Show me the hack →
                 </button>
               </div>
             </div>
@@ -148,18 +170,17 @@ export default function SignInPage() {
                 />
               </div>
               <h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">
-                We’ve already made the smart choice.
+                Save big. Waste less.
               </h2>
               <p className="mx-auto max-w-sm text-base text-[#475569]">
-                Aasta handpicks real, transparent deals and eco-friendly partner
-                kitchens — so you save time, money, and the planet..
+                Transparent deals + eco kitchens.
               </p>
               <div className="mt-6 w-full">
                 <button
                   onClick={() => setStep(3)}
-                  className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white"
+                  className="mx-auto flex w-full items-center justify-center rounded-3xl bg-black px-5 py-7 text-xl text-white"
                 >
-                  Show me the #FoodHack →
+                  Unlock my #FoodHack →
                 </button>
               </div>
             </div>
@@ -176,44 +197,56 @@ export default function SignInPage() {
                 />
               </div>
               <h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">
-                Eat smarter. Feel lighter.
+                Fast. Fair. Planet-friendly.
               </h2>
               <p className="mx-auto max-w-sm text-base text-[#475569]">
-                Fast delivery, fair prices, and food that doesn’t cost the
-                Earth. Because every order is a #FoodHack for you — and for the
-                planet.
+                Quick delivery, fair prices, lighter impact.
               </p>
               <div className="mt-6 w-full">
                 <button
                   onClick={() => setStep(4)}
-                  className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white"
+                  className="mx-auto flex w-full items-center justify-center rounded-3xl bg-black px-5 py-7 text-xl text-white"
                 >
-                  Let’s Get Started →
+                  Let's get started →
                 </button>
               </div>
             </div>
           )}
 
           {step === 4 && (
-            <div className="flex h-full flex-col items-center text-center">
-              <h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">
-                What's your name?
+            <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+              {/* Title */}
+              <h2 className="mb-2 text-4xl font-bold tracking-tight text-slate-900">
+                Claim your foodie identity.
               </h2>
-              <p className="mx-auto max-w-sm text-base text-[#475569]">
-                We’ll personalize your experience.
+
+              {/* Subtitle */}
+              <p className="mb-6 max-w-xs text-base text-slate-600">
+                Tell us who you are, and we'll unlock your personalized
+                #FoodHacks.
               </p>
-              <div className="mt-4 w-full space-y-3">
-                <input
-                  type="text"
-                  placeholder="Your name"
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-center text-lg"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
+
+              {/* Input + Button */}
+              <div className="w-full space-y-5">
+                {/* Material 3 styled input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder=" "
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="peer w-full rounded-2xl border border-slate-300 bg-white px-4 pt-5 pb-2 text-lg text-slate-900 shadow-sm focus:border-[#002a01] focus:ring-2 focus:ring-[#002a01] focus:outline-none"
+                  />
+                  <label className="absolute top-2 left-4 text-sm text-slate-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-[#002a01]">
+                    Your name
+                  </label>
+                </div>
+
+                {/* Material 3 expressive button */}
                 <button
                   onClick={() => setStep(5)}
                   disabled={!name.trim()}
-                  className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white"
+                  className="w-full rounded-3xl bg-black px-6 py-7 text-2xl font-medium text-white shadow-md transition-all duration-200 enabled:hover:bg-[#002a01] enabled:active:scale-[0.97] disabled:bg-slate-300 disabled:text-slate-500"
                 >
                   Next →
                 </button>
@@ -222,61 +255,123 @@ export default function SignInPage() {
           )}
 
           {step === 5 && (
-            <div className="flex h-full flex-col items-center text-center">
-              <h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">
-                Enter your phone number
+            <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+              {/* Title */}
+              <h2 className="mb-2 text-4xl font-bold tracking-tight text-slate-900">
+                Keep your #FoodHacks safe.
               </h2>
-              <p className="mx-auto max-w-sm text-base text-[#475569]">
-                We’ll send you a one-time code to sign in securely.
+
+              {/* Subtitle */}
+              <p className="mb-6 max-w-xs text-base text-slate-600">
+                Enter your number and we'll send a one-time code to sign in
+                securely.
               </p>
-              <div className="glass-liquid mt-4 w-full space-y-3 rounded-3xl p-4 shadow-xl">
-                <input
-                  type="tel"
-                  placeholder="e.g., 9876543210"
-                  className="w-full rounded-xl border border-gray-300 bg-white/60 px-4 py-3 text-center text-lg"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-                <div id="recaptcha-container" />
+
+              {/* Input + Button */}
+              <div className="w-full space-y-5">
+                {/* Material 3 styled input */}
+                <div className="relative">
+                  <input
+                    type="tel"
+                    placeholder=" "
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    className="peer w-full rounded-2xl border border-slate-300 bg-white px-4 pt-5 pb-2 text-lg text-slate-900 shadow-sm focus:border-[#002a01] focus:ring-2 focus:ring-[#002a01] focus:outline-none"
+                  />
+                  <label className="absolute top-2 left-4 text-sm text-slate-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-[#002a01]">
+                    Phone number
+                  </label>
+                </div>
+
+                {/* Hidden reCAPTCHA container - will be invisible */}
+                <div id="recaptcha-container" className="hidden" />
+
+                {/* Material 3 expressive button */}
                 <button
                   disabled={isLoading || phone.length < 8}
                   onClick={startPhoneFlow}
-                  className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white"
+                  className="w-full rounded-3xl bg-black px-6 py-7 text-2xl font-medium text-white shadow-md transition-all duration-200 enabled:hover:bg-[#003d01] enabled:active:scale-[0.97] disabled:bg-slate-300 disabled:text-slate-500"
                 >
                   {isLoading ? 'Sending…' : 'Send OTP'}
                 </button>
-                {error && <p className="pt-2 text-sm text-red-600">{error}</p>}
+
+                {/* Error message */}
+                {error && (
+                  <p className="pt-2 text-sm font-medium text-red-600">
+                    {error}
+                  </p>
+                )}
               </div>
             </div>
           )}
 
           {step === 6 && (
-            <div className="flex h-full flex-col items-center text-center">
-              <h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">
-                Verify code
+            <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+              {/* Title */}
+              <h2 className="mb-2 text-4xl font-bold tracking-tight text-slate-900">
+                Almost there, foodie hacker!
               </h2>
-              <p className="mx-auto max-w-sm text-base text-[#475569]">
-                We sent an OTP to{' '}
+
+              {/* Subtitle */}
+              <p className="mb-6 max-w-xs text-base text-slate-600">
+                We sent your secret code to{' '}
+                {/* <span className="font-medium text-slate-800">
                 {phone.trim().startsWith('+') ? phone : `+91${phone}`}
+              </span> */}
+                — enter it to unlock your #FoodHacks.
               </p>
-              <div className="glass-liquid mt-4 w-full space-y-3 rounded-3xl p-4 shadow-xl">
-                <input
-                  type="text"
-                  placeholder="6-digit code"
-                  className="w-full rounded-xl border border-gray-300 bg-white/60 px-4 py-3 text-center text-lg tracking-widest"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                />
-                <button
-                  disabled={isLoading || otp.length < 6}
-                  onClick={verifyOtp}
-                  className="mx-auto flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-white"
-                >
-                  {isLoading ? 'Verifying…' : 'Verify & Continue'}
-                </button>
-                {error && <p className="pt-2 text-sm text-red-600">{error}</p>}
+
+              {/* 6-digit OTP input */}
+              <div className="mb-5 flex justify-center space-x-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <input
+                    key={i}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={otp[i] || ''}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/, '');
+                      if (!val) return;
+                      const newOtp = otp.split('');
+                      newOtp[i] = val;
+                      setOtp(newOtp.join(''));
+                      // move focus to next box
+                      if (i < 5) {
+                        const next = document.getElementById(`otp-${i + 1}`);
+                        next?.focus();
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace') {
+                        const newOtp = otp.split('');
+                        newOtp[i] = '';
+                        setOtp(newOtp.join(''));
+                        if (i > 0 && !otp[i]) {
+                          const prev = document.getElementById(`otp-${i - 1}`);
+                          prev?.focus();
+                        }
+                      }
+                    }}
+                    id={`otp-${i}`}
+                    className="h-14 w-12 rounded-lg border border-slate-300 text-center text-xl font-medium text-slate-900 shadow-sm transition focus:border-[#002a01] focus:ring-2 focus:ring-[#002a01] focus:outline-none"
+                  />
+                ))}
               </div>
+
+              {/* Verify button */}
+              <button
+                disabled={isLoading || otp.length < 6}
+                onClick={verifyOtp}
+                className="w-full rounded-3xl bg-black px-6 py-7 text-2xl font-medium text-white shadow-md transition-all duration-200 enabled:hover:bg-[#003d01] enabled:active:scale-[0.97] disabled:bg-slate-300 disabled:text-slate-500"
+              >
+                {isLoading ? 'Verifying…' : 'Verify & Continue'}
+              </button>
+
+              {/* Error message */}
+              {error && (
+                <p className="pt-2 text-sm font-medium text-red-600">{error}</p>
+              )}
             </div>
           )}
         </div>

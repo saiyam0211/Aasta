@@ -13,17 +13,21 @@ interface ImageUploadProps {
   className?: string;
 }
 
-export function ImageUpload({ 
-  onImageUploaded, 
-  onImageRemoved, 
+export function ImageUpload({
+  onImageUploaded,
+  onImageRemoved,
   currentImageUrl,
-  className = '' 
+  className = '',
 }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    currentImageUrl || null
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -97,12 +101,7 @@ export function ImageUpload({
       {/* Upload Area */}
       <div
         onClick={handleClick}
-        className={`
-          relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
-          transition-colors hover:border-gray-400 hover:bg-gray-50
-          ${previewUrl ? 'border-green-300 bg-green-50' : 'border-gray-300'}
-          ${isUploading ? 'pointer-events-none opacity-50' : ''}
-        `}
+        className={`relative cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors hover:border-gray-400 hover:bg-gray-50 ${previewUrl ? 'border-green-300 bg-green-50' : 'border-gray-300'} ${isUploading ? 'pointer-events-none opacity-50' : ''} `}
       >
         <input
           ref={fileInputRef}
@@ -148,9 +147,7 @@ export function ImageUpload({
               <p className="text-sm font-medium text-gray-700">
                 Click to upload image
               </p>
-              <p className="text-xs text-gray-500">
-                PNG, JPG, GIF up to 5MB
-              </p>
+              <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
             </div>
           </div>
         )}
@@ -158,8 +155,8 @@ export function ImageUpload({
 
       {/* Help Text */}
       <p className="text-xs text-gray-500">
-        Upload an image to make your notification more engaging. 
-        The image will be displayed alongside the notification text.
+        Upload an image to make your notification more engaging. The image will
+        be displayed alongside the notification text.
       </p>
     </div>
   );

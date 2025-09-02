@@ -3,6 +3,10 @@
 import Image from 'next/image';
 import Lottie from 'lottie-react';
 import footerAnimation from '../../../public/lotties/footer.json';
+import { Fredoka } from 'next/font/google';
+
+// Import Fredoka font
+const fredoka = Fredoka({ subsets: ['latin'], weight: ['400', '700'] });
 
 interface FoodHacksPromoProps {
   className?: string;
@@ -10,11 +14,13 @@ interface FoodHacksPromoProps {
 
 export function FoodHacksPromo({ className = '' }: FoodHacksPromoProps) {
   return (
-    <div className={`bg-gradient-to-br from-green-50 to-emerald-50 rounded-t-3xl p-6  ${className}`}>
-      <div className="flex flex-col items-center justify-between">
+    <div
+      className={`border-gradient-to-br bg-[#002a01] rounded-tl-[1000px] pl-10 ml-10 rounded-tr-[650px] rounded-bl-[400px] from-green-50 to-emerald-50 px-6 pt-6 ${className}`}
+    >
+      <div className="flex  flex-col items-center justify-between">
         {/* Left side with Lottie animation */}
         <div className="flex-shrink-0">
-          <div className="w-16 h-16">
+          <div className="h-24 w-24">
             <Lottie
               animationData={footerAnimation}
               loop={true}
@@ -24,25 +30,27 @@ export function FoodHacksPromo({ className = '' }: FoodHacksPromoProps) {
         </div>
 
         {/* Center content */}
-        <div className="flex-1 ml-4">
-          <h3 className="fredoka text-3xl mt-5 font-bold text-gray-800 mb-1">
-            #FoodHack 
+        <div className="ml-4 pb-8 flex-1">
+          <h3
+            className={`${fredoka.className} mt-5 mb-3 text-5xl font-bold text-gray-50`}
+          >
+            #FoodHack
           </h3>
         </div>
       </div>
 
       {/* Aasta logo at the bottom */}
-      <div className="flex justify-center border-t border-green-200">
-        <div className="relative w-56 h-20">
+      {/* <div className="flex justify-center pb-2">
+        <div className="relative h-20 w-20">
           <Image
-            src="/aasta_full.png"
+            src="/aasta_icon_logo_with_bg.png"
             alt="Aasta"
             fill
-            className="object-contain opacity-60"
+            className="object-contain opacity-50"
             priority
           />
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

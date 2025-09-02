@@ -42,7 +42,10 @@ export interface ScheduledNotification {
 
 class EnhancedNotificationService {
   // Send instant notification to specific user
-  async sendToUser(userId: string, notification: NotificationData): Promise<boolean> {
+  async sendToUser(
+    userId: string,
+    notification: NotificationData
+  ): Promise<boolean> {
     try {
       const subscription = await prisma.pushSubscription.findFirst({
         where: { userId, active: true },
@@ -56,7 +59,8 @@ class EnhancedNotificationService {
       const payload = JSON.stringify({
         title: notification.title,
         body: notification.body,
-        icon: notification.image || notification.icon || '/icons/icon-192x192.png',
+        icon:
+          notification.image || notification.icon || '/icons/icon-192x192.png',
         badge: notification.badge || '/icons/icon-72x72.png',
         image: notification.image, // Add image for rich notifications
         data: {
@@ -91,7 +95,7 @@ class EnhancedNotificationService {
       await prisma.notificationHistory.create({
         data: {
           userId,
-          type: 'INSTANT',
+          type: 'SYSTEM_ANNOUNCEMENT',
           channel: 'PUSH',
           title: notification.title,
           message: notification.body,
@@ -104,13 +108,16 @@ class EnhancedNotificationService {
       console.log(`✅ Instant notification sent to user: ${userId}`);
       return true;
     } catch (error) {
-      console.error(`❌ Failed to send instant notification to user ${userId}:`, error);
-      
+      console.error(
+        `❌ Failed to send instant notification to user ${userId}:`,
+        error
+      );
+
       // Log failed notification
       await prisma.notificationHistory.create({
         data: {
           userId,
-          type: 'INSTANT',
+          type: 'SYSTEM_ANNOUNCEMENT',
           channel: 'PUSH',
           title: notification.title,
           message: notification.body,
@@ -118,18 +125,21 @@ class EnhancedNotificationService {
           errorMsg: error instanceof Error ? error.message : 'Unknown error',
         },
       });
-      
+
       return false;
     }
   }
 
   // Send notification to multiple specific users
-  async sendToUsers(userIds: string[], notification: NotificationData): Promise<{
+  async sendToUsers(
+    userIds: string[],
+    notification: NotificationData
+  ): Promise<{
     success: string[];
     failed: string[];
   }> {
     const results = await Promise.allSettled(
-      userIds.map(userId => this.sendToUser(userId, notification))
+      userIds.map((userId) => this.sendToUser(userId, notification))
     );
 
     const success: string[] = [];
@@ -160,12 +170,14 @@ class EnhancedNotificationService {
     console.log(`📤 Sending notification to ${subscriptions.length} PWA users`);
 
     const results = await Promise.allSettled(
-      subscriptions.map(subscription => 
+      subscriptions.map((subscription) =>
         this.sendToUser(subscription.userId, notification)
       )
     );
 
-    const success = results.filter(r => r.status === 'fulfilled' && r.value).length;
+    const success = results.filter(
+      (r) => r.status === 'fulfilled' && r.value
+    ).length;
     const failed = results.length - success;
 
     return { total: subscriptions.length, success, failed };
@@ -173,22 +185,23 @@ class EnhancedNotificationService {
 
   // Send order status update notification
   async sendOrderStatusUpdate(
-    userId: string, 
-    orderNumber: string, 
-    status: string, 
+    userId: string,
+    orderNumber: string,
+    status: string,
     restaurantName: string,
     estimatedTime?: string
   ): Promise<boolean> {
     const statusMessages = {
-      'PLACED': 'Your order has been placed successfully!',
-      'CONFIRMED': 'Your order has been confirmed by the restaurant!',
-      'PREPARING': 'Your order is being prepared!',
-      'READY_FOR_PICKUP': 'Your order is ready for pickup!',
-      'OUT_FOR_DELIVERY': 'Your order is out for delivery!',
-      'DELIVERED': 'Your order has been delivered! Enjoy your meal!',
+      PLACED: 'Your order has been placed successfully!',
+      CONFIRMED: 'Your order has been confirmed by the restaurant!',
+      PREPARING: 'Your order is being prepared!',
+      READY_FOR_PICKUP: 'Your order is ready for pickup!',
+      OUT_FOR_DELIVERY: 'Your order is out for delivery!',
+      DELIVERED: 'Your order has been delivered! Enjoy your meal!',
     };
 
-    const message = statusMessages[status as keyof typeof statusMessages] || 
+    const message =
+      statusMessages[status as keyof typeof statusMessages] ||
       `Your order status has been updated to: ${status}`;
 
     const notification: NotificationData = {
@@ -237,37 +250,44 @@ class EnhancedNotificationService {
   }
 
   // Schedule a notification
-  async scheduleNotification(scheduledNotification: ScheduledNotification): Promise<string> {
+  async scheduleNotification(
+    scheduledNotification: ScheduledNotification
+  ): Promise<string> {
     const notificationId = `scheduled_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Store in database for processing
-    await prisma.scheduledNotification.create({
-      data: {
-        id: notificationId,
-        title: scheduledNotification.title,
-        body: scheduledNotification.body,
-        image: scheduledNotification.image,
-        scheduledFor: scheduledNotification.scheduledFor,
-        userIds: scheduledNotification.userIds || [],
-        data: scheduledNotification.data || {},
-        type: scheduledNotification.type,
-        status: 'SCHEDULED',
-      },
-    });
 
-    console.log(`📅 Scheduled notification: ${notificationId} for ${scheduledNotification.scheduledFor}`);
+    // TODO: Add ScheduledNotification model to schema
+    // Store in database for processing
+    // await prisma.scheduledNotification.create({
+    //   data: {
+    //     id: notificationId,
+    //     title: scheduledNotification.title,
+    //     body: scheduledNotification.body,
+    //     image: scheduledNotification.image,
+    //     scheduledFor: scheduledNotification.scheduledFor,
+    //     userIds: scheduledNotification.userIds || [],
+    //     data: scheduledNotification.data || {},
+    //     type: scheduledNotification.type,
+    //     status: 'SCHEDULED',
+    //   },
+    // });
+
+    console.log(
+      `📅 Scheduled notification: ${notificationId} for ${scheduledNotification.scheduledFor}`
+    );
     return notificationId;
   }
 
   // Get all PWA users for targeting
-  async getPWAUsers(): Promise<Array<{
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    hasActiveSubscription: boolean;
-    lastActive: Date;
-  }>> {
+  async getPWAUsers(): Promise<
+    Array<{
+      id: string;
+      name: string;
+      email: string;
+      phone: string;
+      hasActiveSubscription: boolean;
+      lastActive: Date;
+    }>
+  > {
     const users = await prisma.user.findMany({
       where: {
         pushSubscriptions: {
@@ -284,7 +304,7 @@ class EnhancedNotificationService {
       orderBy: { updatedAt: 'desc' },
     });
 
-    return users.map(user => ({
+    return users.map((user) => ({
       id: user.id,
       name: user.name || 'Unknown User',
       email: user.email || '',
@@ -296,51 +316,52 @@ class EnhancedNotificationService {
 
   // Process scheduled notifications (should be called by a cron job)
   async processScheduledNotifications(): Promise<void> {
+    // TODO: Add ScheduledNotification model to schema
     const now = new Date();
-    const scheduledNotifications = await prisma.scheduledNotification.findMany({
-      where: {
-        scheduledFor: { lte: now },
-        status: 'SCHEDULED',
-      },
-    });
+    // const scheduledNotifications = await prisma.scheduledNotification.findMany({
+    //   where: {
+    //     scheduledFor: { lte: now },
+    //     status: 'SCHEDULED',
+    //   },
+    // });
 
-    for (const scheduled of scheduledNotifications) {
-      try {
-        const notification: NotificationData = {
-          title: scheduled.title,
-          body: scheduled.body,
-          image: scheduled.image,
-          data: scheduled.data,
-        };
+    // for (const scheduled of scheduledNotifications) {
+    //   try {
+    //     const notification: NotificationData = {
+    //     title: scheduled.title,
+    //     body: scheduled.body,
+    //     image: scheduled.image,
+    //     data: scheduled.data,
+    //   };
 
-        if (scheduled.userIds.length > 0) {
-          // Send to specific users
-          await this.sendToUsers(scheduled.userIds, notification);
-        } else {
-          // Send to all PWA users
-          await this.sendToAllPWAUsers(notification);
-        }
+    //   if (scheduled.userIds.length > 0) {
+    //     // Send to specific users
+    //     await this.sendToUsers(scheduled.userIds, notification);
+    //   } else {
+    //     // Send to all PWA users
+    //     await this.sendToAllPWAUsers(notification);
+    //   }
 
-        // Mark as processed
-        await prisma.scheduledNotification.update({
-          where: { id: scheduled.id },
-          data: { status: 'SENT', sentAt: new Date() },
-        });
+    //   // Mark as processed
+    //   await prisma.scheduledNotification.update({
+    //     where: { id: scheduled.id },
+    //     data: { status: 'SENT', sentAt: new Date() },
+    //   });
 
-        console.log(`✅ Processed scheduled notification: ${scheduled.id}`);
-      } catch (error) {
-        console.error(`❌ Failed to process scheduled notification ${scheduled.id}:`, error);
-        
-        // Mark as failed
-        await prisma.scheduledNotification.update({
-          where: { id: scheduled.id },
-          data: { 
-            status: 'FAILED', 
-            errorMsg: error instanceof Error ? error.message : 'Unknown error' 
-          },
-        });
-      }
-    }
+    //   console.log(`✅ Processed scheduled notification: ${scheduled.id}`);
+    // } catch (error) {
+    //   console.error(`❌ Failed to process scheduled notification ${scheduled.id}:`, error);
+
+    //   // Mark as failed
+    //   await prisma.scheduledNotification.update({
+    //     where: { id: scheduled.id },
+    //     data: {
+    //       status: 'FAILED',
+    //       errorMsg: error instanceof Error ? error.message : 'Unknown error'
+    //     },
+    //   });
+    // }
+    // }
   }
 }
 

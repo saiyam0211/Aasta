@@ -2,7 +2,16 @@
 
 import * as React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Plus, MapPin, Phone, Home, Building2, Check, Loader2 } from 'lucide-react';
+import {
+  X,
+  Plus,
+  MapPin,
+  Phone,
+  Home,
+  Building2,
+  Check,
+  Loader2,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocationStore } from '@/lib/store';
 import { toast } from 'sonner';
@@ -127,7 +136,7 @@ export default function AddressSheet({
 
   const saveAddress = async () => {
     console.log('Save address clicked, saving state:', saving);
-    
+
     // Validate required fields and live location
     const missing: string[] = [];
     if (!currentLocation?.latitude || !currentLocation?.longitude)
@@ -432,7 +441,7 @@ export default function AddressSheet({
                     </div>
                   </div>
                   <button
-                    className="mt-4 w-full rounded-xl bg-[#fd6923] px-4 py-3 text-white disabled:opacity-60 flex items-center justify-center gap-2"
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#fd6923] px-4 py-3 text-white disabled:opacity-60"
                     onClick={saveAddress}
                     disabled={loading || saving}
                   >

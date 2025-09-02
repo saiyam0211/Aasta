@@ -30,10 +30,24 @@ export function createInvisibleRecaptcha(
   containerId: string,
   size: 'invisible' | 'normal' = 'invisible'
 ) {
-  const verifier = new RecaptchaVerifier(auth, containerId, { size });
+  // For invisible reCAPTCHA, we don't need to render it visibly
+  const verifier = new RecaptchaVerifier(auth, containerId, {
+    size,
+    callback: () => {
+      // This callback will be called when reCAPTCHA is solved
+      console.log('reCAPTCHA solved automatically');
+    },
+    'expired-callback': () => {
+      // This callback will be called when reCAPTCHA expires
+      console.log('reCAPTCHA expired');
+    },
+  });
+
+  // Only render if it's normal size, invisible should not be rendered
   if (size === 'normal' && typeof (verifier as any).render === 'function') {
     (verifier as any).render();
   }
+
   return verifier;
 }
 

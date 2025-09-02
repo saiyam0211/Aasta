@@ -235,7 +235,7 @@ export function HomeHeader({
     return (
       <>
         {before}
-        <span className="rounded bg-yellow-200 px-0.5 text-black">{match}</span>
+        <span className="rounded bg-yellow-200 px-0.5 text-white">{match}</span>
         {after}
       </>
     );
@@ -256,25 +256,25 @@ export function HomeHeader({
     <div
       ref={containerRef}
       className={cn(
-        'z-10 mr-5 w-[93%] rounded-tr-[300px] rounded-br-[1000px] bg-[#D2F86A] p-5 pt-6 text-black',
+        'z-10 mr-5 w-[93%] rounded-tr-[300px] rounded-br-[1000px] bg-[#002a01] p-5 pt-6 text-white',
         className
       )}
     >
-      <div className="absolute top-[16.59377rem] left-0 z-12 h-18 w-20 rounded-tl-[200px] bg-white"></div>
-      <div className="absolute top-[16.59377rem] left-0 z-10 h-18 w-20 bg-[#D2F86A]"></div>
+      <div className="absolute top-[16.625rem] left-0 z-12 h-20 w-24 rounded-tl-[200px] bg-white shadow-none"></div>
+      <div className="absolute top-[16.59377rem] left-0 z-10 h-18 w-20 bg-[#002a01]"></div>
       {/* Top row: location + actions */}
       <div className="mb-5 flex items-center justify-between">
         <button
           type="button"
           onClick={onLocationClick}
-          className="flex items-center gap-2 rounded-full border border-white bg-[#002A01]/5 bg-white/30 px-3 py-2 backdrop-blur-sm"
+          className="flex items-center gap-2 rounded-full border border-[#002a01] bg-[#002a01]/5 bg-white/30 px-3 py-2 backdrop-blur-sm"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/50 bg-black/10 bg-white/40 backdrop-blur-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[#002a01]/50 bg-black/10 bg-white/40 backdrop-blur-sm">
             <MapPin className="h-4 w-4" />
           </div>
           <div className="max-w-[180px] text-left">
-            <div className="text-xs text-gray-900">Location</div>
-            <div className="truncate text-sm font-medium text-black">
+            <div className="text-xs text-gray-100">Location</div>
+            <div className="truncate text-sm font-medium text-white">
               {shortLocation}...
             </div>
           </div>
@@ -293,7 +293,7 @@ export function HomeHeader({
                 }
               }}
               disabled={isRefreshing}
-              className="border border-white bg-white/30 backdrop-blur-sm flex h-12 w-12 items-center justify-center rounded-full transition-colors hover:bg-white/40 disabled:opacity-50"
+              className="border border-[#002a01] bg-white/30 backdrop-blur-sm flex h-12 w-12 items-center justify-center rounded-full transition-colors hover:bg-white/40 disabled:opacity-50"
               title="Refresh"
             >
               <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -302,7 +302,7 @@ export function HomeHeader({
           <button
             type="button"
             onClick={onProfileClick}
-            className="border border-white bg-white/30 backdrop-blur-sm flex h-12 w-12 items-center justify-center rounded-full transition-colors"
+            className="flex h-12 w-12 items-center justify-center rounded-full border border-[#002a01] bg-white/30 backdrop-blur-sm transition-colors"
           >
             <User className="h-5 w-5" />
           </button>
@@ -312,10 +312,8 @@ export function HomeHeader({
       {/* Headline - Only show when NOT in search mode */}
       {!isSearchMode && (
         <div className="mt-10 mb-4">
-          <h1 className="text-[28px] leading-8 font-extrabold tracking-tight">
-            Your Next Meal is Just a
-            <br />
-            Tap Away!
+          <h1 className="text-[28px] leading-8 font-extrabold tracking-tight text-white">
+            Hey foodie, ready to hack today’s meal?
           </h1>
         </div>
       )}
@@ -326,14 +324,14 @@ export function HomeHeader({
         className={cn('flex items-center gap-2', isSearchMode && 'mt-10')}
       >
         <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-4 z-50 h-5 w-5 -translate-y-1/2 text-[#002A01]" />
+          <Search className="absolute top-1/2 left-4 z-50 h-5 w-5 -translate-y-1/2 text-[#fff]" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder={' '}
-            className="h-12 w-full rounded-full border border-[#D2F86A] bg-white/40 px-12 text-black backdrop-blur-sm outline-none placeholder:text-transparent"
+            className="h-12 w-full rounded-full border border-[#002a01] bg-white/40 px-12 text-white backdrop-blur-sm outline-none placeholder:text-transparent"
             onFocus={() => {
               setSuggestionsOpen(true);
             }}
@@ -342,7 +340,7 @@ export function HomeHeader({
           {!query && (
             <span
               key={placeholderText}
-              className="placeholder-animate pointer-events-none absolute top-1/2 left-12 -translate-y-1/2 text-gray-900"
+              className="placeholder-animate pointer-events-none absolute top-1/2 left-12 -translate-y-1/2 text-gray-50"
             >
               {`Search "${placeholderText}".`}
             </span>
@@ -492,7 +490,7 @@ export function HomeHeader({
                     e.preventDefault();
                     handleSubmit(e as any);
                   }}
-                  className="rounded-full bg-[#D2F86A] px-3 py-1.5 text-sm font-medium hover:brightness-95"
+                  className="rounded-full bg-[#002a01] px-3 py-1.5 text-sm font-medium text-white"
                 >
                   Search "{query.trim()}"
                 </button>
@@ -503,10 +501,10 @@ export function HomeHeader({
         {/* <button
           type="button"
           onClick={onFilterClick}
-          className="bg-white/10 backdrop-blur-sm border border-white/20 flex h-12 w-12 items-center justify-center rounded-full"
+          className="bg-white/10 backdrop-blur-sm border border-[#002a01]/20 flex h-12 w-12 items-center justify-center rounded-full"
           aria-label="Filter"
         >
-          <SlidersHorizontal className="h-5 w-5 text-[#002A01]" />
+          <SlidersHorizontal className="h-5 w-5 text-[#002a01]" />
         </button> */}
       </form>
     </div>

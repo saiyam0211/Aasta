@@ -289,7 +289,7 @@ export default function RestaurantDetailPage() {
 
   const handleShareRestaurant = async () => {
     if (!restaurant) return;
-    
+
     const shareData = generateRestaurantShareData(
       restaurant.name,
       restaurant.description || `Delicious food at ${restaurant.name}`,
@@ -297,7 +297,7 @@ export default function RestaurantDetailPage() {
       locationText,
       restaurant.id
     );
-    
+
     const success = await shareContent(shareData);
     if (success) {
       toast.success('Restaurant shared successfully!');
@@ -361,7 +361,7 @@ export default function RestaurantDetailPage() {
             <Button
               size="sm"
               variant="outline"
-              className="glass-liquid h-10 w-10 rounded-full hover:bg-white/90 transition-colors"
+              className="glass-liquid h-10 w-10 rounded-full transition-colors hover:bg-white/90"
               onClick={handleShareRestaurant}
             >
               <Share2 className="h-4 w-4" />

@@ -6,7 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { NotificationNav } from '@/components/ui/NotificationNav';
 import { toast } from 'sonner';
@@ -28,7 +34,9 @@ export default function EnhancedNotificationsPage() {
 
   const loadPWAUsers = async () => {
     try {
-      const response = await fetch('/api/enhanced-notifications?action=get-pwa-users');
+      const response = await fetch(
+        '/api/enhanced-notifications?action=get-pwa-users'
+      );
       if (response.ok) {
         const data = await response.json();
         setPwaUsers(data.users || []);
@@ -60,8 +68,12 @@ export default function EnhancedNotificationsPage() {
       };
 
       const payload: any = {
-        type: notificationType === 'SCHEDULED' ? 'SCHEDULE' : 
-              targetType === 'ALL' ? 'SEND_TO_ALL' : 'SEND_TO_USER',
+        type:
+          notificationType === 'SCHEDULED'
+            ? 'SCHEDULE'
+            : targetType === 'ALL'
+              ? 'SEND_TO_ALL'
+              : 'SEND_TO_USER',
         notification,
       };
 
@@ -79,11 +91,11 @@ export default function EnhancedNotificationsPage() {
 
       if (result.success) {
         toast.success(
-          notificationType === 'SCHEDULED' 
+          notificationType === 'SCHEDULED'
             ? `Notification scheduled successfully! ID: ${result.scheduledId}`
             : 'Notification sent successfully!'
         );
-        
+
         setTitle('');
         setBody('');
         setImageUrl('');
@@ -100,19 +112,20 @@ export default function EnhancedNotificationsPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto max-w-4xl p-6">
       <NotificationNav />
-      
+
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="mb-2 text-3xl font-bold text-gray-900">
           Enhanced Notifications
         </h1>
         <p className="text-gray-600">
-          Send rich notifications with images, schedule them, and target specific users
+          Send rich notifications with images, schedule them, and target
+          specific users
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -123,7 +136,10 @@ export default function EnhancedNotificationsPage() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="notificationType">Notification Type</Label>
-              <Select value={notificationType} onValueChange={setNotificationType}>
+              <Select
+                value={notificationType}
+                onValueChange={setNotificationType}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -163,7 +179,10 @@ export default function EnhancedNotificationsPage() {
 
             {notificationType === 'SCHEDULED' && (
               <div>
-                <Label htmlFor="scheduledFor" className="flex items-center gap-2">
+                <Label
+                  htmlFor="scheduledFor"
+                  className="flex items-center gap-2"
+                >
                   <Calendar className="h-4 w-4" />
                   Schedule For
                 </Label>
@@ -202,7 +221,9 @@ export default function EnhancedNotificationsPage() {
               ) : (
                 <>
                   <Send className="mr-2 h-4 w-4" />
-                  {notificationType === 'SCHEDULED' ? 'Schedule Notification' : 'Send Notification'}
+                  {notificationType === 'SCHEDULED'
+                    ? 'Schedule Notification'
+                    : 'Send Notification'}
                 </>
               )}
             </Button>
@@ -219,29 +240,35 @@ export default function EnhancedNotificationsPage() {
           <CardContent>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="rounded-lg bg-blue-50 p-4 text-center">
                   <div className="text-2xl font-bold text-blue-600">
                     {pwaUsers.length}
                   </div>
                   <div className="text-sm text-blue-600">Total Users</div>
                 </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="rounded-lg bg-green-50 p-4 text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {pwaUsers.filter(u => u.hasActiveSubscription).length}
+                    {pwaUsers.filter((u) => u.hasActiveSubscription).length}
                   </div>
-                  <div className="text-sm text-green-600">Active Subscriptions</div>
+                  <div className="text-sm text-green-600">
+                    Active Subscriptions
+                  </div>
                 </div>
               </div>
 
               <div>
-                <h4 className="font-medium mb-2">Recent Users</h4>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
+                <h4 className="mb-2 font-medium">Recent Users</h4>
+                <div className="max-h-60 space-y-2 overflow-y-auto">
                   {pwaUsers.slice(0, 10).map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between rounded bg-gray-50 p-2"
+                    >
                       <div>
-                        <div className="font-medium text-sm">{user.name}</div>
+                        <div className="text-sm font-medium">{user.name}</div>
                         <div className="text-xs text-gray-500">
-                          Last active: {new Date(user.lastActive).toLocaleDateString()}
+                          Last active:{' '}
+                          {new Date(user.lastActive).toLocaleDateString()}
                         </div>
                       </div>
                     </div>

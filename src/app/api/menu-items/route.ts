@@ -18,9 +18,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get menu items for the restaurant
+    // Get menu items for the restaurant (only available items)
     const menuItems = await prisma.menuItem.findMany({
-      where: { restaurantId },
+      where: {
+        restaurantId,
+        available: true,
+      },
       orderBy: {
         name: 'asc',
       },

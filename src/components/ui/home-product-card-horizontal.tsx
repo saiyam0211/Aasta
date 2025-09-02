@@ -129,7 +129,7 @@ export function HomeProductCardHorizontal({
             </div>
             {quantity > 0 ? (
               <div
-                className="glass-liquid inline-flex items-center rounded-md border border-green-600/30 bg-white shadow"
+                className="ml-2 inline-flex items-center rounded-md border border-green-600/30 bg-white shadow"
                 onClick={(e) => e.stopPropagation()}
               >
                 <button

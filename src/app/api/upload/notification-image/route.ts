@@ -17,18 +17,27 @@ export async function POST(request: NextRequest) {
     const file = formData.get('image') as File;
 
     if (!file) {
-      return NextResponse.json({ error: 'No image file provided' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'No image file provided' },
+        { status: 400 }
+      );
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'File must be an image' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'File must be an image' },
+        { status: 400 }
+      );
     }
 
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      return NextResponse.json({ error: 'File size must be less than 5MB' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'File size must be less than 5MB' },
+        { status: 400 }
+      );
     }
 
     // Generate unique filename
@@ -38,7 +47,12 @@ export async function POST(request: NextRequest) {
     const filename = `notification-${timestamp}-${randomString}.${fileExtension}`;
 
     // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'notification-images');
+    const uploadsDir = join(
+      process.cwd(),
+      'public',
+      'uploads',
+      'notification-images'
+    );
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true });
     }

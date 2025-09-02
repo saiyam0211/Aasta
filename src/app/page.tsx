@@ -21,6 +21,7 @@ import { useCartStore } from '@/lib/store';
 import { CartBottomNav } from '@/components/ui/cart-bottom-nav';
 import { useCacheStore } from '@/lib/cache-store';
 import { FoodHacksPromo } from '@/components/ui/food-hacks-promo';
+// import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 const brandFont = localFont({
@@ -40,13 +41,13 @@ export default function HomePage() {
   const { isInstalled } = usePWA();
   const { latitude, longitude, setLocation } = useLocationStore();
   const { cart, addItem } = useCartStore();
-  const { 
-    setRestaurants: setCachedRestaurants, 
-    setDishes: setCachedDishes, 
-    isCacheValid, 
-    getCachedRestaurants, 
+  const {
+    setRestaurants: setCachedRestaurants,
+    setDishes: setCachedDishes,
+    isCacheValid,
+    getCachedRestaurants,
     getCachedDishes,
-    invalidateCache
+    invalidateCache,
   } = useCacheStore();
 
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
@@ -143,13 +144,13 @@ export default function HomePage() {
     const location = { latitude, longitude };
     const cachedRestaurants = getCachedRestaurants(location);
     const cachedDishes = getCachedDishes(location);
-    
+
     if (cachedRestaurants && cachedDishes) {
       // Use cached data immediately for instant loading
       setPopularRestaurants(cachedRestaurants);
       setPopularDishes(cachedDishes);
       setPopularLoading(false);
-      
+
       // Refresh in background if cache is stale
       if (!isCacheValid(location)) {
         loadPopularContent(true); // true = background refresh
@@ -165,49 +166,58 @@ export default function HomePage() {
       if (!backgroundRefresh) {
         setPopularLoading(true);
       }
-      
-      const [dishesRes, restaurantsRes] = await Promise.all([
-        fetch(
-          `/api/featured-dishes?limit=8${latitude && longitude ? `&lat=${latitude}&lng=${longitude}` : ''}`
-        ),
-        latitude && longitude
-          ? fetch(
-              `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=5&limit=8`
-            )
-          : Promise.resolve(
-              new Response(JSON.stringify({ success: true, data: [] }))
-            ),
-      ]);
 
-      let dishesData: any[] = [];
+      // First get restaurants within 5km radius
       let restaurantsData: RestaurantSummary[] = [];
+      let dishesData: any[] = [];
 
-      if (dishesRes.ok) {
-        const dishesResponse = await dishesRes.json();
-        dishesData = dishesResponse.data || [];
-        if (!backgroundRefresh) {
-          setPopularDishes(dishesData);
+      if (latitude && longitude) {
+        const restaurantsRes = await fetch(
+          `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=5&limit=8`
+        );
+
+        if (restaurantsRes.ok) {
+          const r = await restaurantsRes.json();
+          restaurantsData = (r.data || []).map((x: any) => ({
+            id: x.id,
+            name: x.name,
+            imageUrl: x.image, // API returns `image`
+            bannerImage: x.bannerImageUrl, // if present
+            cuisineTypes: x.cuisineTypes,
+            rating: x.rating,
+            estimatedDeliveryTime: x.deliveryTime, // API returns string like "25-35 min"
+            distanceKm: x.distance,
+            minimumOrderAmount: x.minimumOrderAmount,
+            isOpen: x.isOpen,
+            featuredItems: Array.isArray(x.featuredItems)
+              ? x.featuredItems
+              : [],
+          }));
+
+          if (!backgroundRefresh) {
+            setPopularRestaurants(restaurantsData);
+          }
         }
       }
 
-      if (restaurantsRes.ok) {
-        const r = await restaurantsRes.json();
-        restaurantsData = (r.data || []).map((x: any) => ({
-          id: x.id,
-          name: x.name,
-          imageUrl: x.image, // API returns `image`
-          bannerImage: x.bannerImageUrl, // if present
-          cuisineTypes: x.cuisineTypes,
-          rating: x.rating,
-          estimatedDeliveryTime: x.deliveryTime, // API returns string like "25-35 min"
-          distanceKm: x.distance,
-          minimumOrderAmount: x.minimumOrderAmount,
-          isOpen: x.isOpen,
-          featuredItems: Array.isArray(x.featuredItems) ? x.featuredItems : [],
-        }));
-        
+      // Only get dishes if we have restaurants within 5km
+      if (restaurantsData.length > 0) {
+        const dishesRes = await fetch(
+          `/api/featured-dishes?limit=8${latitude && longitude ? `&lat=${latitude}&lng=${longitude}&radius=5` : ''}`
+        );
+
+        if (dishesRes.ok) {
+          const dishesResponse = await dishesRes.json();
+          dishesData = dishesResponse.data || [];
+          if (!backgroundRefresh) {
+            setPopularDishes(dishesData);
+          }
+        }
+      } else {
+        // No restaurants in 5km radius, so no dishes either
+        dishesData = [];
         if (!backgroundRefresh) {
-          setPopularRestaurants(restaurantsData);
+          setPopularDishes([]);
         }
       }
 
@@ -217,7 +227,6 @@ export default function HomePage() {
         setCachedDishes(dishesData, location);
         setCachedRestaurants(restaurantsData, location);
       }
-      
     } catch (e) {
       console.error(e);
       if (!backgroundRefresh) {
@@ -413,6 +422,23 @@ export default function HomePage() {
         resetSignal={headerResetSignal}
       />
 
+      {/* Curved Marquee for Offers
+      <div className="relative -mt-4">
+        <CurvedMarquee 
+          messages={[
+            '🎉 50% OFF on your first order!',
+            '🚚 Free delivery on orders above ₹299',
+            '⚡ 20 min delivery guaranteed',
+            '💸 Get ₹100 cashback on weekend orders',
+            '🔥 Hot deals this weekend only!',
+            '🍕 Pizza starting at just ₹199',
+            '🎁 Special offers for new users'
+          ]}
+          speed={25}
+          className=""
+        />
+      </div> */}
+
       {/* Pull-to-refresh indicator */}
       {/* {isPullRefreshing && (
         <div className="fixed top-20 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/80 px-4 py-2 text-white">
@@ -470,8 +496,29 @@ export default function HomePage() {
                     />
                   ))}
                   {dishResults.length === 0 && (
-                    <div className="col-span-2 text-sm text-gray-500">
-                      No dishes matched.
+                    <div className="col-span-2 flex flex-col items-center justify-center py-8 text-center">
+                      <div className="mb-3 rounded-full bg-gray-100 p-3">
+                        <svg
+                          className="h-8 w-8 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="mb-1 text-base font-medium text-gray-900">
+                        No dishes found
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Try searching for different foods or check your
+                        spelling.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -504,8 +551,29 @@ export default function HomePage() {
                     />
                   ))}
                   {restaurantResults.length === 0 && (
-                    <div className="text-sm text-gray-500">
-                      No restaurants matched.
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="mb-3 rounded-full bg-gray-100 p-3">
+                        <svg
+                          className="h-8 w-8 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="mb-1 text-base font-medium text-gray-900">
+                        No restaurants found
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Try searching for different restaurant names or
+                        cuisines.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -516,13 +584,18 @@ export default function HomePage() {
           <>
             {/* Popular foods */}
             <div className="">
-              <div className="mb-3 flex items-center justify-end">
+              <div className="relative mb-3 flex items-center justify-end">
                 <h2
-                  className={`${brandFont.className} font-brand z-20 text-[70px] font-semibold`}
+                  className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
                   style={{ letterSpacing: '-0.08em' }}
                 >
                   Popular foods
                   <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
+                  {/* Background image */}
+                  <span
+                    className="absolute inset-0 -z-10 ml-24 mt-7 bg-contain bg-center bg-no-repeat"
+                    style={{ backgroundImage: "url('/highlighter.png')" }}
+                  />
                 </h2>
               </div>
 
@@ -535,22 +608,58 @@ export default function HomePage() {
                       className="h-48 animate-pulse rounded-2xl bg-gray-100"
                     />
                   ))}
-                {popularDishes.map((dish) => (
-                  <HomeProductCard
-                    key={dish.id}
-                    dish={dish as Dish}
-                    onAdd={handleAdd}
-                    onClick={openProduct}
-                    restaurantContext={
-                      (dish as Dish).restaurantId
-                        ? {
-                            id: (dish as Dish).restaurantId!,
-                            name: (dish as Dish).restaurant,
+                {popularDishes.length > 0
+                  ? popularDishes.map((dish) => (
+                      <HomeProductCard
+                        key={dish.id}
+                        dish={dish as Dish}
+                        onAdd={handleAdd}
+                        onClick={openProduct}
+                        restaurantContext={
+                          (dish as Dish).restaurantId
+                            ? {
+                                id: (dish as Dish).restaurantId!,
+                                name: (dish as Dish).restaurant,
+                              }
+                            : undefined
+                        }
+                      />
+                    ))
+                  : !popularLoading && (
+                      <div className="col-span-2 flex flex-col items-center justify-center py-12 text-center">
+                        <div className="mb-4 rounded-full bg-gray-100 p-4">
+                          <svg
+                            className="h-12 w-12 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 5.477 9.246 5 7.5 5s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                            />
+                          </svg>
+                        </div>
+                        <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                          No popular dishes available
+                        </h3>
+                        <p className="mb-4 max-w-sm text-sm text-gray-600">
+                          We couldn't find any popular dishes in your area. Try
+                          searching for specific foods or updating your
+                          location.
+                        </p>
+                        <button
+                          onClick={() =>
+                            router.push('/onboarding/location?reselect=1')
                           }
-                        : undefined
-                    }
-                  />
-                ))}
+                          className="rounded-full bg-black px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                        >
+                          Update Location
+                        </button>
+                      </div>
+                    )}
               </div>
             </div>
 
@@ -563,9 +672,13 @@ export default function HomePage() {
                 >
                   Restaurants
                   <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
+                  <span
+                    className="absolute inset-0 -z-10 ml-24 mt-7 bg-contain bg-center bg-no-repeat"
+                    style={{ backgroundImage: "url('/highlighter.png')" }}
+                  />
                 </h2>
               </div>
-              {popularLoading && popularRestaurants.length === 0 ? (
+              {popularLoading ? (
                 <div className="space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <div
@@ -574,16 +687,48 @@ export default function HomePage() {
                     />
                   ))}
                 </div>
+              ) : popularRestaurants.length > 0 ? (
+                popularRestaurants.map((r) => (
+                  <RestaurantCard
+                    key={r.id}
+                    restaurant={r}
+                    href={`/restaurants/${r.id}`}
+                  />
+                ))
               ) : (
-                <>
-                  {popularRestaurants.map((r) => (
-                    <RestaurantCard
-                      key={r.id}
-                      restaurant={r}
-                      href={`/restaurants/${r.id}`}
-                    />
-                  ))}
-                </>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="mb-4 rounded-full bg-gray-100 p-4">
+                    <svg
+                      className="h-12 w-12 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                    No restaurants available in your location
+                  </h3>
+                  <p className="mb-4 max-w-sm text-sm text-gray-600">
+                    We couldn't find any restaurants within 5km of your current
+                    location. Try updating your location or expanding your
+                    search radius.
+                  </p>
+                  <button
+                    onClick={() =>
+                      router.push('/onboarding/location?reselect=1')
+                    }
+                    className="rounded-full bg-black px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                  >
+                    Update Location
+                  </button>
+                </div>
               )}
             </div>
           </>

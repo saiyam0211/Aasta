@@ -65,8 +65,8 @@ export default function LocationOnboarding() {
   return (
     <div className="pt-safe pb-safe flex min-h-screen w-full flex-col items-center bg-[#f0f9e8]">
       <div className="w-full max-w-md px-6 pt-6">
-        <div className="rounded-3xl bg-gradient-to-b from-[#d1f86a] to-[#b6ec54] p-6 shadow-xl">
-          <div className="glass-liquid inline-block rounded-2xl bg-white/60 px-4 py-2 text-sm font-semibold text-[#002a01]">
+        <div className="rounded-3xl bg-[#002a01] p-6 shadow-xl">
+          <div className="inline-block rounded-2xl border border-[#002a01] bg-[#002a01]/30 bg-white/60 px-4 py-2 text-sm font-semibold text-[#002a01] backdrop-blur-sm">
             Location
           </div>
           <div className="mt-2">
@@ -74,22 +74,22 @@ export default function LocationOnboarding() {
               animationData={locationAnim as any}
               loop
               autoplay
-              style={{ width: '100%', height: 260 }}
+              style={{ width: '100%', height: 500 }}
             />
           </div>
-          <h1 className="mt-2 text-3xl font-extrabold text-[#002a01]">
-            Location is Important
+          <h1 className="text-4xl font-extrabold text-[#fff]">
+            Where should we deliver the hacks?
           </h1>
-          <p className="mt-2 text-[#053a03]/80">
-            Pick-ups and delivery estimates get faster and more accurate when we
-            know where you are.
+          <p className="mt-4 text-lg text-[#fff]/80">
+            Your location helps us serve fresh meals, hot deals, and quick
+            deliveries — right to you.
           </p>
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
           <div className="mt-6 space-y-3">
             <button
               onClick={requestLocation}
               disabled={isRequesting}
-              className="w-full rounded-full bg-[#00a651] py-4 font-semibold text-white shadow-md active:scale-[0.99]"
+              className="w-full rounded-3xl bg-[#dcf874] py-7 text-xl font-semibold text-black shadow-md active:scale-[0.99]"
             >
               {isRequesting ? 'Requesting…' : 'Allow Location'}
             </button>

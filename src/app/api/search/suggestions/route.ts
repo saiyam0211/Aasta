@@ -33,6 +33,9 @@ export async function GET(request: NextRequest) {
       prisma.menuItem.findMany({
         where: {
           available: true,
+          restaurant: {
+            status: 'ACTIVE',
+          },
           OR: [
             { name: { contains: q, mode: 'insensitive' } },
             { description: { contains: q, mode: 'insensitive' } },

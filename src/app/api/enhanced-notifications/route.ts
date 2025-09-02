@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { enhancedNotificationService, type NotificationData, type ScheduledNotification } from '@/lib/enhanced-notification-service';
+import {
+  enhancedNotificationService,
+  type NotificationData,
+  type ScheduledNotification,
+} from '@/lib/enhanced-notification-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,64 +16,88 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { 
-      type, 
-      userIds, 
-      notification, 
+    const {
+      type,
+      userIds,
+      notification,
       scheduledFor,
       orderNumber,
       orderStatus,
       restaurantName,
       totalAmount,
-      estimatedDeliveryTime
+      estimatedDeliveryTime,
     } = body;
 
     switch (type) {
       case 'SEND_TO_USER':
         if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-          return NextResponse.json({ error: 'User IDs required' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'User IDs required' },
+            { status: 400 }
+          );
         }
-        
-        const result = await enhancedNotificationService.sendToUsers(userIds, notification);
+
+        const result = await enhancedNotificationService.sendToUsers(
+          userIds,
+          notification
+        );
         return NextResponse.json({ success: true, result });
 
       case 'SEND_TO_ALL':
-        const allResult = await enhancedNotificationService.sendToAllPWAUsers(notification);
+        const allResult =
+          await enhancedNotificationService.sendToAllPWAUsers(notification);
         return NextResponse.json({ success: true, result: allResult });
 
       case 'ORDER_STATUS_UPDATE':
         if (!userIds?.[0] || !orderNumber || !orderStatus || !restaurantName) {
-          return NextResponse.json({ error: 'Missing required fields for order status update' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'Missing required fields for order status update' },
+            { status: 400 }
+          );
         }
-        
-        const statusResult = await enhancedNotificationService.sendOrderStatusUpdate(
-          userIds[0],
-          orderNumber,
-          orderStatus,
-          restaurantName,
-          estimatedDeliveryTime
-        );
+
+        const statusResult =
+          await enhancedNotificationService.sendOrderStatusUpdate(
+            userIds[0],
+            orderNumber,
+            orderStatus,
+            restaurantName,
+            estimatedDeliveryTime
+          );
         return NextResponse.json({ success: statusResult });
 
       case 'ORDER_CONFIRMATION':
-        if (!userIds?.[0] || !orderNumber || !restaurantName || !totalAmount || !estimatedDeliveryTime) {
-          return NextResponse.json({ error: 'Missing required fields for order confirmation' }, { status: 400 });
+        if (
+          !userIds?.[0] ||
+          !orderNumber ||
+          !restaurantName ||
+          !totalAmount ||
+          !estimatedDeliveryTime
+        ) {
+          return NextResponse.json(
+            { error: 'Missing required fields for order confirmation' },
+            { status: 400 }
+          );
         }
-        
-        const confirmationResult = await enhancedNotificationService.sendOrderConfirmation(
-          userIds[0],
-          orderNumber,
-          restaurantName,
-          totalAmount,
-          estimatedDeliveryTime
-        );
+
+        const confirmationResult =
+          await enhancedNotificationService.sendOrderConfirmation(
+            userIds[0],
+            orderNumber,
+            restaurantName,
+            totalAmount,
+            estimatedDeliveryTime
+          );
         return NextResponse.json({ success: confirmationResult });
 
       case 'SCHEDULE':
         if (!scheduledFor || !notification) {
-          return NextResponse.json({ error: 'Scheduled time and notification required' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'Scheduled time and notification required' },
+            { status: 400 }
+          );
         }
-        
+
         const scheduledNotification: ScheduledNotification = {
           id: '',
           title: notification.title,
@@ -80,12 +108,18 @@ export async function POST(request: NextRequest) {
           data: notification.data,
           type: 'SCHEDULED',
         };
-        
-        const scheduledId = await enhancedNotificationService.scheduleNotification(scheduledNotification);
+
+        const scheduledId =
+          await enhancedNotificationService.scheduleNotification(
+            scheduledNotification
+          );
         return NextResponse.json({ success: true, scheduledId });
 
       default:
-        return NextResponse.json({ error: 'Invalid notification type' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Invalid notification type' },
+          { status: 400 }
+        );
     }
   } catch (error) {
     console.error('Error in enhanced notifications API:', error);
@@ -114,7 +148,10 @@ export async function GET(request: NextRequest) {
 
       case 'process-scheduled':
         await enhancedNotificationService.processScheduledNotifications();
-        return NextResponse.json({ success: true, message: 'Scheduled notifications processed' });
+        return NextResponse.json({
+          success: true,
+          message: 'Scheduled notifications processed',
+        });
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

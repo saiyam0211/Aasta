@@ -210,7 +210,7 @@ export default function Notifications() {
     <OperationsLayout type="restaurant">
       <div className="mx-auto max-w-2xl">
         <NotificationNav />
-        
+
         <div className="mb-8">
           <h1 className="flex items-center gap-3 text-3xl font-bold text-[#002a01]">
             <Bell className="h-8 w-8" />

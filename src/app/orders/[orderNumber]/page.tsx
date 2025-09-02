@@ -40,9 +40,13 @@ import pickupAnim from '../../../../public/lotties/pickup.json';
 import deliveryAnim from '../../../../public/lotties/delivery.json';
 import deliveredAnim from '../../../../public/lotties/delivered.json';
 
-function formatEta(iso: string | null, orderStatus?: string, estimatedDeliveryDuration?: number): string | null {
+function formatEta(
+  iso: string | null,
+  orderStatus?: string,
+  estimatedDeliveryDuration?: number
+): string | null {
   if (!iso) return null;
-  
+
   // If order is out for delivery and we have estimated delivery duration, use that + 4 mins
   if (orderStatus === 'OUT_FOR_DELIVERY' && estimatedDeliveryDuration) {
     const totalMins = estimatedDeliveryDuration + 4;
@@ -54,7 +58,7 @@ function formatEta(iso: string | null, orderStatus?: string, estimatedDeliveryDu
     });
     return `${totalMins} mins • ~${timeStr}`;
   }
-  
+
   // Default calculation for other statuses
   const target = new Date(iso);
   const now = new Date();
@@ -194,13 +198,14 @@ export default function OrderTrackingPage() {
   useEffect(() => {
     // Clear cart when order page loads (after successful order placement)
     // Only clear if we're coming from a successful order (check URL params)
-    const isFromOrderSuccess = searchParams.get('success') === 'true' || 
-                              searchParams.get('payment') === 'success' ||
-                              !searchParams.get('from'); // If no 'from' param, assume it's a fresh order
+    const isFromOrderSuccess =
+      searchParams.get('success') === 'true' ||
+      searchParams.get('payment') === 'success' ||
+      !searchParams.get('from'); // If no 'from' param, assume it's a fresh order
     if (isFromOrderSuccess) {
       clearCart();
     }
-    
+
     // Ensure socket connected and authenticated so we join user_* room
     const token = session?.user?.id || '';
     if (token && typeof token === 'string') {
@@ -277,15 +282,19 @@ export default function OrderTrackingPage() {
   const fetchOrder = async () => {
     try {
       setIsLoading(true);
-      const orderNumber = decodeURIComponent(Array.isArray(params?.orderNumber) ? params.orderNumber[0] : params?.orderNumber || '');
+      const orderNumber = decodeURIComponent(
+        Array.isArray(params?.orderNumber)
+          ? params.orderNumber[0]
+          : params?.orderNumber || ''
+      );
       console.log('Fetching order:', orderNumber);
       console.log('Order number type:', typeof orderNumber);
       console.log('Session user ID:', session?.user?.id);
-      
+
       const response = await fetch(`/api/orders/${orderNumber}`);
       console.log('Response status:', response.status);
       console.log('Response ok:', response.ok);
-      
+
       const data = await response.json();
       console.log('Order API response:', data);
 
@@ -417,13 +426,18 @@ export default function OrderTrackingPage() {
   // Reactive ETA calculation that updates automatically
   const currentEta = useMemo(() => {
     if (!order) return null;
-    
+
     return formatEta(
       order.estimatedDeliveryTime,
       order.status,
       (order as any).estimatedDeliveryDuration
     );
-  }, [order?.status, order?.estimatedDeliveryTime, (order as any)?.estimatedDeliveryDuration, currentTime]);
+  }, [
+    order?.status,
+    order?.estimatedDeliveryTime,
+    (order as any)?.estimatedDeliveryDuration,
+    currentTime,
+  ]);
 
   // Timer to update ETA every minute for OUT_FOR_DELIVERY status
   useEffect(() => {
@@ -431,7 +445,7 @@ export default function OrderTrackingPage() {
       const interval = setInterval(() => {
         setCurrentTime(new Date());
       }, 60000); // Update every minute
-      
+
       return () => clearInterval(interval);
     }
   }, [order?.status]);
@@ -588,19 +602,19 @@ export default function OrderTrackingPage() {
                 >
                   Order #{order.orderNumber}
                 </h1> */}
-                                  {order.deliveryFee > 0 ? (
-                    <div className="flex w-full items-center justify-between rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900">
-                      <div className="flex">
-                        <Clock className="mr-2 h-4 w-4" /> ETA{' '}
-                        {currentEta || 'Soon'}
-                      </div>
-                      <div>
-                        <Badge className={`bg-yellow-50 px-3 py-1`}>
-                          OTP: {order.verificationCode}
-                        </Badge>
-                      </div>
+                {order.deliveryFee > 0 ? (
+                  <div className="flex w-full items-center justify-between rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900">
+                    <div className="flex">
+                      <Clock className="mr-2 h-4 w-4" /> ETA{' '}
+                      {currentEta || 'Soon'}
                     </div>
-                  ) : (
+                    <div>
+                      <Badge className={`bg-yellow-50 px-3 py-1`}>
+                        OTP: {order.verificationCode}
+                      </Badge>
+                    </div>
+                  </div>
+                ) : (
                   <div className="flex w-full items-center justify-between rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900">
                     <div className="flex">
                       <ChefHat className="mr-2 h-4 w-4" /> Avg prep time{' '}
@@ -740,97 +754,90 @@ export default function OrderTrackingPage() {
           </div>
         )}
 
-        
-
         <div className="grid grid-cols-1 gap-8 px-4 lg:grid-cols-3">
-
-        {isCompleted && (
-              <div className="px-4 pt-6">
-                <div className="relative">
-                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#002a01] via-[#002a01]/95 to-[#002a01]"></div>
-                  <div className="relative rounded-3xl border border-[#fcfefe]/15 p-6 text-center text-[#fcfefe]">
-                    {order.reviewSubmitted || hasSubmittedReview ? (
-                      <div className="space-y-3">
-                        <h3 className="text-xl font-bold">Thank you! 💚</h3>
-                        <p className="text-sm text-[#fcfefe]/85">
-                          {thankQuote}
-                        </p>
-                        <div className="mt-3 flex items-center justify-center gap-3">
-                          <Button
-                            onClick={() => router.push('/')}
-                            className="rounded-xl bg-[#d1f86a] text-[#002a01]"
-                          >
-                            Explore more
-                          </Button>
-                          {/* <Button variant="outline" onClick={() => router.push('/customer/orders')} className="rounded-xl border-[#fcfefe]/30 text-[#fcfefe]">
+          {isCompleted && (
+            <div className="px-4 pt-6">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-[#002a01] via-[#002a01]/95 to-[#002a01]"></div>
+                <div className="relative rounded-3xl border border-[#fcfefe]/15 p-6 text-center text-[#fcfefe]">
+                  {order.reviewSubmitted || hasSubmittedReview ? (
+                    <div className="space-y-3">
+                      <h3 className="text-xl font-bold">Thank you! 💚</h3>
+                      <p className="text-sm text-[#fcfefe]/85">{thankQuote}</p>
+                      <div className="mt-3 flex items-center justify-center gap-3">
+                        <Button
+                          onClick={() => router.push('/')}
+                          className="rounded-xl bg-[#d1f86a] text-[#002a01]"
+                        >
+                          Explore more
+                        </Button>
+                        {/* <Button variant="outline" onClick={() => router.push('/customer/orders')} className="rounded-xl border-[#fcfefe]/30 text-[#fcfefe]">
                         View my orders
                       </Button> */}
-                        </div>
                       </div>
-                    ) : (
-                      <>
-                        <h3 className="mb-1 text-xl font-bold">
-                          Enjoy your meal!
-                        </h3>
-                        <p className="mb-4 text-sm text-[#fcfefe]/80">
-                          We’d love your feedback
-                        </p>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="mb-1 text-xl font-bold">
+                        Enjoy your meal!
+                      </h3>
+                      <p className="mb-4 text-sm text-[#fcfefe]/80">
+                        We’d love your feedback
+                      </p>
 
-                        {order.orderType === 'DELIVERY' ? (
-                          <div className="mb-4 flex flex-col items-center justify-center">
-                            <p className="mb-2 text-sm">
-                              Rate your delivery partner experience
-                            </p>
-                            <RatingStars
-                              value={deliveryRating}
-                              onChange={setDeliveryRating}
-                            />
-                          </div>
-                        ) : (
-                          <div className="mb-4 flex flex-col items-center justify-center">
-                            <p className="mb-2 text-sm">
-                              Rate your pickup experience
-                            </p>
-                            <RatingStars
-                              value={restaurantRating}
-                              onChange={setRestaurantRating}
-                            />
-                          </div>
-                        )}
-
+                      {order.orderType === 'DELIVERY' ? (
                         <div className="mb-4 flex flex-col items-center justify-center">
                           <p className="mb-2 text-sm">
-                            How's the food quality?
+                            Rate your delivery partner experience
                           </p>
                           <RatingStars
-                            value={mealRating}
-                            onChange={setMealRating}
+                            value={deliveryRating}
+                            onChange={setDeliveryRating}
                           />
                         </div>
-
-                        <div className="mb-6 flex flex-col items-center justify-center">
+                      ) : (
+                        <div className="mb-4 flex flex-col items-center justify-center">
                           <p className="mb-2 text-sm">
-                            How's your overall experience with Aasta?
+                            Rate your pickup experience
                           </p>
                           <RatingStars
-                            value={aastaRating}
-                            onChange={setAastaRating}
+                            value={restaurantRating}
+                            onChange={setRestaurantRating}
                           />
                         </div>
+                      )}
 
-                        <Button
-                          className="h-10 w-full rounded-xl bg-[#d1f86a] text-[#002a01]"
-                          disabled={submittingReview}
-                          onClick={submitReview}
-                        >
-                          {submittingReview ? 'Submitting…' : 'Submit review'}
-                        </Button>
-                      </>
-                    )}
-                  </div>
+                      <div className="mb-4 flex flex-col items-center justify-center">
+                        <p className="mb-2 text-sm">How's the food quality?</p>
+                        <RatingStars
+                          value={mealRating}
+                          onChange={setMealRating}
+                        />
+                      </div>
+
+                      <div className="mb-6 flex flex-col items-center justify-center">
+                        <p className="mb-2 text-sm">
+                          How's your overall experience with Aasta?
+                        </p>
+                        <RatingStars
+                          value={aastaRating}
+                          onChange={setAastaRating}
+                        />
+                      </div>
+
+                      <Button
+                        className="h-10 w-full rounded-xl bg-[#d1f86a] text-[#002a01]"
+                        disabled={submittingReview}
+                        onClick={submitReview}
+                      >
+                        {submittingReview ? 'Submitting…' : 'Submit review'}
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
+          )}
           {/* Order Status & Timeline */}
           <div className="space-y-6 lg:col-span-2">
             <Card className="rounded-3xl border border-gray-100 shadow-sm">

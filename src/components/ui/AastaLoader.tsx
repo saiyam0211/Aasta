@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useEffect, useRef } from 'react';
 import Lottie from 'lottie-react';
@@ -31,7 +31,10 @@ export function AastaLoader({
         const totalFrames = anim?.getDuration?.(true) || 0; // frames
         if (totalSeconds > 0 && totalFrames > 0) {
           const framesPerSecond = totalFrames / totalSeconds;
-          const endFrame = Math.max(1, Math.floor(framesPerSecond * segmentSeconds));
+          const endFrame = Math.max(
+            1,
+            Math.floor(framesPerSecond * segmentSeconds)
+          );
           anim.playSegments([0, endFrame], true);
         } else {
           anim.goToAndPlay?.(0, true);

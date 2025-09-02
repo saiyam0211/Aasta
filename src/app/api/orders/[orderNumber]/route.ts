@@ -89,7 +89,7 @@ export async function GET(
         } else if (item.price) {
           total = Number(item.price) * Number(item.quantity);
         }
-        
+
         const itemTotal = Number(total || 0);
         console.log('Item calculation:', {
           itemName: item.menuItem?.name,
@@ -97,20 +97,20 @@ export async function GET(
           price: item.price,
           quantity: item.quantity,
           totalPrice: item.totalPrice,
-          calculatedTotal: itemTotal
+          calculatedTotal: itemTotal,
         });
         return sum + itemTotal;
       },
       0
     );
     const savings = Math.max(0, Math.round(itemsTotalOriginal - itemsTotal));
-    
+
     // Calculate proper totals
     const subtotal = itemsTotal;
     const taxes = (order as any).taxes || 0;
     const deliveryFee = (order as any).deliveryFee || 0;
     const total = subtotal + taxes + deliveryFee;
-    
+
     console.log('Order calculation debug:', {
       orderNumber: order.orderNumber,
       itemsTotal,
@@ -120,9 +120,9 @@ export async function GET(
       deliveryFee,
       total,
       totalAmount: (order as any).totalAmount,
-      orderItems: (order as any).orderItems.length
+      orderItems: (order as any).orderItems.length,
     });
-    
+
     const transformedOrder = {
       id: order.id,
       orderNumber: order.orderNumber,
@@ -148,7 +148,7 @@ export async function GET(
         } else if (item.price && item.quantity) {
           itemTotal = Number(item.price) * Number(item.quantity);
         }
-        
+
         return {
           id: item.id,
           menuItemId: item.menuItemId,

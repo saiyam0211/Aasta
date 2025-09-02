@@ -30,7 +30,7 @@ export function usePullToRefresh({
       if (element.scrollTop === 0 && !isRefreshing.current) {
         currentY.current = e.touches[0].clientY;
         const pullDistance = currentY.current - startY.current;
-        
+
         if (pullDistance > 0) {
           e.preventDefault();
           const pullRatio = Math.min(pullDistance / resistance, threshold);
@@ -42,11 +42,11 @@ export function usePullToRefresh({
     const handleTouchEnd = async (e: TouchEvent) => {
       if (element.scrollTop === 0 && !isRefreshing.current) {
         const pullDistance = currentY.current - startY.current;
-        
+
         if (pullDistance > threshold) {
           isRefreshing.current = true;
           element.style.transform = 'translateY(0px)';
-          
+
           try {
             await onRefresh();
           } finally {
@@ -58,7 +58,9 @@ export function usePullToRefresh({
       }
     };
 
-    element.addEventListener('touchstart', handleTouchStart, { passive: false });
+    element.addEventListener('touchstart', handleTouchStart, {
+      passive: false,
+    });
     element.addEventListener('touchmove', handleTouchMove, { passive: false });
     element.addEventListener('touchend', handleTouchEnd, { passive: false });
 
