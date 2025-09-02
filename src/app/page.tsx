@@ -643,12 +643,10 @@ export default function HomePage() {
                           </svg>
                         </div>
                         <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                          No popular dishes available
+                        No trending FoodHacks here (yet).
                         </h3>
                         <p className="mb-4 max-w-sm text-sm text-gray-600">
-                          We couldn't find any popular dishes in your area. Try
-                          searching for specific foods or updating your
-                          location.
+                        Couldn’t spot any popular Food Hack nearby. Try searching for your favorites or update your location for more options.
                         </p>
                         <button
                           onClick={() =>
@@ -713,12 +711,10 @@ export default function HomePage() {
                     </svg>
                   </div>
                   <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                    No restaurants available in your location
+                  No kitchens around you.
                   </h3>
                   <p className="mb-4 max-w-sm text-sm text-gray-600">
-                    We couldn't find any restaurants within 5km of your current
-                    location. Try updating your location or expanding your
-                    search radius.
+                  We couldn’t find any restaurants within 5 km. Try updating your location to explore more.
                   </p>
                   <button
                     onClick={() =>
