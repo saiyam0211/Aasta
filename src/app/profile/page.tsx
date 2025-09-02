@@ -315,11 +315,10 @@ export default function ProfilePage() {
                 <Package className="h-12 w-12 text-[#002a01]" />
               </div>
               <h3 className="mb-3 text-2xl font-bold text-gray-900">
-                No orders yet
+              Your plate’s still empty.
               </h3>
               <p className="mx-auto mb-8 max-w-md text-gray-600">
-                Start ordering delicious food to see your order history here.
-                Your first order will appear right here!
+              Time to fill it up! Place your first order and watch your history grow.
               </p>
               <Button
                 onClick={() => router.push('/')}
