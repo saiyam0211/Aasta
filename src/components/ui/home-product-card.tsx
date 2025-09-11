@@ -120,8 +120,8 @@ export function HomeProductCard({
     <div
       className={cn(
         'cursor-pointer rounded-2xl border border-gray-100 bg-white p-3 shadow-xs transition-transform duration-150',
-        'scale-100 hover:scale-120', // keep hover effect
-        clicked && 'scale-105', // add click effect
+        // 'scale-100 hover:scale-120', // keep hover effect
+        // clicked && 'scale-105', // add click effect
         className
       )}
       onClick={handleCardClick}
