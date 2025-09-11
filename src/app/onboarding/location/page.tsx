@@ -81,8 +81,8 @@ export default function LocationOnboarding() {
             Where should we deliver the hacks?
           </h1>
           <p className="mt-4 text-lg text-[#fff]/80">
-            Your location helps us serve fresh meals, hot deals, and quick
-            deliveries — right to you.
+            Your location helps us serve meals, hot deals, and quick deliveries
+            — right to you.
           </p>
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
           <div className="mt-6 space-y-3">

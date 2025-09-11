@@ -15,9 +15,9 @@ interface FoodHacksPromoProps {
 export function FoodHacksPromo({ className = '' }: FoodHacksPromoProps) {
   return (
     <div
-      className={`border-gradient-to-br bg-[#002a01] rounded-tl-[1000px] pl-10 ml-10 rounded-tr-[650px] rounded-bl-[400px] from-green-50 to-emerald-50 px-6 pt-6 ${className}`}
+      className={`border-gradient-to-br ml-10 rounded-tl-[1000px] rounded-tr-[650px] rounded-bl-[0px] bg-[#002a01] from-green-50 to-emerald-50 px-6 pt-6 pl-10 ${className}`}
     >
-      <div className="flex  flex-col items-center justify-between">
+      <div className="flex flex-col items-center justify-between">
         {/* Left side with Lottie animation */}
         <div className="flex-shrink-0">
           <div className="h-24 w-24">
@@ -30,7 +30,7 @@ export function FoodHacksPromo({ className = '' }: FoodHacksPromoProps) {
         </div>
 
         {/* Center content */}
-        <div className="ml-4 pb-8 flex-1">
+        <div className="ml-4 flex-1 pb-8">
           <h3
             className={`${fredoka.className} mt-5 mb-3 text-5xl font-bold text-gray-50`}
           >

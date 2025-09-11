@@ -6,6 +6,7 @@ import {
   User,
   SlidersHorizontal,
   Search,
+  CircleUserRound,
   TrendingUp,
   History,
   RefreshCw,
@@ -13,6 +14,10 @@ import {
 import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { Fredoka } from 'next/font/google';
+
+// Import Fredoka font
+const fredoka = Fredoka({ subsets: ['latin'], weight: ['400', '700'] });
 
 interface HomeHeaderProps {
   locationLabel: string;
@@ -42,6 +47,7 @@ export function HomeHeader({
   resetSignal,
 }: HomeHeaderProps) {
   const [query, setQuery] = useState('');
+  const [vegOnly, setVegOnly] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -92,11 +98,12 @@ export function HomeHeader({
 
   const shortLocation = useMemo(() => {
     if (!locationLabel) return '';
-    const firstPart = locationLabel.split(',')[0]?.trim() || locationLabel;
-    const maxLen = 24;
-    return firstPart.length > maxLen
-      ? firstPart.slice(0, maxLen) + '...'
-      : firstPart;
+    // For saved addresses, show the full formatted address (houseNumber, locality, street)
+    // For live location, show the full address but truncate if too long
+    const maxLen = 28;
+    return locationLabel.length > maxLen
+      ? locationLabel.slice(0, maxLen) + '...'
+      : locationLabel;
   }, [locationLabel]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -146,7 +153,11 @@ export function HomeHeader({
     const t = setTimeout(async () => {
       try {
         setSuggestionsLoading(true);
-        const params = new URLSearchParams({ q: trimmed, limit: '5' });
+        const params = new URLSearchParams({
+          q: trimmed,
+          limit: '5',
+          veg: vegOnly ? '1' : '0',
+        });
         const res = await fetch(`/api/search/suggestions?${params}`, {
           signal: controller.signal,
         });
@@ -171,7 +182,7 @@ export function HomeHeader({
     }, 200);
 
     return () => clearTimeout(t);
-  }, [query]);
+  }, [query, vegOnly]);
 
   // Outside click to close
   useEffect(() => {
@@ -256,25 +267,31 @@ export function HomeHeader({
     <div
       ref={containerRef}
       className={cn(
-        'z-10 mr-5 w-[93%] rounded-tr-[300px] rounded-br-[1000px] bg-[#002a01] p-5 pt-6 text-white',
+        // 'z-10 mr-5 w-[100%] rounded-tr-[100px] rounded-br-[1000px] bg-[#d3fb6b] p-5 pt-6 text-white',
+        'z-10 mr-5 w-[100%] bg-[#d3fb6b] p-3 pt-6 text-white',
+        "bg-[url('/spotlight.svg')] bg-cover bg-center bg-no-repeat",
         className
       )}
     >
-      <div className="absolute top-[16.625rem] left-0 z-12 h-20 w-24 rounded-tl-[200px] bg-white shadow-none"></div>
-      <div className="absolute top-[16.59377rem] left-0 z-10 h-18 w-20 bg-[#002a01]"></div>
+      {/* <div className="absolute top-[17.600rem] left-0 z-12 h-16 w-24 rounded-tl-[100px] bg-white shadow-none"></div>
+      <div className="absolute top-[17.500rem] left-0 z-10 h-14 w-20 bg-[#d3fb6b]"></div>
+
+      <div className="absolute top-[17.600rem] right-0 z-12 h-16 w-24 rounded-tr-[100px] bg-white shadow-none"></div>
+      <div className="absolute top-[17.500rem] right-0 z-10 h-14 w-20 bg-[#d3fb6b]"></div> */}
+
       {/* Top row: location + actions */}
       <div className="mb-5 flex items-center justify-between">
         <button
           type="button"
           onClick={onLocationClick}
-          className="flex items-center gap-2 rounded-full border border-[#002a01] bg-[#002a01]/5 bg-white/30 px-3 py-2 backdrop-blur-sm"
+          className="flex items-center gap-2 rounded-full border border-[#d3fb6b] bg-[#002a01]/5 bg-white/30 px-3 py-2 backdrop-blur-sm"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[#002a01]/50 bg-black/10 bg-white/40 backdrop-blur-sm">
-            <MapPin className="h-4 w-4" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d3fb6b]/50 bg-white/20 backdrop-blur-sm">
+            <MapPin className="h-5 w-5 text-[#002a01]" />
           </div>
-          <div className="max-w-[180px] text-left">
-            <div className="text-xs text-gray-100">Location</div>
-            <div className="truncate text-sm font-medium text-white">
+          <div className="max-w-[300px] text-left">
+            {/* <div className="text-xs text-gray-100">Location</div> */}
+            <div className="text-md truncate font-medium text-[#002a01]">
               {shortLocation}...
             </div>
           </div>
@@ -302,21 +319,21 @@ export function HomeHeader({
           <button
             type="button"
             onClick={onProfileClick}
-            className="flex h-12 w-12 items-center justify-center rounded-full border border-[#002a01] bg-white/30 backdrop-blur-sm transition-colors"
+            className="flex h-12 w-12 items-center justify-center rounded-full border border-[#d3fb6b] bg-white/50 backdrop-blur-sm transition-colors"
           >
-            <User className="h-5 w-5" />
+            <CircleUserRound className="h-7 w-7 text-black font-normal" />
           </button>
         </div>
       </div>
 
       {/* Headline - Only show when NOT in search mode */}
-      {!isSearchMode && (
+      {/* {!isSearchMode && (
         <div className="mt-10 mb-4">
           <h1 className="text-[28px] leading-8 font-extrabold tracking-tight text-white">
-            Hey foodie, ready to hack today’s meal?
+          Foodie, it’s your turn to <br/>hack the menu.
           </h1>
         </div>
-      )}
+      )} */}
 
       {/* Search row - Add top margin when in search mode to replace headline space */}
       <form
@@ -324,14 +341,14 @@ export function HomeHeader({
         className={cn('flex items-center gap-2', isSearchMode && 'mt-10')}
       >
         <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-4 z-50 h-5 w-5 -translate-y-1/2 text-[#fff]" />
+          <Search className="absolute top-1/2 left-6 z-50 h-6 w-6 -translate-y-1/2 text-[#002a01]" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder={' '}
-            className="h-12 w-full rounded-full border border-[#002a01] bg-white/40 px-12 text-white backdrop-blur-sm outline-none placeholder:text-transparent"
+            className="h-16 w-full rounded-3xl border border-[#fff] bg-[#fff]/20 px-20 text-white backdrop-blur-sm outline-none placeholder:text-transparent"
             onFocus={() => {
               setSuggestionsOpen(true);
             }}
@@ -340,7 +357,7 @@ export function HomeHeader({
           {!query && (
             <span
               key={placeholderText}
-              className="placeholder-animate pointer-events-none absolute top-1/2 left-12 -translate-y-1/2 text-gray-50"
+              className="placeholder-animate pointer-events-none absolute top-1/2 left-16 -translate-y-1/2 text-lg text-[#002a01]"
             >
               {`Search "${placeholderText}".`}
             </span>
@@ -498,6 +515,26 @@ export function HomeHeader({
             </div>
           )}
         </div>
+        {/* Veg mode toggle */}
+        <div className="flex flex-col items-center gap-2 rounded-3xl">
+          <div className=" flex flex-col space-y-0">
+            <span className="text-center text-md font-black text-[#002a01]">
+              VEG
+            </span>
+            <span className="text-xs -mt-1 font-black text-[#002a01]"> MODE</span>
+          </div>
+          <label className="switch">
+            <input
+              className="toggle"
+              type="checkbox"
+              checked={vegOnly}
+              onChange={(e) => setVegOnly(e.target.checked)}
+              aria-label="Veg mode"
+            />
+            <span className="slider"></span>
+            <span className="card-side"></span>
+          </label>
+        </div>
         {/* <button
           type="button"
           onClick={onFilterClick}
@@ -507,6 +544,78 @@ export function HomeHeader({
           <SlidersHorizontal className="h-5 w-5 text-[#002a01]" />
         </button> */}
       </form>
+
+      <style jsx>{`
+        /* From Uiverse.io by andrew-demchenk0 */
+        .switch {
+          --input-focus: #d3fb6b;
+          --font-color: #323232;
+          --font-color-sub: #666;
+          --bg-color: #fff;
+          --bg-color-alt: #666;
+          --main-color: #002a01;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          gap: 30px;
+          width: 40px;
+          height: 20px;
+        }
+        .toggle {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+        .slider {
+          box-sizing: border-box;
+          border-radius: 5px;
+          border: 2px solid var(--main-color);
+          box-shadow: 3px 3px var(--main-color);
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: var(--bg-color);
+          transition: 0.3s;
+        }
+        .slider:before {
+          box-sizing: border-box;
+          position: absolute;
+          content: '';
+          height: 20px;
+          width: 15px;
+          border: 2px solid var(--main-color);
+          border-radius: 5px;
+          left: -2px;
+          bottom: 2px;
+          background-color: var(--bg-color);
+          box-shadow: 0 3px 0 var(--main-color);
+          transition: 0.3s;
+        }
+        .toggle:checked + .slider {
+          background-color: var(--input-focus);
+        }
+        .toggle:checked + .slider:before {
+          transform: translateX(30px);
+        }
+      `}</style>
+
+      {/* Headline - Only show when NOT in search mode */}
+      {!isSearchMode && (
+        <div className="mt-10 mb-4">
+          <h1
+            className={`${fredoka.className} text-center text-[34px] leading-8 font-extrabold tracking-tight text-[#002a01]`}
+            style={{ letterSpacing: '0.02em' }}
+          >
+            Foodie, it’s your turn to <br />
+            hack the menu.
+          </h1>
+        </div>
+      )}
     </div>
   );
 }

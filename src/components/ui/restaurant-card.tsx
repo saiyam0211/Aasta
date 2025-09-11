@@ -150,7 +150,7 @@ export function RestaurantCard({
   const content = (
     <div
       className={cn(
-        'w-full overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm',
+        'w-full overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-md',
         className
       )}
       onClick={() => onClick?.(restaurant.id)}
@@ -200,14 +200,14 @@ export function RestaurantCard({
       <div className="p-4">
         <div className="mb-2 flex items-start justify-between">
           <div>
-            <div className="line-clamp-1 text-base leading-5 font-semibold text-gray-900">
+            <div className="mb-2 line-clamp-1 text-2xl leading-5 font-semibold text-gray-900">
               {restaurant.name}
             </div>
-            {restaurant.cuisineTypes && restaurant.cuisineTypes.length > 0 && (
+            {/* {restaurant.cuisineTypes && restaurant.cuisineTypes.length > 0 && (
               <div className="mt-1 line-clamp-1 text-xs text-gray-500">
                 {restaurant.cuisineTypes.join(', ')}
               </div>
-            )}
+            )} */}
           </div>
         </div>
 

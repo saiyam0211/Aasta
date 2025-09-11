@@ -130,15 +130,21 @@ class GoogleMapsService {
               return;
             }
 
-            // Convert predictions to LocationWithAddress format
+            // Convert predictions to LocationWithAddress format (with place name)
             const locationPromises = predictions
               .slice(0, 5)
-              .map(async (prediction) => {
+              .map(async (prediction): Promise<LocationWithAddress | null> => {
                 try {
                   const location = await this.geocodePlaceId(
                     prediction.place_id!
                   );
-                  return location;
+                  if (!location) return null;
+                  // Attach human-friendly name from prediction
+                  const name: string | undefined =
+                    (prediction as any)?.structured_formatting?.main_text ||
+                    (prediction as any)?.terms?.[0]?.value ||
+                    undefined;
+                  return { ...location, name };
                 } catch (error) {
                   console.error('Error geocoding place:', error);
                   return null;
@@ -146,11 +152,10 @@ class GoogleMapsService {
               });
 
             const locations = await Promise.all(locationPromises);
-            resolve(
-              locations.filter(
-                (loc): loc is LocationWithAddress => loc !== null
-              )
+            const validLocations = locations.filter(
+              (loc): loc is LocationWithAddress => loc !== null
             );
+            resolve(validLocations);
           }
         );
       });

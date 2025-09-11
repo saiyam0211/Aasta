@@ -11,6 +11,8 @@ import {
   Building2,
   Check,
   Loader2,
+  Search,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocationStore } from '@/lib/store';
@@ -65,7 +67,7 @@ export default function AddressSheet({
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searching, setSearching] = React.useState(false);
   const [searchResults, setSearchResults] = React.useState<
-    { address: string; latitude: number; longitude: number }[]
+    { name?: string; address: string; latitude: number; longitude: number }[]
   >([]);
   const [selectedBySearch, setSelectedBySearch] = React.useState(false);
 
@@ -80,6 +82,7 @@ export default function AddressSheet({
         setSearching(true);
         const results = await locationService.getPlaceSuggestions(searchQuery);
         const mapped = (results || []).map((r) => ({
+          name: r.name,
           address: r.address,
           latitude: r.latitude,
           longitude: r.longitude,
@@ -94,20 +97,31 @@ export default function AddressSheet({
   }, [searchQuery]);
 
   const applySuggestion = (s: {
+    name?: string;
     address: string;
     latitude: number;
     longitude: number;
   }) => {
     // Set coordinates from search selection
-    useLocationStore.getState().setLocation({
+    useLocationStore.getState().setLocation({ latitude: s.latitude, longitude: s.longitude });
+    // Immediately select and close the sheet with a lightweight AddressRecord
+    onSelect({
+      id: 'search',
+      type: 'OTHER',
+      street: s.address,
+      city: null,
+      state: null,
+      zipCode: null,
       latitude: s.latitude,
       longitude: s.longitude,
-    });
-    // Optionally help-fill street
-    setForm((f) => ({ ...f, street: s.address }));
-    setSelectedBySearch(true);
-    setSearchResults([]);
-    setSearchQuery(s.address);
+      landmark: null,
+      instructions: null,
+      isDefault: false,
+      houseNumber: null,
+      locality: s.name || null, // put place name into locality for header title usage
+      contactPhone: null,
+    } as any);
+    onOpenChange(false);
   };
 
   const fetchAddresses = React.useCallback(async () => {
@@ -129,8 +143,56 @@ export default function AddressSheet({
     try {
       setLoading(true);
       await requestLocation();
+      const loc = useLocationStore.getState().currentLocation;
+      if (loc?.latitude && loc?.longitude) {
+        // Reverse geocode via API (Google Maps behind the scenes)
+        try {
+          const res = await fetch(
+            `/api/geocode/reverse?lat=${loc.latitude}&lng=${loc.longitude}`
+          );
+          const data = await res.json();
+          const formatted = data?.data?.address || 'Using live location';
+          // Notify parent using a lightweight AddressRecord shape
+          onSelect({
+            id: 'live',
+            type: 'OTHER',
+            street: formatted,
+            city: null,
+            state: null,
+            zipCode: null,
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+            landmark: null,
+            instructions: null,
+            isDefault: false,
+            houseNumber: null,
+            locality: null,
+            contactPhone: null,
+          } as any);
+        } catch {
+          // If reverse geocoding fails, still select live location
+          onSelect({
+            id: 'live',
+            type: 'OTHER',
+            street: 'Using live location',
+            city: null,
+            state: null,
+            zipCode: null,
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+            landmark: null,
+            instructions: null,
+            isDefault: false,
+            houseNumber: null,
+            locality: null,
+            contactPhone: null,
+          } as any);
+        }
+      }
     } finally {
       setLoading(false);
+      // Always close sheet after attempting to use live location
+      onOpenChange(false);
     }
   };
 
@@ -211,20 +273,86 @@ export default function AddressSheet({
 
             {mode === 'list' ? (
               <>
+                {/* Search field */}
+                <div className="mb-4">
+                  <div className="relative">
+                    <input
+                      className="w-full rounded-2xl border border-gray-200 bg-white px-12 py-3 text-[15px] text-gray-900 placeholder:text-gray-400"
+                      placeholder="Search for area, street name..."
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setSelectedBySearch(false);
+                      }}
+                    />
+                    <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                  </div>
+                  {searchResults.length > 0 && (
+                    <div className="mt-2 max-h-64 overflow-auto rounded-2xl border border-gray-200 bg-white shadow-lg">
+                      {searchResults.map((s, i) => (
+                        <div
+                          key={i}
+                          className="flex cursor-pointer items-start gap-3 px-3 py-3 hover:bg-gray-50"
+                          onClick={() => applySuggestion(s)}
+                        >
+                          <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                            <MapPin className="h-4 w-4 text-green-700" />
+                          </div>
+                          <div className="min-w-0">
+                            {s.name && (
+                              <div className="truncate text-[15px] font-semibold text-gray-900">
+                                {s.name}
+                              </div>
+                            )}
+                            <div className="truncate text-[13px] text-gray-600">
+                              {s.address}
+                            </div>
+                          </div>
+                          <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-gray-400" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Use current location */}
                 <button
-                  className="mb-4 flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-4 text-left"
+                  className="mb-3 flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-4 text-left"
+                  onClick={handleUseLiveLocation}
+                  disabled={loading}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                      <MapPin className="h-5 w-5 text-green-700" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-[15px] font-semibold text-gray-900">Use current location</p>
+                      {currentLocation && (
+                        <p className="text-xs text-gray-600">Live coordinates set</p>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                </button>
+
+                {/* Add new address */}
+                <button
+                  className="mb-3 flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-4 text-left"
                   onClick={() => setMode('form')}
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-                      <Plus className="h-5 w-5" />
+                      <Plus className="h-5 w-5 text-gray-700" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-medium">Add Address</p>
+                      <p className="text-[15px] font-semibold text-gray-900">Add new address</p>
                     </div>
                   </div>
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
                 </button>
 
+                {/* Saved addresses */}
+                <div className="mb-2 text-sm font-semibold text-gray-700">Your saved addresses</div>
                 {loading && (
                   <div className="text-sm text-gray-500">Loading...</div>
                 )}
@@ -233,15 +361,19 @@ export default function AddressSheet({
                     <button
                       key={a.id}
                       className={cn(
-                        'w-full rounded-xl border p-4 text-left',
+                        'w-full rounded-2xl border bg-white p-4 text-left',
                         a.isDefault ? 'border-green-400' : 'border-gray-200'
                       )}
                       onClick={() => {
                         useLocationStore.getState().setSelectedAddressId(a.id);
+                        // If saved address has coordinates, apply them to global location
+                        if (typeof a.latitude === 'number' && typeof a.longitude === 'number') {
+                          useLocationStore.getState().setLocation({ latitude: a.latitude!, longitude: a.longitude! });
+                        }
                         onSelect(a);
                       }}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
                           {a.type === 'WORK' ? (
                             <Building2 className="h-5 w-5 text-green-700" />
@@ -250,20 +382,17 @@ export default function AddressSheet({
                           )}
                         </div>
                         <div className="flex-1">
-                          <div className="text-sm font-medium text-gray-900">
-                            {a.type === 'WORK'
-                              ? 'Work'
-                              : a.type === 'HOME'
-                                ? 'Home'
-                                : 'Other'}
+                          <div className="mb-1 text-sm font-semibold text-gray-900">
+                            {a.type === 'WORK' ? 'Home' : a.type === 'HOME' ? 'Home' : 'Other'}
+                            {a.isDefault && <span className="ml-2 text-xs text-green-600">You are here</span>}
                           </div>
-                          <div className="line-clamp-2 text-xs text-gray-600">
+                          <div className="text-[13px] leading-5 text-gray-700">
                             {[a.houseNumber, a.locality, a.street, a.city]
                               .filter(Boolean)
                               .join(', ')}
                           </div>
                           {a.contactPhone && (
-                            <div className="mt-1 inline-flex items-center gap-1 text-xs text-gray-500">
+                            <div className="mt-2 inline-flex items-center gap-1 text-xs text-gray-500">
                               <Phone className="h-3 w-3" /> {a.contactPhone}
                             </div>
                           )}

@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,28 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User Management
 model User {
-  id        String   @id @default(cuid())
-  email     String?  @unique
-  name      String?
-  image     String?
-  phone     String?  @unique
-  password  String?  // For email/password authentication
-  role      UserRole @default(CUSTOMER)
-  googleId  String?  @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relationships
+  id                     String                  @id @default(cuid())
+  email                  String?                 @unique
+  name                   String?
+  image                  String?
+  phone                  String?                 @unique
+  role                   UserRole                @default(CUSTOMER)
+  googleId               String?                 @unique
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  password               String?
+  accounts               Account[]
   customer               Customer?
   deliveryPartner        DeliveryPartner?
+  notificationHistory    NotificationHistory[]
+  notificationPreference NotificationPreference?
+  pushSubscriptions      PushSubscription[]
   restaurant             Restaurant?
   sessions               Session[]
-  accounts               Account[]
-  notificationPreference NotificationPreference?
-  notificationHistory    NotificationHistory[]
-  pushSubscriptions      PushSubscription[]
   userActivities         UserActivity[]
 
   @@map("users")
@@ -46,15 +37,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -70,133 +60,122 @@ model Session {
   @@map("sessions")
 }
 
-// Customer specific data
 model Customer {
-  id                  String   @id @default(cuid())
-  userId              String   @unique
-  favoriteRestaurants String[] // Array of restaurant IDs
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  favoriteRestaurants String[]
   defaultAddressId    String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  addresses Address[]
-  orders    Order[]
-  reviews   Review[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  addresses           Address[]
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders              Order[]
+  reviews             Review[]
 
   @@map("customers")
 }
 
-// Delivery Partner specific data
 model DeliveryPartner {
-  id                  String        @id @default(cuid())
-  userId              String        @unique
-  assignedRestaurants String[] // Array of restaurant IDs
+  id                  String               @id @default(cuid())
+  userId              String               @unique
+  assignedRestaurants String[]
   currentLatitude     Float?
   currentLongitude    Float?
-  status              PartnerStatus @default(OFFLINE)
-  todayEarnings       Float         @default(0)
-  totalEarnings       Float         @default(0)
-  rating              Float         @default(0)
-  ratingCount         Int           @default(0)
-  completedDeliveries Int           @default(0)
-  telegramPhone       String? // Telegram phone number for notifications
-  telegramChatId      String? // Telegram chat ID for bot messaging
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-
-  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders             Order[]
-  deliveryBatches    DeliveryBatch[]
-  performanceMetrics PerformanceMetrics[]
+  status              PartnerStatus        @default(OFFLINE)
+  todayEarnings       Float                @default(0)
+  totalEarnings       Float                @default(0)
+  rating              Float                @default(0)
+  completedDeliveries Int                  @default(0)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  telegramPhone       String?
+  telegramChatId      String?
+  ratingCount         Int                  @default(0)
+  deliveryBatches     DeliveryBatch[]
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders              Order[]
+  performanceMetrics  PerformanceMetrics[]
 
   @@map("delivery_partners")
 }
 
-// Location management
 model Location {
-  id        String   @id @default(cuid())
-  name      String   @unique // e.g., "Koramangala", "Indiranagar", "Whitefield"
-  city      String   @default("Bengaluru")
-  state     String   @default("Karnataka")
-  country   String   @default("India")
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id          String       @id @default(cuid())
+  name        String       @unique
+  city        String       @default("Bengaluru")
+  state       String       @default("Karnataka")
+  country     String       @default("India")
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   restaurants Restaurant[]
 
   @@map("locations")
 }
 
-// Restaurant data
 model Restaurant {
-  id                        String           @id @default(cuid())
+  id                        String               @id @default(cuid())
   name                      String
-  ownerName                 String // SPoC/Owner name
-  ownerId                   String           @unique
-  locationId                String // Reference to Location
+  ownerId                   String               @unique
   latitude                  Float
   longitude                 Float
   address                   String
   phone                     String
   email                     String?
   imageUrl                  String?
-  cuisineTypes              String[]         @default([])
-  averagePreparationTime    Int              @default(20) // in minutes - admin controlled
-  minimumOrderAmount        Float            @default(200) // admin controlled
-  deliveryRadius            Float            @default(5) // admin controlled - in km
-  commissionRate            Float            @default(0.15) // 15%
-  restaurantPricePercentage Float            @default(0.40) // 40% - Percentage for restaurant earnings
-  aastaPricePercentage      Float            @default(0.10) // 10% - Percentage for Aasta earnings
-  rating                    Float            @default(0)
-  pickupExperienceRating    Float            @default(0)
-  pickupExperienceCount     Int              @default(0)
-  totalOrders               Int              @default(0)
-  status                    RestaurantStatus @default(ACTIVE)
-  operatingHours            Json // Store as JSON: { "monday": { "open": "21:00", "close": "00:00" }, ... }
-  assignedDeliveryPartners  String[] // Array of delivery partner IDs
-  createdAt                 DateTime         @default(now())
-  updatedAt                 DateTime         @updatedAt
-
-  owner              User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  location           Location             @relation(fields: [locationId], references: [id])
-  menuItems          MenuItem[]
-  orders             Order[]
-  reviews            Review[]
-  performanceMetrics PerformanceMetrics[]
+  cuisineTypes              String[]             @default([])
+  averagePreparationTime    Int                  @default(20)
+  minimumOrderAmount        Float                @default(200)
+  deliveryRadius            Float                @default(5)
+  commissionRate            Float                @default(0.15)
+  rating                    Float                @default(0)
+  totalOrders               Int                  @default(0)
+  status                    RestaurantStatus     @default(ACTIVE)
+  operatingHours            Json
+  assignedDeliveryPartners  String[]
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  ownerName                 String
+  aastaPricePercentage      Float                @default(0.10)
+  restaurantPricePercentage Float                @default(0.40)
+  locationId                String
+  pickupExperienceCount     Int                  @default(0)
+  pickupExperienceRating    Float                @default(0)
+  menuItems                 MenuItem[]
+  orders                    Order[]
+  performanceMetrics        PerformanceMetrics[]
+  location                  Location             @relation(fields: [locationId], references: [id])
+  owner                     User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  reviews                   Review[]
 
   @@map("restaurants")
 }
 
-// Menu items
 model MenuItem {
-  id              String   @id @default(cuid())
+  id              String      @id @default(cuid())
   restaurantId    String
   name            String
   description     String?
   price           Float
-  originalPrice   Float? // For discount display
+  originalPrice   Float?
   category        String
-  preparationTime Int      @default(15) // in minutes
+  preparationTime Int         @default(15)
   imageUrl        String?
-  dietaryTags     String[] // ["vegetarian", "vegan", "gluten-free", etc.]
-  spiceLevel      String? // "mild", "medium", "hot"
-  available       Boolean  @default(true)
-  featured        Boolean  @default(false)
-  stockLeft       Int? // Number of items left in stock
-  rating          Float    @default(0)
-  ratingCount     Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  restaurant Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
+  dietaryTags     String[]
+  spiceLevel      String?
+  available       Boolean     @default(true)
+  featured        Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  stockLeft       Int?
+  rating          Float       @default(0)
+  ratingCount     Int         @default(0)
+  restaurant      Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orderItems      OrderItem[]
 
   @@map("menu_items")
 }
 
-// Address management
 model Address {
   id           String      @id @default(cuid())
   customerId   String
@@ -212,56 +191,51 @@ model Address {
   isDefault    Boolean     @default(false)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
-
-  // New fields for richer address capture
+  contactPhone String?
   houseNumber  String?
   locality     String?
-  contactPhone String?
-
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  orders   Order[]
+  customer     Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orders       Order[]
 
   @@map("addresses")
 }
 
-// Orders
 model Order {
-  id                        String      @id @default(cuid())
-  orderNumber               String      @unique
+  id                        String           @id @default(cuid())
+  orderNumber               String           @unique
   customerId                String
   restaurantId              String
   deliveryPartnerId         String?
   deliveryAddressId         String
-  orderType                 OrderType   @default(DELIVERY)
-  status                    OrderStatus @default(PLACED)
+  status                    OrderStatus      @default(PLACED)
   subtotal                  Float
-  deliveryFee               Float       @default(0)
-  taxes                     Float       @default(0)
-  discountAmount            Float       @default(0)
+  deliveryFee               Float            @default(0)
+  taxes                     Float            @default(0)
+  discountAmount            Float            @default(0)
   totalAmount               Float
-  estimatedPreparationTime  Int // in minutes
+  estimatedPreparationTime  Int
   estimatedDeliveryTime     DateTime?
   actualDeliveryTime        DateTime?
-  deliveryDistance          Float? // Distance in kilometers from restaurant to customer
-  estimatedDeliveryDuration Int? // ETA in minutes from Google Maps API
   verificationCode          String
-  razorpayOrderId           String?
-  paymentStatus             String      @default("pending")
+  paymentStatus             String           @default("pending")
   specialInstructions       String?
   cancelReason              String?
-  createdAt                 DateTime    @default(now())
-  updatedAt                 DateTime    @updatedAt
-
-  customer        Customer         @relation(fields: [customerId], references: [id])
-  restaurant      Restaurant       @relation(fields: [restaurantId], references: [id])
-  deliveryPartner DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id])
-  deliveryAddress Address          @relation(fields: [deliveryAddressId], references: [id])
-  orderItems      OrderItem[]
-  deliveryBatch   DeliveryBatch?   @relation(fields: [deliveryBatchId], references: [id])
-  deliveryBatchId String?
-  review          Review?
-  orderAnalytics  OrderAnalytics?
-  payments        Payment[]
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  deliveryBatchId           String?
+  razorpayOrderId           String?
+  deliveryDistance          Float?
+  estimatedDeliveryDuration Int?
+  orderType                 OrderType        @default(DELIVERY)
+  orderAnalytics            OrderAnalytics?
+  orderItems                OrderItem[]
+  customer                  Customer         @relation(fields: [customerId], references: [id])
+  deliveryAddress           Address          @relation(fields: [deliveryAddressId], references: [id])
+  deliveryBatch             DeliveryBatch?   @relation(fields: [deliveryBatchId], references: [id])
+  deliveryPartner           DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id])
+  restaurant                Restaurant       @relation(fields: [restaurantId], references: [id])
+  payments                  Payment[]
+  review                    Review?
 
   @@map("orders")
 }
@@ -278,9 +252,8 @@ model Payment {
   failureReason     String?
   capturedAt        DateTime?
   createdAt         DateTime  @default(now())
-
-  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  refunds Refund[]
+  order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  refunds           Refund[]
 
   @@unique([orderId, razorpayOrderId])
   @@map("payments")
@@ -296,115 +269,103 @@ model Refund {
   reason           String?
   processedAt      DateTime?
   createdAt        DateTime  @default(now())
-
-  payment Payment @relation(fields: [paymentId], references: [razorpayPaymentId])
+  payment          Payment   @relation(fields: [paymentId], references: [razorpayPaymentId])
 
   @@map("refunds")
 }
 
-// Order items
 model OrderItem {
   id                        String   @id @default(cuid())
   orderId                   String
   menuItemId                String
   quantity                  Int
-  unitPrice                 Float // Selling price per item (what customer pays)
-  totalPrice                Float // unitPrice * quantity (total selling price)
-  originalUnitPrice         Float? // Original price per item (for calculations)
-  totalOriginalPrice        Float? // originalUnitPrice * quantity (for restaurant/aasta earnings calculation)
-  restaurantEarningsPerItem Float? // Restaurant earnings per item based on percentage
-  restaurantTotalEarnings   Float? // Restaurant earnings for this item (restaurantEarningsPerItem * quantity)
-  aastaEarningsPerItem      Float? // Aasta earnings per item based on percentage
-  aastaTotalEarnings        Float? // Aasta earnings for this item (aastaEarningsPerItem * quantity)
-  customizations            Json? // Store customizations as JSON
+  unitPrice                 Float
+  totalPrice                Float
+  customizations            Json?
   createdAt                 DateTime @default(now())
-
-  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+  aastaEarningsPerItem      Float?
+  aastaTotalEarnings        Float?
+  originalUnitPrice         Float?
+  restaurantEarningsPerItem Float?
+  restaurantTotalEarnings   Float?
+  totalOriginalPrice        Float?
+  menuItem                  MenuItem @relation(fields: [menuItemId], references: [id])
+  order                     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("order_items")
 }
 
-// Delivery batching
 model DeliveryBatch {
-  id                      String      @id @default(cuid())
+  id                      String          @id @default(cuid())
   deliveryPartnerId       String
-  status                  BatchStatus @default(CREATED)
+  status                  BatchStatus     @default(CREATED)
   pickupLatitude          Float
   pickupLongitude         Float
   estimatedCompletionTime DateTime?
   actualCompletionTime    DateTime?
-  totalDistance           Float?      @default(0)
-  optimizedRoute          Json? // Store route as JSON
-  createdAt               DateTime    @default(now())
-  updatedAt               DateTime    @updatedAt
-
-  deliveryPartner DeliveryPartner @relation(fields: [deliveryPartnerId], references: [id])
-  orders          Order[]
-  deliveryStops   DeliveryStop[]
+  totalDistance           Float?          @default(0)
+  optimizedRoute          Json?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  deliveryPartner         DeliveryPartner @relation(fields: [deliveryPartnerId], references: [id])
+  deliveryStops           DeliveryStop[]
+  orders                  Order[]
 
   @@map("delivery_batches")
 }
 
-// Delivery stops
 model DeliveryStop {
-  id                   String     @id @default(cuid())
+  id                   String        @id @default(cuid())
   deliveryBatchId      String
-  orderId              String     @unique
+  orderId              String        @unique
   latitude             Float
   longitude            Float
   estimatedArrivalTime DateTime?
   actualArrivalTime    DateTime?
-  status               StopStatus @default(PENDING)
+  status               StopStatus    @default(PENDING)
   sequenceNumber       Int
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
-
-  deliveryBatch DeliveryBatch @relation(fields: [deliveryBatchId], references: [id], onDelete: Cascade)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  deliveryBatch        DeliveryBatch @relation(fields: [deliveryBatchId], references: [id], onDelete: Cascade)
 
   @@map("delivery_stops")
 }
 
-// Reviews and ratings
 model Review {
-  id             String   @id @default(cuid())
+  id             String     @id @default(cuid())
   customerId     String
   restaurantId   String
-  orderId        String   @unique
-  rating         Int // 1-5 stars
+  orderId        String     @unique
+  rating         Int
   comment        String?
-  foodRating     Int? // 1-5 stars
-  serviceRating  Int? // 1-5 stars
-  deliveryRating Int? // 1-5 stars
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  customer   Customer   @relation(fields: [customerId], references: [id])
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
-  order      Order      @relation(fields: [orderId], references: [id])
+  foodRating     Int?
+  serviceRating  Int?
+  deliveryRating Int?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  customer       Customer   @relation(fields: [customerId], references: [id])
+  order          Order      @relation(fields: [orderId], references: [id])
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id])
 
   @@map("reviews")
 }
 
-// Analytics
 model OrderAnalytics {
   id                    String   @id @default(cuid())
   orderId               String   @unique
-  preparationTime       Int? // actual time taken
-  deliveryTime          Int? // actual delivery time
-  customerWaitTime      Int? // total wait time
+  preparationTime       Int?
+  deliveryTime          Int?
+  customerWaitTime      Int?
   distanceTraveled      Float?
-  deliveryEfficiency    Float? // calculated metric
+  deliveryEfficiency    Float?
   customerSatisfaction  Float?
   restaurantPerformance Float?
   createdAt             DateTime @default(now())
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order                 Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("order_analytics")
 }
 
-// Platform analytics
 model PlatformMetrics {
   id                     String   @id @default(cuid())
   date                   DateTime @unique @db.Date
@@ -415,15 +376,14 @@ model PlatformMetrics {
   customerAcquisition    Int      @default(0)
   restaurantSignups      Int      @default(0)
   deliveryPartnerSignups Int      @default(0)
-  platformRatingSum      Float    @default(0)
-  platformRatingCount    Int      @default(0)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
+  platformRatingCount    Int      @default(0)
+  platformRatingSum      Float    @default(0)
 
   @@map("platform_metrics")
 }
 
-// Notification Management
 model NotificationPreference {
   id                  String                @id @default(cuid())
   userId              String                @unique
@@ -436,12 +396,11 @@ model NotificationPreference {
   deliveryAlerts      Boolean               @default(true)
   systemAnnouncements Boolean               @default(true)
   frequency           NotificationFrequency @default(REAL_TIME)
-  quietHoursStart     String? // "22:00"
-  quietHoursEnd       String? // "08:00"
+  quietHoursStart     String?
+  quietHoursEnd       String?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_preferences")
 }
@@ -460,8 +419,7 @@ model NotificationHistory {
   clickedAt DateTime?
   errorMsg  String?
   createdAt DateTime            @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_history")
 }
@@ -476,27 +434,24 @@ model PushSubscription {
   userAgent String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, endpoint])
   @@map("push_subscriptions")
 }
 
-// Analytics Models
 model UserActivity {
   id        String   @id @default(cuid())
   userId    String
   sessionId String
-  action    String // "page_view", "order_placed", "search", etc.
+  action    String
   page      String?
   data      Json?
   ipAddress String?
   userAgent String?
-  duration  Int? // milliseconds
+  duration  Int?
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
   @@index([action, createdAt])
@@ -504,28 +459,26 @@ model UserActivity {
 }
 
 model PerformanceMetrics {
-  id                     String   @id @default(cuid())
-  date                   DateTime @db.Date
+  id                     String           @id @default(cuid())
+  date                   DateTime         @db.Date
   restaurantId           String?
   deliveryPartnerId      String?
-  totalOrders            Int      @default(0)
-  completedOrders        Int      @default(0)
-  cancelledOrders        Int      @default(0)
-  averagePreparationTime Float    @default(0)
-  averageDeliveryTime    Float    @default(0)
-  customerSatisfaction   Float    @default(0)
-  revenue                Float    @default(0)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-
-  restaurant      Restaurant?      @relation(fields: [restaurantId], references: [id])
-  deliveryPartner DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id])
+  totalOrders            Int              @default(0)
+  completedOrders        Int              @default(0)
+  cancelledOrders        Int              @default(0)
+  averagePreparationTime Float            @default(0)
+  averageDeliveryTime    Float            @default(0)
+  customerSatisfaction   Float            @default(0)
+  revenue                Float            @default(0)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  deliveryPartner        DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id])
+  restaurant             Restaurant?      @relation(fields: [restaurantId], references: [id])
 
   @@unique([date, restaurantId, deliveryPartnerId])
   @@map("performance_metrics")
 }
 
-// Enums
 enum UserRole {
   CUSTOMER
   DELIVERY_PARTNER
@@ -574,7 +527,7 @@ enum OrderStatus {
   CANCELLED
 }
 
-enum OrderType{
+enum OrderType {
   DELIVERY
   PICKUP
 }

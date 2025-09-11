@@ -6,6 +6,8 @@ interface Location {
 
 interface LocationWithAddress extends Location {
   address: string;
+  // Optional human-friendly place name/title (e.g., building/PG/complex name)
+  name?: string;
   city?: string;
   state?: string;
   zipCode?: string;
@@ -307,6 +309,7 @@ class LocationService {
 
       // 2) Fallback: Google Places
       const { googleMapsService } = await import('./google-maps');
+      // Expect google service to enrich with name when available
       return await googleMapsService.getPlacePredictions(input);
     } catch (error) {
       console.error('Error getting place suggestions:', error);
@@ -342,6 +345,7 @@ class LocationService {
       const results: LocationWithAddress[] = [];
       for (const s of top) {
         if (typeof s.latitude === 'number' && typeof s.longitude === 'number') {
+          // Ola description usually contains full address; no separate name available
           results.push({
             address: s.description,
             latitude: s.latitude,

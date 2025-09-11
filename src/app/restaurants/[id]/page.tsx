@@ -380,9 +380,9 @@ export default function RestaurantDetailPage() {
                     {restaurant.name}
                   </h1>
                   <div className="mt-1 flex items-center gap-2 text-sm text-gray-600">
-                    <Clock className="h-4 w-4" /> {prepTimeText}
-                    <span>|</span>
                     <MapPin className="h-4 w-4" /> {locationText}
+                    <span>|</span>
+                    <Clock className="h-4 w-4" /> {prepTimeText}
                     {distanceText && (
                       <>
                         <span>|</span>

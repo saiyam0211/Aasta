@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Star, Clock } from 'lucide-react';
 import type { Dish } from '@/types/dish';
@@ -54,6 +55,8 @@ export function HomeProductCard({
   onClick,
   restaurantContext,
 }: HomeProductCardProps) {
+  const [clicked, setClicked] = useState(false);
+
   const hasDiscount = !!dish.originalPrice && dish.originalPrice > dish.price;
   const discountPct = hasDiscount
     ? Math.round(
@@ -106,13 +109,22 @@ export function HomeProductCard({
     updateQuantity(dish.id, quantity - 1);
   };
 
+  // Click handler for card (preserves original onClick)
+  const handleCardClick = () => {
+    setClicked(true);
+    onClick?.(dish);
+    setTimeout(() => setClicked(false), 150);
+  };
+
   return (
     <div
       className={cn(
-        'cursor-pointer rounded-2xl border border-gray-100 bg-white p-3 shadow-sm',
+        'cursor-pointer rounded-2xl border border-gray-100 bg-white p-3 shadow-xs transition-transform duration-150',
+        'scale-100 hover:scale-120', // keep hover effect
+        clicked && 'scale-105', // add click effect
         className
       )}
-      onClick={() => onClick?.(dish)}
+      onClick={handleCardClick}
       role="button"
       aria-label={`View ${dish.name}`}
     >
@@ -171,20 +183,20 @@ export function HomeProductCard({
 
       {/* Price row */}
       <div className="relative flex items-center justify-between">
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-bold text-gray-900">₹{dish.price}</span>
+        <div className="mt-2 flex flex-col items-baseline">
           {dish.originalPrice && (
             <span className="text-xs text-gray-400 line-through">
               ₹{dish.originalPrice}
             </span>
           )}
+          <span className="text-lg font-bold text-gray-900">₹{dish.price}</span>
         </div>
-        <div className="absolute -bottom-5 left-35 -translate-x-1/2 border-10 border-white">
+        <div className="relative mt-4 border-1 border-white">
           {quantity > 0 ? (
-            <div className="-gap-2 inline-flex h-9 items-center rounded-md border border-green-600/30 bg-white shadow">
+            <div className="-gap-2 inline-flex h-9 items-center rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm">
               <button
                 onClick={handleDecrease}
-                className="h-6 w-6 rounded-md text-lg text-[#002a01]"
+                className="h-8 w-8 rounded-md text-lg text-[#002a01]"
                 aria-label={`Decrease ${dish.name}`}
               >
                 −
@@ -194,7 +206,7 @@ export function HomeProductCard({
               </span>
               <button
                 onClick={handleIncrease}
-                className="h-6 w-6 rounded-md text-lg text-[#002a01]"
+                className="h-8 w-8 rounded-md text-lg text-[#002a01]"
                 aria-label={`Increase ${dish.name}`}
               >
                 +
@@ -203,7 +215,7 @@ export function HomeProductCard({
           ) : (
             <button
               onClick={handleAddToCart}
-              className="h-8 rounded-md border border-green-600/30 bg-white px-4 text-xl font-semibold text-[#002a01] shadow"
+              className="h-9 rounded-md border border-green-600/30 bg-white px-4 text-xl font-semibold text-[#002a01] shadow-sm"
               aria-label={`Add ${dish.name}`}
             >
               Add

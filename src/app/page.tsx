@@ -9,6 +9,7 @@ import { useLocationStore } from '@/hooks/useLocation';
 import { toast } from 'sonner';
 import { usePWA } from '@/hooks/usePWA';
 import { HomeHeader } from '@/components/ui/home-header';
+import AddressSheet from '@/components/ui/AddressSheet';
 import { HomeProductCard } from '@/components/ui/home-product-card';
 import { CheckCircle } from 'lucide-react';
 import type { Dish } from '@/types/dish';
@@ -51,8 +52,9 @@ export default function HomePage() {
   } = useCacheStore();
 
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+  const [addressSheetOpen, setAddressSheetOpen] = useState(false);
   const [selectedLocationLabel, setSelectedLocationLabel] =
-    useState('New York City');
+    useState('Using live location');
   // Removed popular content; using inline search results instead
   const [searchQuery, setSearchQuery] = useState('');
   const [dishResults, setDishResults] = useState<Dish[]>([]);
@@ -75,6 +77,29 @@ export default function HomePage() {
 
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
+
+  // Show location prompt only once after first sign-in; otherwise prefer AddressSheet input
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    const hasCoords = typeof latitude === 'number' && typeof longitude === 'number';
+    const shownKey = 'aasta_location_prompt_shown_v1';
+    const alreadyShown = (() => {
+      try {
+        return localStorage.getItem(shownKey) === '1';
+      } catch {
+        return true; // default to hidden if storage blocked
+      }
+    })();
+
+    if (!hasCoords) {
+      if (!alreadyShown) {
+        setShowLocationPrompt(true);
+      } else {
+        // Skip the legacy prompt, focus user on address entry instead
+        setAddressSheetOpen(true);
+      }
+    }
+  }, [status]);
 
   const slugify = (input: string) =>
     input
@@ -99,26 +124,74 @@ export default function HomePage() {
   //   resistance: 2.5,
   // });
 
-  // Resolve human-readable address when coordinates are present
+  // Resolve human-readable address when coordinates are present and no saved address chosen
   useEffect(() => {
     const resolveAddress = async () => {
       if (!latitude || !longitude) return;
+      
+      // Check if user has saved addresses first
       try {
-        const res = await fetch(
-          `/api/geocode/reverse?lat=${latitude}&lng=${longitude}`
-        );
+        const res = await fetch('/api/user/address');
         if (res.ok) {
           const data = await res.json();
-          if (data?.success && data?.data?.address) {
-            setSelectedLocationLabel(data.data.address);
+          const addresses = Array.isArray(data?.addresses) ? data.addresses : [];
+          const hasSavedAddresses = addresses.length > 0;
+          
+          // Only use reverse geocoding if no saved addresses
+          if (!hasSavedAddresses) {
+            const geoRes = await fetch(
+              `/api/geocode/reverse?lat=${latitude}&lng=${longitude}`
+            );
+            if (geoRes.ok) {
+              const geoData = await geoRes.json();
+              if (geoData?.success && geoData?.data?.address) {
+                // Truncate to first 50 words
+                const words = geoData.data.address.split(/\s+/);
+                const truncated =
+                  words.length > 50 ? words.slice(0, 50).join(' ') + '…' : geoData.data.address;
+                setSelectedLocationLabel(truncated);
+              }
+            }
           }
         }
       } catch (e) {
-        console.error('Reverse geocode failed', e);
+        console.error('Address resolution failed', e);
       }
     };
     resolveAddress();
   }, [latitude, longitude]);
+
+  // On load, try to fetch user's saved addresses and use default if present
+  useEffect(() => {
+    const loadDefaultAddress = async () => {
+      try {
+        const res = await fetch('/api/user/address');
+        if (!res.ok) return;
+        const data = await res.json();
+        const addresses = Array.isArray(data?.addresses) ? data.addresses : [];
+        const def = addresses.find((a: any) => a.isDefault) || addresses[0];
+        if (def) {
+          const summary = [
+            def.houseNumber,
+            def.locality,
+            def.street,
+          ]
+            .filter(Boolean)
+            .join(', ');
+          setSelectedLocationLabel(summary || 'Saved address');
+          // If saved address has coordinates, set them so listings use it
+          if (typeof def.latitude === 'number' && typeof def.longitude === 'number') {
+            setLocation(def.latitude, def.longitude);
+          }
+        } else {
+          setSelectedLocationLabel('Using live location');
+        }
+      } catch (error) {
+        console.error('Error loading default address:', error);
+      }
+    };
+    loadDefaultAddress();
+  }, []);
 
   // Invalidate cache when location changes significantly
   useEffect(() => {
@@ -396,7 +469,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#d3fb6b]">
       {/* Full-screen onboarding handles location; fallback UI kept for legacy */}
       {showLocationPrompt && (
         <LocationPrompt
@@ -404,6 +477,9 @@ export default function HomePage() {
             setLocation(location.lat, location.lng);
             setSelectedLocationLabel('Current Location');
             setShowLocationPrompt(false);
+            try {
+              localStorage.setItem('aasta_location_prompt_shown_v1', '1');
+            } catch {}
             loadPopularContent();
           }}
           onDismiss={() => setShowLocationPrompt(false)}
@@ -412,7 +488,7 @@ export default function HomePage() {
 
       <HomeHeader
         locationLabel={selectedLocationLabel}
-        onLocationClick={() => router.push('/onboarding/location?reselect=1')}
+        onLocationClick={() => setAddressSheetOpen(true)}
         onSearch={(q) => debouncedSearch(q)}
         onFilterClick={() => router.push('/search')}
         onCartClick={() => router.push('/cart')}
@@ -420,6 +496,40 @@ export default function HomePage() {
         onRefresh={refreshData}
         className="z-10"
         resetSignal={headerResetSignal}
+      />
+
+      <AddressSheet
+        open={addressSheetOpen}
+        onOpenChange={setAddressSheetOpen}
+        onSelect={(addr) => {
+          // If selection came from search suggestions, show `name, address` if available
+          if (addr.id === 'search') {
+            // Ensure the selected coordinates are set globally
+            if (typeof addr.latitude === 'number' && typeof addr.longitude === 'number') {
+              setLocation(addr.latitude!, addr.longitude!);
+            }
+            const name = (addr as any).locality ? String((addr as any).locality) : '';
+            const full = [name, addr.street].filter(Boolean).join(', ');
+            const words = full.split(/\s+/);
+            const truncated = words.length > 50 ? words.slice(0, 50).join(' ') + '…' : full;
+            setSelectedLocationLabel(truncated);
+          } else if (addr.id !== 'live' && (addr.houseNumber || addr.locality || addr.street)) {
+            // For saved addresses, show house no, locality, street area
+            const summary = [addr.houseNumber, addr.locality, addr.street]
+              .filter(Boolean)
+              .join(', ');
+            setSelectedLocationLabel(summary || 'Saved address');
+          } else {
+            // For live location, use the reverse-geocoded address with truncation
+            const label = addr.street || 'Using live location';
+            const words = String(label).split(/\s+/);
+            const truncated = words.length > 50 ? words.slice(0, 50).join(' ') + '…' : String(label);
+            setSelectedLocationLabel(truncated);
+          }
+          setAddressSheetOpen(false);
+          // Trigger refresh based on new coordinates
+          refreshData();
+        }}
       />
 
       {/* Curved Marquee for Offers
@@ -450,7 +560,7 @@ export default function HomePage() {
       )} */}
 
       {/* Inline Search Results or Popular Sections */}
-      <div className="px-4 pt-8 pb-28">
+      <div className="rounded-t-[70px] bg-white px-4 pt-8 pb-28">
         {searchQuery ? (
           <>
             {/* Dishes */}
@@ -542,7 +652,7 @@ export default function HomePage() {
                   ))}
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-20">
                   {restaurantResults.map((r) => (
                     <RestaurantCard
                       key={r.id}
@@ -583,7 +693,18 @@ export default function HomePage() {
         ) : (
           <>
             {/* Popular foods */}
-            <div className="">
+            <div className="relative min-h-screen w-full bg-white">
+              {/* Emerald Glow Background */}
+              {/* <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `
+        radial-gradient(125% 125% at 50% 90%, #ffffff 40%, #10b981 100%)
+      `,
+                  backgroundSize: '100% 100%',
+                }}
+              /> */}
+
               <div className="relative mb-3 flex items-center justify-end">
                 <h2
                   className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
@@ -593,7 +714,7 @@ export default function HomePage() {
                   <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
                   {/* Background image */}
                   <span
-                    className="absolute inset-0 -z-10 ml-24 mt-7 bg-contain bg-center bg-no-repeat"
+                    className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
                     style={{ backgroundImage: "url('/highlighter.png')" }}
                   />
                 </h2>
@@ -643,10 +764,12 @@ export default function HomePage() {
                           </svg>
                         </div>
                         <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                        No trending FoodHacks here (yet).
+                          No trending FoodHacks here (yet).
                         </h3>
                         <p className="mb-4 max-w-sm text-sm text-gray-600">
-                        Couldn’t spot any popular Food Hack nearby. Try searching for your favorites or update your location for more options.
+                          Couldn’t spot any popular Food Hack nearby. Try
+                          searching for your favorites or update your location
+                          for more options.
                         </p>
                         <button
                           onClick={() =>
@@ -671,7 +794,7 @@ export default function HomePage() {
                   Restaurants
                   <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
                   <span
-                    className="absolute inset-0 -z-10 ml-24 mt-7 bg-contain bg-center bg-no-repeat"
+                    className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
                     style={{ backgroundImage: "url('/highlighter.png')" }}
                   />
                 </h2>
@@ -711,10 +834,11 @@ export default function HomePage() {
                     </svg>
                   </div>
                   <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                  No kitchens around you.
+                    No kitchens around you.
                   </h3>
                   <p className="mb-4 max-w-sm text-sm text-gray-600">
-                  We couldn’t find any restaurants within 5 km. Try updating your location to explore more.
+                    We couldn’t find any restaurants within 5 km. Try updating
+                    your location to explore more.
                   </p>
                   <button
                     onClick={() =>
@@ -732,7 +856,9 @@ export default function HomePage() {
       </div>
 
       {/* Food Hacks Promotional Section */}
-      <FoodHacksPromo />
+      <div className="bg-white">
+        <FoodHacksPromo />
+      </div>
 
       <ProductBottomSheet
         open={productSheetOpen}

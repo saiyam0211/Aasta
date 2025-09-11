@@ -460,7 +460,7 @@ export default function CartPage() {
 
             {/* Cart Items */}
             <div className="mb-6">
-              <h2 className="-mb-1 flex items-center text-lg font-semibold text-gray-900">
+              {/* <h2 className="-mb-1 flex items-center text-lg font-semibold text-gray-900">
                 <span
                   className={`${brandFont.className} text-[60px]`}
                   style={{ letterSpacing: '-0.08em' }}
@@ -471,7 +471,7 @@ export default function CartPage() {
                   {' '}
                   ({cart.items.length})
                 </span>
-              </h2>
+              </h2> */}
               <div className="space-y-4">
                 {cart.items.map((item, index) => (
                   <div

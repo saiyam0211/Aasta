@@ -16,6 +16,9 @@ module.exports = {
       },
     },
     extend: {
+      scale: {
+        105: '1.05',
+      },
       fontFamily: {
         sans: ["var(--font-brand)", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Inter", "sans-serif"],
         brand: ["var(--font-brand)"],

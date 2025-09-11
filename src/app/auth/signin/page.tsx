@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { Button } from '@/components/ui/button';
 import Lottie from 'lottie-react';
 import step1 from '../../../../public/lotties/step1.json';
 import step2 from '../../../../public/lotties/step2.json';
@@ -161,7 +162,19 @@ export default function SignInPage() {
 
           {step === 2 && (
             <div className="flex h-full flex-col items-center text-center">
-              <div className="mb-6 w-full">
+              {/* Skip button positioned at the top */}
+              <div className="-mt-40 mb-4 flex w-full justify-end">
+                <Button
+                  onClick={() => setStep(4)}
+                  variant="ghost"
+                  size="sm"
+                  className="h-10 w-20 rounded-full border border-white/20 bg-white/10 p-0 shadow-sm backdrop-blur-sm hover:bg-white"
+                >
+                  Skip
+                </Button>
+              </div>
+
+              <div className="mt-28 mb-6 w-full">
                 <Lottie
                   animationData={step2 as any}
                   loop
@@ -170,7 +183,7 @@ export default function SignInPage() {
                 />
               </div>
               <h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">
-                Save big. Waste less.
+                The Unhappening is here.
               </h2>
               <p className="mx-auto max-w-sm text-base text-[#475569]">
                 Transparent deals + eco kitchens.
@@ -188,7 +201,18 @@ export default function SignInPage() {
 
           {step === 3 && (
             <div className="flex h-full flex-col items-center text-center">
-              <div className="mb-6 w-full">
+              {/* Skip button positioned at the top */}
+              <div className="-mt-40 mb-4 flex w-full justify-end">
+                <Button
+                  onClick={() => setStep(4)}
+                  variant="ghost"
+                  size="sm"
+                  className="h-10 w-20 rounded-full border border-white/20 bg-white/10 p-0 shadow-sm backdrop-blur-sm hover:bg-white"
+                >
+                  Skip
+                </Button>
+              </div>
+              <div className="mt-28 mb-6 w-full">
                 <Lottie
                   animationData={step3 as any}
                   loop
@@ -200,7 +224,7 @@ export default function SignInPage() {
                 Fast. Fair. Planet-friendly.
               </h2>
               <p className="mx-auto max-w-sm text-base text-[#475569]">
-                Quick delivery, fair prices, lighter impact.
+                Watch us reinvent food savings.
               </p>
               <div className="mt-6 w-full">
                 <button
@@ -222,8 +246,8 @@ export default function SignInPage() {
 
               {/* Subtitle */}
               <p className="mb-6 max-w-xs text-base text-slate-600">
-                Tell us who you are, and we'll unlock your personalized
-                #FoodHacks.
+                Tell us who you are, and we'll unlock your personalized Food
+                Hack.
               </p>
 
               {/* Input + Button */}
@@ -237,7 +261,7 @@ export default function SignInPage() {
                     onChange={(e) => setName(e.target.value)}
                     className="peer w-full rounded-2xl border border-slate-300 bg-white px-4 pt-5 pb-2 text-lg text-slate-900 shadow-sm focus:border-[#002a01] focus:ring-2 focus:ring-[#002a01] focus:outline-none"
                   />
-                  <label className="absolute top-2 left-4 text-sm text-slate-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-[#002a01]">
+                  <label className="absolute top-2 left-4 text-sm text-slate-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-slate-300">
                     Your name
                   </label>
                 </div>
@@ -278,7 +302,7 @@ export default function SignInPage() {
                     onChange={handlePhoneChange}
                     className="peer w-full rounded-2xl border border-slate-300 bg-white px-4 pt-5 pb-2 text-lg text-slate-900 shadow-sm focus:border-[#002a01] focus:ring-2 focus:ring-[#002a01] focus:outline-none"
                   />
-                  <label className="absolute top-2 left-4 text-sm text-slate-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-[#002a01]">
+                  <label className="absolute top-2 left-4 text-sm text-slate-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-slate-300">
                     Phone number
                   </label>
                 </div>
@@ -309,7 +333,7 @@ export default function SignInPage() {
             <div className="flex h-full flex-col items-center justify-center px-6 text-center">
               {/* Title */}
               <h2 className="mb-2 text-4xl font-bold tracking-tight text-slate-900">
-                Almost there, foodie hacker!
+                Almost there!
               </h2>
 
               {/* Subtitle */}

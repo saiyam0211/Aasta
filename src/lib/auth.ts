@@ -113,6 +113,7 @@ export const authOptions: NextAuthOptions = {
         try {
           let user = await prisma.user.findFirst({ where: { phone } as any });
           if (!user) {
+            console.log('Creating new user with phone:', phone);
             user = await prisma.user.create({
               data: {
                 phone,
@@ -123,18 +124,23 @@ export const authOptions: NextAuthOptions = {
                     : 'Aasta User',
               } as any,
             });
+            console.log('Created user:', user.id);
             await prisma.customer.create({
               data: {
                 userId: user.id,
                 favoriteRestaurants: [],
               },
             });
+            console.log('Created customer profile for user:', user.id);
           } else if (providedName && !user.name) {
             // Backfill name on first sign-in if it was missing
+            console.log('Backfilling name for existing user:', user.id);
             user = await prisma.user.update({
               where: { id: user.id },
               data: { name: providedName },
             });
+          } else {
+            console.log('Found existing user:', user.id);
           }
           return {
             id: user.id,
@@ -195,27 +201,8 @@ export const authOptions: NextAuthOptions = {
           return true;
         }
 
-        // When signing in with phone credentials, ensure user exists (by phone)
+        // When signing in with phone credentials, user is already created in authorize function
         if (account?.provider === 'phone-otp' && userHasPhone) {
-          const phone = (user as any).phone as string;
-          const existingByPhone = await prisma.user.findFirst({
-            where: { phone } as any,
-          });
-          if (!existingByPhone) {
-            const newUser = await prisma.user.create({
-              data: {
-                phone,
-                name: user.name || 'Aasta User',
-                role: 'CUSTOMER',
-              } as any,
-            });
-            await prisma.customer.create({
-              data: {
-                userId: newUser.id,
-                favoriteRestaurants: [],
-              },
-            });
-          }
           return true;
         }
 
