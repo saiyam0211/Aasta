@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     const longitude = parseFloat(searchParams.get('longitude') || '0');
     const radius = parseInt(searchParams.get('radius') || '5');
     const limit = parseInt(searchParams.get('limit') || '10');
+    const vegOnly = searchParams.get('veg') === '1';
 
     if (!latitude || !longitude) {
       return NextResponse.json(
@@ -32,6 +33,16 @@ export async function GET(request: NextRequest) {
     const allRestaurants = await prisma.restaurant.findMany({
       where: {
         status: 'ACTIVE',
+        ...(vegOnly && {
+          menuItems: {
+            some: {
+              available: true,
+              dietaryTags: {
+                has: 'Veg',
+              },
+            },
+          },
+        }),
       },
       include: {
         _count: {
@@ -71,9 +82,17 @@ export async function GET(request: NextRequest) {
     const withFeaturedItems = await Promise.all(
       nearbyRestaurants.map(async (r) => {
         const items = await prisma.menuItem.findMany({
-          where: { restaurantId: r.id, available: true },
+          where: { 
+            restaurantId: r.id, 
+            available: true,
+            ...(vegOnly && {
+              dietaryTags: {
+                has: 'Veg',
+              },
+            }),
+          },
           orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
-          select: { name: true, price: true, imageUrl: true },
+          select: { name: true, price: true, imageUrl: true, dietaryTags: true },
           take: 6,
         });
         return { restaurant: r, featuredItems: items };

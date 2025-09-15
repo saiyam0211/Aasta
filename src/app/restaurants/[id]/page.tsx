@@ -32,6 +32,7 @@ import { HomeProductCard } from '@/components/ui/home-product-card';
 import { HomeProductCardHorizontal } from '@/components/ui/home-product-card-horizontal';
 import { HomeProductCardList } from '@/components/ui/home-product-card-vertical';
 import AastaLoader from '@/components/ui/AastaLoader';
+import { useVegMode } from '@/contexts/VegModeContext';
 
 const brandFont = localFont({
   src: [
@@ -110,6 +111,7 @@ export default function RestaurantDetailPage() {
   const params = useParams();
   const { addItem, updateQuantity, cart } = useCartStore();
   const { latitude, longitude } = useLocationStore();
+  const { vegOnly } = useVegMode();
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -144,8 +146,19 @@ export default function RestaurantDetailPage() {
         setRestaurant(r);
 
         const menuItems: MenuItem[] = menuData.data || [];
-        setFeaturedItems(menuItems.filter((m) => m.featured));
-        setOtherItems(menuItems.filter((m) => !m.featured));
+        
+        // Filter items based on veg mode
+        const filteredItems = vegOnly 
+          ? menuItems.filter((item) => {
+              const isVeg = Array.isArray(item.dietaryTags)
+                ? item.dietaryTags.includes('Veg')
+                : item.isVegetarian;
+              return isVeg;
+            })
+          : menuItems;
+        
+        setFeaturedItems(filteredItems.filter((m) => m.featured));
+        setOtherItems(filteredItems.filter((m) => !m.featured));
 
         // Prefer API-provided flattened locationName
         const apiName = (r as any).locationName as string | null;
@@ -163,7 +176,7 @@ export default function RestaurantDetailPage() {
       }
     };
     if (params?.id) fetchRestaurantData();
-  }, [params?.id]);
+  }, [params?.id, vegOnly]);
 
   // Compute distance using Google Maps Distance Matrix (with fallback)
   useEffect(() => {

@@ -22,6 +22,7 @@ import { useCartStore } from '@/lib/store';
 import { CartBottomNav } from '@/components/ui/cart-bottom-nav';
 import { useCacheStore } from '@/lib/cache-store';
 import { FoodHacksPromo } from '@/components/ui/food-hacks-promo';
+import { useVegMode } from '@/contexts/VegModeContext';
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
@@ -42,6 +43,7 @@ export default function HomePage() {
   const { isInstalled } = usePWA();
   const { latitude, longitude, setLocation } = useLocationStore();
   const { cart, addItem } = useCartStore();
+  const { vegOnly } = useVegMode();
   const {
     setRestaurants: setCachedRestaurants,
     setDishes: setCachedDishes,
@@ -234,6 +236,15 @@ export default function HomePage() {
     }
   }, [session, status, latitude, longitude]);
 
+  // Handle veg mode changes - force refresh
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    
+    // Clear cache and reload when veg mode changes
+    invalidateCache();
+    loadPopularContent();
+  }, [vegOnly]);
+
   const loadPopularContent = async (backgroundRefresh = false) => {
     try {
       if (!backgroundRefresh) {
@@ -246,7 +257,7 @@ export default function HomePage() {
 
       if (latitude && longitude) {
         const restaurantsRes = await fetch(
-          `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=5&limit=8`
+          `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=5&limit=8${vegOnly ? '&veg=1' : ''}`
         );
 
         if (restaurantsRes.ok) {
@@ -267,8 +278,21 @@ export default function HomePage() {
               : [],
           }));
 
+          // Filter restaurants when veg mode is on
+          const filteredRestaurants = vegOnly 
+            ? restaurantsData.filter(restaurant => {
+                // Check if restaurant has any vegetarian items
+                return restaurant.featuredItems?.some((item: any) => {
+                  const isVeg = Array.isArray(item.dietaryTags)
+                    ? item.dietaryTags.includes('Veg')
+                    : item.isVegetarian;
+                  return isVeg;
+                });
+              })
+            : restaurantsData;
+
           if (!backgroundRefresh) {
-            setPopularRestaurants(restaurantsData);
+            setPopularRestaurants(filteredRestaurants);
           }
         }
       }
@@ -276,7 +300,7 @@ export default function HomePage() {
       // Only get dishes if we have restaurants within 5km
       if (restaurantsData.length > 0) {
         const dishesRes = await fetch(
-          `/api/featured-dishes?limit=8${latitude && longitude ? `&lat=${latitude}&lng=${longitude}&radius=5` : ''}`
+          `/api/featured-dishes?limit=8${latitude && longitude ? `&lat=${latitude}&lng=${longitude}&radius=5` : ''}${vegOnly ? '&veg=1' : ''}`
         );
 
         if (dishesRes.ok) {
@@ -380,11 +404,14 @@ export default function HomePage() {
             (it.category || '').toLowerCase().includes(lowered);
           if (matches) {
             const isVeg = Array.isArray(it.dietaryTags)
-              ? it.dietaryTags.some((t: string) =>
-                  /veg(an|etarian)?/i.test(t)
-                ) &&
-                !it.dietaryTags.some((t: string) => /non[-\s]?veg/i.test(t))
+              ? it.dietaryTags.includes('Veg')
               : false;
+            
+            // Skip non-vegetarian items when veg mode is on
+            if (vegOnly && !isVeg) {
+              return;
+            }
+            
             const dish: Dish = {
               id: it.id,
               name: it.name,

@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '6');
     const lat = parseFloat(searchParams.get('lat') || '0');
     const lng = parseFloat(searchParams.get('lng') || '0');
+    const vegOnly = searchParams.get('veg') === '1';
     const hasCoords = !isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0);
 
     // Get featured menu items from active restaurants
@@ -61,16 +62,10 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform data for client
-    const clientFeaturedDishes = featuredDishes.map((dish) => {
-      const tags = (dish.dietaryTags || []).map((t: string) => t.toLowerCase());
-      const isNonVeg = tags.some(
-        (t: string) => t.includes('non') && t.includes('veg')
-      );
-      const isVegTag = tags.some(
-        (t: string) =>
-          t.includes('veg') || t.includes('vegetarian') || t.includes('vegan')
-      );
-      const isVegetarian = !isNonVeg && isVegTag;
+    const clientFeaturedDishes = featuredDishes
+      .map((dish) => {
+        const tags = dish.dietaryTags || [];
+        const isVegetarian = tags.includes('Veg');
 
       let distanceText: string | undefined;
       let distanceMeters: number | undefined;
@@ -110,7 +105,8 @@ export async function GET(request: NextRequest) {
         distanceText,
         distanceMeters,
       };
-    });
+    })
+    .filter((dish) => !vegOnly || dish.isVegetarian);
 
     return NextResponse.json({
       success: true,

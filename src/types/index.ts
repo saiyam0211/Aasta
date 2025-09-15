@@ -262,6 +262,7 @@ export interface RestaurantFilters {
   deliveryTime?: number;
   location?: Location;
   radius?: number;
+  vegOnly?: boolean;
 }
 
 export interface MenuItemFilters {

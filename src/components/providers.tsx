@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/providers/theme-provider';
+import { VegModeProvider } from '@/contexts/VegModeContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -23,8 +24,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          {children}
-          <Toaster />
+          <VegModeProvider>
+            {children}
+            <Toaster />
+          </VegModeProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </SessionProvider>

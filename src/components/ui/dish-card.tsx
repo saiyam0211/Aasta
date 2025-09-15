@@ -47,8 +47,7 @@ export function DishCard({ dish, onAddToCart, className }: DishCardProps) {
     : 0;
 
   const isVeg = Array.isArray(dish.dietaryTags)
-    ? dish.dietaryTags.some((t) => /veg(an|etarian)?/i.test(t)) &&
-      !dish.dietaryTags.some((t) => /non[-\s]?veg/i.test(t))
+    ? dish.dietaryTags.includes('Veg')
     : dish.isVegetarian;
 
   const highlights = (dish.description || '')

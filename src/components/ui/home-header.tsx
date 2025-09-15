@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Fredoka } from 'next/font/google';
+import { useVegMode } from '@/contexts/VegModeContext';
 
 // Import Fredoka font
 const fredoka = Fredoka({ subsets: ['latin'], weight: ['400', '700'] });
@@ -47,7 +48,7 @@ export function HomeHeader({
   resetSignal,
 }: HomeHeaderProps) {
   const [query, setQuery] = useState('');
-  const [vegOnly, setVegOnly] = useState(false);
+  const { vegOnly, setVegOnly } = useVegMode();
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -528,7 +529,16 @@ export function HomeHeader({
               className="toggle"
               type="checkbox"
               checked={vegOnly}
-              onChange={(e) => setVegOnly(e.target.checked)}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setVegOnly(next);
+                try {
+                  // Force a hard refresh so APIs refetch immediately
+                  if (typeof window !== 'undefined') {
+                    window.location.reload();
+                  }
+                } catch {}
+              }}
               aria-label="Veg mode"
             />
             <span className="slider"></span>

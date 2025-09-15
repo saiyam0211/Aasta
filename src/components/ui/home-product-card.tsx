@@ -65,8 +65,7 @@ export function HomeProductCard({
     : 0;
 
   const isVeg = Array.isArray(dish.dietaryTags)
-    ? dish.dietaryTags.some((t) => /veg(an|etarian)?/i.test(t)) &&
-      !dish.dietaryTags.some((t) => /non[-\s]?veg/i.test(t))
+    ? dish.dietaryTags.includes('Veg')
     : dish.isVegetarian;
 
   const getItemQuantityInCart = useCartStore((s) => s.getItemQuantityInCart);

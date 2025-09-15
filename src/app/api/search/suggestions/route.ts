@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const q = (searchParams.get('q') || '').trim();
     const limit = Number(searchParams.get('limit') || 5);
+    const vegOnly = searchParams.get('veg') === '1';
 
     if (!q || q.length < 2) {
       return NextResponse.json({
@@ -19,6 +20,16 @@ export async function GET(request: NextRequest) {
         where: {
           status: 'ACTIVE',
           name: { contains: q, mode: 'insensitive' },
+          ...(vegOnly && {
+            menuItems: {
+              some: {
+                available: true,
+                dietaryTags: {
+                  has: 'Veg',
+                },
+              },
+            },
+          }),
         },
         select: {
           id: true,
@@ -41,6 +52,11 @@ export async function GET(request: NextRequest) {
             { description: { contains: q, mode: 'insensitive' } },
             { category: { contains: q, mode: 'insensitive' } },
           ],
+          ...(vegOnly && {
+            dietaryTags: {
+              has: 'Veg',
+            },
+          }),
         },
         select: {
           id: true,
@@ -48,6 +64,7 @@ export async function GET(request: NextRequest) {
           imageUrl: true,
           price: true,
           category: true,
+          dietaryTags: true,
           restaurant: { select: { id: true, name: true } },
         },
         take: Math.max(3, Math.min(limit * 2, 10)),

@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
 
     const body: DiscoverRequest = await request.json();
     const { latitude, longitude, radius = 5, filters } = body;
+    const vegOnly = filters?.vegOnly || false;
 
     if (!latitude || !longitude) {
       return NextResponse.json(
@@ -44,6 +45,16 @@ export async function POST(request: NextRequest) {
       where: {
         status: 'ACTIVE',
         // Remove strict lat/lng filtering - we'll filter by distance calculation instead
+        ...(vegOnly && {
+          menuItems: {
+            some: {
+              available: true,
+              dietaryTags: {
+                has: 'Veg',
+              },
+            },
+          },
+        }),
       },
       include: {
         menuItems: {
