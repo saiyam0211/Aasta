@@ -42,7 +42,7 @@ function VegMark({ isVegetarian }: { isVegetarian: boolean }) {
   );
 }
 
-function DealCard({ deal, onAdd }: { deal: Deal; onAdd: () => void }) {
+function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) {
   const hasDiscount = !!deal.originalPrice && deal.originalPrice > deal.price;
   const [showDiscountText, setShowDiscountText] = useState(true); // true = percentage, false = amount saved
   

@@ -76,13 +76,13 @@ export async function GET(request: NextRequest) {
       let distanceText = 'Near you';
       
       // Only calculate distance if location data exists
-      if (item.restaurant.location?.latitude && item.restaurant.location?.longitude) {
+      if (item.restaurant.latitude && item.restaurant.longitude) {
         try {
           distanceText = calculateDistance(
             lat, 
             lng, 
-            item.restaurant.location.latitude, 
-            item.restaurant.location.longitude
+            item.restaurant.latitude, 
+            item.restaurant.longitude
           );
         } catch (error) {
           console.error('Error calculating distance:', error);

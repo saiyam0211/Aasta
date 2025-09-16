@@ -152,7 +152,7 @@ export default function RestaurantDetailPage() {
           ? menuItems.filter((item) => {
               const isVeg = Array.isArray(item.dietaryTags)
                 ? item.dietaryTags.includes('Veg')
-                : item.isVegetarian;
+                : false;
               return isVeg;
             })
           : menuItems;
