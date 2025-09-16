@@ -115,6 +115,7 @@ export async function POST(request: NextRequest) {
         dietaryTags: [data.dietaryType as string], // Store dietary type in dietaryTags for now
         imageUrl: imageUrl,
         featured: data.featured === 'true',
+        hackOfTheDay: data.hackOfTheDay === 'true',
         stockLeft: data.stockLeft ? parseInt(data.stockLeft as string) : null,
       },
     });

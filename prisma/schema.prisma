@@ -170,6 +170,7 @@ model MenuItem {
   stockLeft       Int?
   rating          Float       @default(0)
   ratingCount     Int         @default(0)
+  hackOfTheDay    Boolean     @default(false)
   restaurant      Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   orderItems      OrderItem[]
 

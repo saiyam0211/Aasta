@@ -58,6 +58,7 @@ interface MenuItem {
   restaurantId: string;
   restaurantName?: string;
   featured?: boolean;
+  hackOfTheDay?: boolean;
   stockLeft?: number | null;
 }
 
@@ -86,12 +87,61 @@ export default function RestaurantMenuManagementPage() {
     imageUrl: '',
     dietaryType: 'Veg',
     restaurantId: restaurantId,
+    hackOfTheDay: false,
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [showHackLimitPopup, setShowHackLimitPopup] = useState(false);
+  const [hackLimitMessage, setHackLimitMessage] = useState('');
 
   useEffect(() => {
     loadData();
   }, [restaurantId]);
+
+  const validateHackOfTheDay = (newHackStatus: boolean, dietaryType: 'Veg' | 'Non-Veg', currentItemId?: string) => {
+    try {
+      if (!newHackStatus) return true; // If unchecking, always allow
+
+      const currentHackItems = menuItems.filter(item => 
+        item.hackOfTheDay && 
+        (!currentItemId || item.id !== currentItemId) // Exclude current item if editing
+      );
+
+      const vegHackCount = currentHackItems.filter(item => 
+        item.dietaryType === 'Veg' || 
+        (Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg'))
+      ).length;
+
+      const nonVegHackCount = currentHackItems.filter(item => 
+        item.dietaryType === 'Non-Veg' || 
+        (Array.isArray(item.dietaryTags) && !item.dietaryTags.includes('Veg'))
+      ).length;
+
+      if (dietaryType === 'Veg' && vegHackCount >= 1) {
+        const existingVegHack = currentHackItems.find(item => 
+          item.dietaryType === 'Veg' || 
+          (Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg'))
+        );
+        setHackLimitMessage(`Only one vegetarian hack of the day is allowed. Please uncheck "${existingVegHack?.name || 'the existing item'}" first.`);
+        setShowHackLimitPopup(true);
+        return false;
+      }
+
+      if (dietaryType === 'Non-Veg' && nonVegHackCount >= 1) {
+        const existingNonVegHack = currentHackItems.find(item => 
+          item.dietaryType === 'Non-Veg' || 
+          (Array.isArray(item.dietaryTags) && !item.dietaryTags.includes('Veg'))
+        );
+        setHackLimitMessage(`Only one non-vegetarian hack of the day is allowed. Please uncheck "${existingNonVegHack?.name || 'the existing item'}" first.`);
+        setShowHackLimitPopup(true);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in validateHackOfTheDay:', error);
+      return true; // Allow operation to continue if validation fails
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -140,6 +190,7 @@ export default function RestaurantMenuManagementPage() {
       );
       formDataToSend.append('dietaryType', formData.dietaryType || 'Veg');
       formDataToSend.append('featured', formData.featured ? 'true' : 'false');
+      formDataToSend.append('hackOfTheDay', formData.hackOfTheDay ? 'true' : 'false');
 
       if (formData.originalPrice) {
         formDataToSend.append(
@@ -172,6 +223,7 @@ export default function RestaurantMenuManagementPage() {
           imageUrl: '',
           dietaryType: 'Veg',
           restaurantId: restaurantId,
+          hackOfTheDay: false,
         });
         setSelectedImage(null);
         setShowAddForm(false);
@@ -538,6 +590,31 @@ export default function RestaurantMenuManagementPage() {
                       </Label>
                     </div>
 
+                    {/* Hack of the Day Toggle */}
+                    <div className="flex items-center space-x-2">
+                      <input
+                        id="hackOfTheDay"
+                        type="checkbox"
+                        checked={formData.hackOfTheDay || false}
+                        onChange={(e) => {
+                          const newHackStatus = e.target.checked;
+                          if (validateHackOfTheDay(newHackStatus, formData.dietaryType || 'Veg', editingItem?.id)) {
+                            setFormData({
+                              ...formData,
+                              hackOfTheDay: newHackStatus,
+                            });
+                          }
+                        }}
+                        className="text-primary-dark-green focus:ring-primary-dark-green h-4 w-4 rounded border-gray-300"
+                      />
+                      <Label
+                        htmlFor="hackOfTheDay"
+                        className="text-primary-dark-green text-sm font-medium"
+                      >
+                        Hack of the Day
+                      </Label>
+                    </div>
+
                     {/* Few Stocks Left Indicator */}
                     <div className="flex items-center space-x-2">
                       <input
@@ -703,6 +780,30 @@ export default function RestaurantMenuManagementPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Hack Limit Popup */}
+        {showHackLimitPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="mx-4 max-w-md rounded-lg bg-white p-6 shadow-xl">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-red-600">
+                  Hack of the Day Limit Reached
+                </h3>
+              </div>
+              <div className="mb-6">
+                <p className="text-gray-700">{hackLimitMessage}</p>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowHackLimitPopup(false)}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </OperationsLayout>
   );

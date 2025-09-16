@@ -121,42 +121,51 @@ export async function PUT(
     }
 
     // Update the menu item
+    const updateData: any = {
+      name: data.name ? (data.name as string) : existingItem.name,
+      description: data.description
+        ? (data.description as string)
+        : existingItem.description,
+      price: data.price
+        ? parseFloat(data.price as string)
+        : existingItem.price,
+      originalPrice: data.originalPrice
+        ? parseFloat(data.originalPrice as string)
+        : existingItem.originalPrice,
+      category: data.category
+        ? (data.category as string)
+        : existingItem.category,
+      preparationTime: data.preparationTime
+        ? parseInt(data.preparationTime as string)
+        : existingItem.preparationTime,
+      imageUrl: imageUrl,
+      dietaryTags: data.dietaryType
+        ? [data.dietaryType as string]
+        : existingItem.dietaryTags,
+      spiceLevel: data.spiceLevel
+        ? (data.spiceLevel as string)
+        : existingItem.spiceLevel,
+      available:
+        data.available !== undefined
+          ? data.available === 'true'
+          : existingItem.available,
+      featured:
+        data.featured !== undefined
+          ? data.featured === 'true'
+          : existingItem.featured,
+      stockLeft: data.stockLeft ? parseInt(data.stockLeft as string) : null,
+    };
+
+    // Only add hackOfTheDay if it exists on the existing item or is being set
+    if (data.hackOfTheDay !== undefined || existingItem.hackOfTheDay !== undefined) {
+      updateData.hackOfTheDay = data.hackOfTheDay !== undefined
+        ? data.hackOfTheDay === 'true'
+        : (existingItem.hackOfTheDay || false);
+    }
+
     const updatedItem = await prisma.menuItem.update({
       where: { id },
-      data: {
-        name: data.name ? (data.name as string) : existingItem.name,
-        description: data.description
-          ? (data.description as string)
-          : existingItem.description,
-        price: data.price
-          ? parseFloat(data.price as string)
-          : existingItem.price,
-        originalPrice: data.originalPrice
-          ? parseFloat(data.originalPrice as string)
-          : existingItem.originalPrice,
-        category: data.category
-          ? (data.category as string)
-          : existingItem.category,
-        preparationTime: data.preparationTime
-          ? parseInt(data.preparationTime as string)
-          : existingItem.preparationTime,
-        imageUrl: imageUrl,
-        dietaryTags: data.dietaryType
-          ? [data.dietaryType as string]
-          : existingItem.dietaryTags,
-        spiceLevel: data.spiceLevel
-          ? (data.spiceLevel as string)
-          : existingItem.spiceLevel,
-        available:
-          data.available !== undefined
-            ? data.available === 'true'
-            : existingItem.available,
-        featured:
-          data.featured !== undefined
-            ? data.featured === 'true'
-            : existingItem.featured,
-        stockLeft: data.stockLeft ? parseInt(data.stockLeft as string) : null,
-      },
+      data: updateData,
     });
 
     return NextResponse.json({
@@ -263,6 +272,7 @@ export async function GET(
         spiceLevel: menuItem.spiceLevel,
         available: menuItem.available,
         featured: menuItem.featured,
+        hackOfTheDay: menuItem.hackOfTheDay || false,
         stockLeft: menuItem.stockLeft,
         restaurantId: menuItem.restaurantId,
         restaurantName: menuItem.restaurant.name,

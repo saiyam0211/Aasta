@@ -23,6 +23,7 @@ import { CartBottomNav } from '@/components/ui/cart-bottom-nav';
 import { useCacheStore } from '@/lib/cache-store';
 import { FoodHacksPromo } from '@/components/ui/food-hacks-promo';
 import { useVegMode } from '@/contexts/VegModeContext';
+import { HackOfTheDay } from '@/components/ui/deal-of-the-day';
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
@@ -75,6 +76,9 @@ export default function HomePage() {
   // Product sheet state
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [productSheetOpen, setProductSheetOpen] = useState(false);
+  // State for hack of the day items
+  const [hacksOfTheDay, setHacksOfTheDay] = useState<any[]>([]);
+  const [hacksLoading, setHacksLoading] = useState(false);
   // const [isPullRefreshing, setIsPullRefreshing] = useState(false);
 
   const cartItemCount =
@@ -114,6 +118,7 @@ export default function HomePage() {
     // setIsPullRefreshing(true);
     try {
       await loadPopularContent();
+      await loadHacksOfTheDay();
     } finally {
       // setIsPullRefreshing(false);
     }
@@ -234,6 +239,9 @@ export default function HomePage() {
       // No cache available, load fresh data
       loadPopularContent();
     }
+    
+    // Load hack of the day items
+    loadHacksOfTheDay();
   }, [session, status, latitude, longitude]);
 
   // Handle veg mode changes - force refresh
@@ -241,9 +249,38 @@ export default function HomePage() {
     if (status !== 'authenticated') return;
     
     // Clear cache and reload when veg mode changes
-    invalidateCache();
-    loadPopularContent();
-  }, [vegOnly]);
+    if (latitude && longitude) {
+      invalidateCache({ latitude, longitude });
+      loadPopularContent();
+      loadHacksOfTheDay();
+    }
+  }, [vegOnly, latitude, longitude, invalidateCache]);
+
+  const loadHacksOfTheDay = async () => {
+    if (!latitude || !longitude) return;
+    
+    try {
+      setHacksLoading(true);
+      const hacksRes = await fetch(
+        `/api/hack-of-the-day?lat=${latitude}&lng=${longitude}&radius=5${vegOnly ? '&veg=1' : ''}`
+      );
+
+      if (hacksRes.ok) {
+        const hacksData = await hacksRes.json();
+        setHacksOfTheDay(hacksData.data || []);
+        console.log('Loaded hack of the day items:', hacksData.data?.length || 0);
+      } else {
+        const errorData = await hacksRes.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Failed to fetch hack of the day:', hacksRes.status, errorData);
+        setHacksOfTheDay([]);
+      }
+    } catch (error) {
+      console.error('Error fetching hack of the day items:', error);
+      setHacksOfTheDay([]);
+    } finally {
+      setHacksLoading(false);
+    }
+  };
 
   const loadPopularContent = async (backgroundRefresh = false) => {
     try {
@@ -448,6 +485,11 @@ export default function HomePage() {
 
   const handleAdd = (dish: Dish) => {
     toast.success(`${dish.name} added to cart!`);
+  };
+
+  const handleDealAdd = (deal: any) => {
+    toast.success(`${deal.name} added to cart!`);
+    // You can add cart logic here similar to other dishes
   };
 
   const handleHomeTap = () => {
@@ -810,6 +852,28 @@ export default function HomePage() {
                     )}
               </div>
             </div>
+
+            {/* Hack of the Day Section */}
+            {(hacksLoading || hacksOfTheDay.length > 0) && (
+              <div className="py-8">
+                {hacksLoading ? (
+                  <div className="flex gap-4 overflow-x-auto pb-4">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="min-w-[320px] h-64 animate-pulse rounded-3xl bg-gray-800/20 flex-shrink-0"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <HackOfTheDay
+                    deals={hacksOfTheDay}
+                    onAdd={handleDealAdd}
+                    className=""
+                  />
+                )}
+              </div>
+            )}
 
             {/* Restaurants list */}
             <div className="space-y-4 pt-6">

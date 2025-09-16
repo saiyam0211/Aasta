@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Star, Clock } from 'lucide-react';
 import type { Dish } from '@/types/dish';
@@ -56,6 +56,7 @@ export function HomeProductCard({
   restaurantContext,
 }: HomeProductCardProps) {
   const [clicked, setClicked] = useState(false);
+  const [showDiscountText, setShowDiscountText] = useState(true); // true = percentage, false = amount saved
 
   const hasDiscount = !!dish.originalPrice && dish.originalPrice > dish.price;
   const discountPct = hasDiscount
@@ -63,6 +64,18 @@ export function HomeProductCard({
         ((dish.originalPrice! - dish.price) / dish.originalPrice!) * 100
       )
     : 0;
+  const savedAmount = hasDiscount ? dish.originalPrice! - dish.price : 0;
+
+  // Auto-toggle discount text every 5 seconds
+  useEffect(() => {
+    if (!hasDiscount) return;
+    
+    const interval = setInterval(() => {
+      setShowDiscountText(prev => !prev);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [hasDiscount]);
 
   const isVeg = Array.isArray(dish.dietaryTags)
     ? dish.dietaryTags.includes('Veg')
@@ -175,8 +188,27 @@ export function HomeProductCard({
 
       {/* Discount */}
       {hasDiscount && (
-        <div className="mb-1 text-[12px] font-semibold text-blue-600">
-          {discountPct}% OFF
+        <div className="mb-1 h-4 text-[12px] font-semibold text-blue-600 relative overflow-hidden">
+          <div
+            className={cn(
+              "absolute inset-0 flex items-center transition-all duration-500 ease-in-out",
+              showDiscountText 
+                ? "transform translate-y-0 opacity-100" 
+                : "transform -translate-y-full opacity-0"
+            )}
+          >
+            {discountPct}% OFF
+          </div>
+          <div
+            className={cn(
+              "absolute inset-0 flex items-center transition-all duration-500 ease-in-out",
+              !showDiscountText 
+                ? "transform translate-y-0 opacity-100" 
+                : "transform translate-y-full opacity-0"
+            )}
+          >
+            You'll save ₹{savedAmount}
+          </div>
         </div>
       )}
 
