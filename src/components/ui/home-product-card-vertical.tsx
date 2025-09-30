@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Star, Clock } from 'lucide-react';
 import type { Dish } from '@/types/dish';
@@ -221,9 +222,33 @@ export function HomeProductCardList({
   restaurantContext,
   showDistance,
 }: HomeProductCardListProps) {
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    // On mount, nudge to a random initial position so not always starting at card 1
+    if (scrollerRef.current) {
+      const el = scrollerRef.current;
+      const max = Math.max(0, el.scrollWidth - el.clientWidth);
+      if (max > 0) {
+        const random = Math.random();
+        // Allow between 10% and 50% of the available scroll range
+        const offset = max * (0.1 + random * 0.4);
+        el.scrollLeft = offset;
+      }
+    }
+    return () => {};
+  }, []);
+
   return (
     <div className="relative">
-      <div className="scrollbar-hide flex gap-8 overflow-x-auto pb-4">
+      {/* edge fades to hint horizontal scroll */}
+      <div className="fade-left absolute inset-y-0 left-0 w-6 pointer-events-none" />
+      <div className="fade-right absolute inset-y-0 right-0 w-10 pointer-events-none" />
+
+      <div
+        className="scrollbar-hide flex gap-8 overflow-x-auto pb-6"
+        ref={scrollerRef}
+      >
         {dishes.map((dish) => (
           <div key={dish.id} className="w-48 flex-shrink-0">
             <HomeProductCard
@@ -237,6 +262,13 @@ export function HomeProductCardList({
         ))}
       </div>
 
+      {/* Subtle slide indicator - per list instance */}
+      <div className="slide-hint pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-1 text-[11px] text-gray-500">
+        <span>Slide</span>
+        <span className="arrow">›</span>
+        <span className="arrow delay">›</span>
+      </div>
+
       <style jsx>{`
         /* Hide scrollbar for Chrome, Safari and Opera */
         .scrollbar-hide::-webkit-scrollbar {
@@ -248,6 +280,20 @@ export function HomeProductCardList({
           -ms-overflow-style: none; /* IE and Edge */
           scrollbar-width: none; /* Firefox */
         }
+
+        .fade-right {
+          background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));
+        }
+        .fade-left {
+          background: linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0));
+        }
+        @keyframes arrow-slide {
+          0%, 100% { transform: translateX(0); opacity: .5; }
+          50% { transform: translateX(6px); opacity: 1; }
+        }
+        .slide-hint { opacity: .85; }
+        .slide-hint .arrow { animation: arrow-slide 1.2s ease-in-out infinite; display:inline-block; }
+        .slide-hint .arrow.delay { animation-delay: .2s; }
       `}</style>
     </div>
   );

@@ -80,9 +80,14 @@ export default function HomePage() {
   // State for hack of the day items
   const [hacksOfTheDay, setHacksOfTheDay] = useState<any[]>([]);
   const [hacksLoading, setHacksLoading] = useState(false);
+  // Recently ordered items (last 4 order items)
+  const [recentDishes, setRecentDishes] = useState<Dish[]>([]);
+  const [recentLoading, setRecentLoading] = useState(false);
   // Nearby non-featured dishes (within 5km), split into three sections with no repeats
   const [nearbyDishesSections, setNearbyDishesSections] = useState<Dish[][]>([[], [], []]);
   const [nearbyDishesLoading, setNearbyDishesLoading] = useState(false);
+  // Smooth veg-toggle UX (quick local filter + subtle animation)
+  const [vegToggleAnimating, setVegToggleAnimating] = useState(false);
   // const [isPullRefreshing, setIsPullRefreshing] = useState(false);
 
   const cartItemCount =
@@ -124,6 +129,7 @@ export default function HomePage() {
       await loadPopularContent();
       await loadHacksOfTheDay();
       await loadNearbyNonFeaturedDishes();
+      await loadRecentlyOrdered();
     } finally {
       // setIsPullRefreshing(false);
     }
@@ -249,6 +255,8 @@ export default function HomePage() {
     loadHacksOfTheDay();
     // Load nearby non-featured dishes
     loadNearbyNonFeaturedDishes();
+    // Load recently ordered
+    loadRecentlyOrdered();
   }, [session, status, latitude, longitude]);
 
   // Handle veg mode changes - force refresh
@@ -257,10 +265,16 @@ export default function HomePage() {
     
     // Clear cache and reload when veg mode changes
     if (latitude && longitude) {
+      // trigger quick UI transition immediately
+      setVegToggleAnimating(true);
+      const t = setTimeout(() => setVegToggleAnimating(false), 220);
+      // background refresh (non-blocking, will reconcile after)
       invalidateCache({ latitude, longitude });
-      loadPopularContent();
+      loadPopularContent(true);
       loadHacksOfTheDay();
       loadNearbyNonFeaturedDishes();
+      loadRecentlyOrdered();
+      return () => clearTimeout(t);
     }
   }, [vegOnly, latitude, longitude, invalidateCache]);
 
@@ -287,6 +301,60 @@ export default function HomePage() {
       setHacksOfTheDay([]);
     } finally {
       setHacksLoading(false);
+    }
+  };
+
+  // Recently ordered - fetch last 4 completed order items and map to Dish
+  const loadRecentlyOrdered = async () => {
+    try {
+      setRecentLoading(true);
+      const res = await fetch('/api/orders?limit=4&paymentStatus=COMPLETED');
+      if (!res.ok) {
+        setRecentDishes([]);
+        return;
+      }
+      const data = await res.json();
+      const orders = Array.isArray(data?.data?.orders) ? data.data.orders : [];
+      // Flatten items with createdAt ordering
+      const items: Dish[] = [];
+      for (const order of orders) {
+        const createdAt = order.createdAt ? Date.parse(order.createdAt) : Date.now();
+        for (const it of (order.orderItems || [])) {
+          const id = it?.menuItem?.id || `${order.id}-${it?.menuItem?.name || 'item'}`;
+          const name = it?.menuItem?.name || 'Item';
+          const image = it?.menuItem?.imageUrl || '/images/dish-placeholder.svg';
+          const price = it?.unitPrice || it?.totalPrice || 0;
+          const originalPrice = it?.originalUnitPrice || it?.totalOriginalPrice || undefined;
+          const isVegetarian = Array.isArray(it?.menuItem?.dietaryTags)
+            ? it.menuItem.dietaryTags.includes('Veg')
+            : false;
+          items.push({
+            id,
+            name,
+            image,
+            price,
+            originalPrice,
+            rating: 0,
+            preparationTime: it?.preparationTime || 15,
+            restaurant: order?.restaurant?.name || 'Restaurant',
+            category: it?.menuItem?.category || '',
+            isVegetarian,
+            spiceLevel: (it?.menuItem?.spiceLevel as any) || 'mild',
+            description: it?.menuItem?.description || undefined,
+            dietaryTags: it?.menuItem?.dietaryTags || [],
+            restaurantId: it?.menuItem?.restaurantId,
+            distanceText: undefined,
+            // Keep createdAt implicitly via sort stage
+          } as Dish & { _ts?: number });
+        }
+      }
+      // Take top 4 in order already limited; in case more items, slice 4
+      setRecentDishes(items.slice(0, 4));
+    } catch (e) {
+      console.error('Failed to load recently ordered', e);
+      setRecentDishes([]);
+    } finally {
+      setRecentLoading(false);
     }
   };
 
@@ -652,8 +720,7 @@ export default function HomePage() {
     }
   };
 
-  if (status === 'loading') return null;
-  if (!session) return null;
+  // Moved loading/session guards below hooks to preserve hook order
 
   const handleAdd = (dish: Dish) => {
     toast.success(`${dish.name} added to cart!`);
@@ -708,6 +775,25 @@ export default function HomePage() {
     toast.success(`Added ${quantity} × ${dish.name} to cart`);
     setProductSheetOpen(false);
   };
+
+  // Local fast-filtered views for instant veg toggle without waiting for network
+  const isVegDish = (d: Dish) =>
+    Array.isArray(d.dietaryTags) ? d.dietaryTags.includes('Veg') : !!d.isVegetarian;
+
+  const visiblePopularDishes = useMemo(() => {
+    if (!vegOnly) return popularDishes;
+    return popularDishes.filter(isVegDish);
+  }, [vegOnly, popularDishes]);
+
+  const visibleNearbySections = useMemo(() => {
+    if (!vegOnly) return nearbyDishesSections;
+    return nearbyDishesSections.map((sec) => sec.filter(isVegDish));
+  }, [vegOnly, nearbyDishesSections]);
+
+  // Early return rendering (after all hooks) to avoid hook-order changes
+  if (status === 'loading' || !session) {
+    return <div className="min-h-screen" />;
+  }
 
   return (
     <div className="min-h-screen bg-[#d3fb6b]">
@@ -970,8 +1056,8 @@ export default function HomePage() {
                       className="h-48 animate-pulse rounded-2xl bg-gray-100"
                     />
                   ))}
-                {popularDishes.length > 0
-                  ? popularDishes.map((dish) => (
+                {visiblePopularDishes.length > 0
+                  ? visiblePopularDishes.map((dish) => (
                       <HomeProductCard
                         key={dish.id}
                         dish={dish as Dish}
@@ -1022,10 +1108,46 @@ export default function HomePage() {
                         </button>
                       </div>
                     )}
-              </div>
+            </div>
+          </div>
+
+          {/* Recently ordered */}
+          <div className="relative mt-10">
+            <div className="relative mb-3 flex items-center justify-end">
+              <h2
+                className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
+                style={{ letterSpacing: '-0.08em' }}
+              >
+                Recently ordered
+                <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
+                <span
+                  className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
+                  style={{ backgroundImage: "url('/highlighter.png')" }}
+                />
+              </h2>
             </div>
 
-            {/* Hack of the Day Section */}
+            {recentLoading && recentDishes.length === 0 ? (
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-48 animate-pulse rounded-2xl bg-gray-100" />
+                ))}
+              </div>
+            ) : recentDishes.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4">
+                {recentDishes.slice(0, 4).map((dish) => (
+                  <HomeProductCard
+                    key={`recent-${dish.id}`}
+                    dish={dish}
+                    onAdd={handleAdd}
+                    onClick={openProduct}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          {/* Hack of the Day Section */}
             {(hacksLoading || hacksOfTheDay.length > 0) && (
               <div className="py-8">
                 {hacksLoading ? (
@@ -1049,16 +1171,29 @@ export default function HomePage() {
 
         {/* Nearby Products (Non-featured, within 5km) - three deduped vertical carousels */}
         <div className="mt-6 space-y-6">
-          {(nearbyDishesLoading && nearbyDishesSections.flat().length === 0) && (
+          <div className="relative mb-3 flex items-center justify-end">
+            <h2
+              className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
+              style={{ letterSpacing: '-0.08em' }}
+            >
+              Nearby foods
+              <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
+              <span
+                className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
+                style={{ backgroundImage: "url('/highlighter.png')" }}
+              />
+            </h2>
+          </div>
+           {(nearbyDishesLoading && visibleNearbySections.flat().length === 0) && (
             <div className="flex gap-8 overflow-x-auto pb-2">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="min-w-[192px] h-60 animate-pulse rounded-2xl bg-gray-100" />
               ))}
             </div>
           )}
-          {nearbyDishesSections.map((section, idx) => (
+           {visibleNearbySections.map((section, idx) => (
             section.length > 0 ? (
-              <div key={idx} className="gap-8">
+               <div key={idx} className={vegToggleAnimating ? "gap-8 transition-opacity duration-200 opacity-90" : "gap-8"}>
                 <HomeProductCardList
                   dishes={section}
                   onAdd={handleAdd}

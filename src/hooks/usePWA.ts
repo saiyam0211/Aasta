@@ -102,42 +102,43 @@ export const usePWA = () => {
       requestNotificationPermissionAfterInstall();
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('appinstalled', handleAppInstalled);
+    // PWA temporarily disabled
+    // window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    // window.addEventListener('online', handleOnline);
+    // window.addEventListener('offline', handleOffline);
+    // window.addEventListener('appinstalled', handleAppInstalled);
 
-    // Register service worker only in production builds
-    if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((registration) => {
-          console.log('✅ Service Worker registered:', registration);
-        })
-        .catch((registrationError) => {
-          console.error(
-            '❌ Service Worker registration failed:',
-            registrationError
-          );
-        });
-    } else if ('serviceWorker' in navigator) {
-      // In development, ensure no SW is controlling the page to avoid caching dev chunks
-      navigator.serviceWorker.getRegistrations().then((regs) => {
-        regs.forEach((reg) => reg.unregister());
-      });
-      caches.keys().then((keys) => {
-        keys.forEach((k) => caches.delete(k));
-      });
-    }
+    // // Register service worker only in production builds (disabled)
+    // if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
+    //   navigator.serviceWorker
+    //     .register('/sw.js')
+    //     .then((registration) => {
+    //       console.log('✅ Service Worker registered:', registration);
+    //     })
+    //     .catch((registrationError) => {
+    //       console.error(
+    //         '❌ Service Worker registration failed:',
+    //         registrationError
+    //       );
+    //     });
+    // } else if ('serviceWorker' in navigator) {
+    //   // In development, ensure no SW is controlling the page to avoid caching dev chunks
+    //   navigator.serviceWorker.getRegistrations().then((regs) => {
+    //     regs.forEach((reg) => reg.unregister());
+    //   });
+    //   caches.keys().then((keys) => {
+    //     keys.forEach((k) => caches.delete(k));
+    //   });
+    // }
 
     return () => {
-      window.removeEventListener(
-        'beforeinstallprompt',
-        handleBeforeInstallPrompt
-      );
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      // window.removeEventListener(
+      //   'beforeinstallprompt',
+      //   handleBeforeInstallPrompt
+      // );
+      // window.removeEventListener('online', handleOnline);
+      // window.removeEventListener('offline', handleOffline);
+      // window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 

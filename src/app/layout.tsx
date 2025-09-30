@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  manifest: '/manifest.json',
+  // manifest: '/manifest.json', // PWA disabled
   icons: {
     icon: [
       {
@@ -193,7 +193,7 @@ export default function RootLayout({
           sizes="16x16"
           href="/icons/Aasta_Logos_192x192.png"
         />
-        <link rel="manifest" href="/manifest.json" />
+        {/* <link rel="manifest" href="/manifest.json" /> */}
         <link
           rel="mask-icon"
           href="/icons/Aasta_Logos_192x192.png"
@@ -221,7 +221,7 @@ export default function RootLayout({
         <meta property="og:url" content="https://www.aasta.food" />
         <meta property="og:image" content="/icons/Aasta_Logos_512x512.png" />
 
-        <Script id="pwa-install-prompt" strategy="afterInteractive">
+        {/* <Script id="pwa-install-prompt" strategy="afterInteractive">
           {`
             let deferredPrompt;
             window.addEventListener('beforeinstallprompt', (e) => {
@@ -244,7 +244,7 @@ export default function RootLayout({
               document.body.appendChild(installBtn);
             });
           `}
-        </Script>
+        </Script> */}
       </head>
       <body className="pt-safe pb-safe font-sans antialiased">
         <Providers>

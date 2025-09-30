@@ -28,9 +28,9 @@ import {
   Download,
 } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
-import { usePWA } from '@/hooks/usePWA';
-import { usePushSubscription } from '@/hooks/usePushSubscription';
-import { useNotificationListener } from '@/hooks/useNotificationListener';
+// import { usePWA } from '@/hooks/usePWA';
+// import { usePushSubscription } from '@/hooks/usePushSubscription';
+// import { useNotificationListener } from '@/hooks/useNotificationListener';
 import { CartBottomNav } from '@/components/ui/cart-bottom-nav';
 
 interface CustomerLayoutProps {
@@ -55,15 +55,11 @@ export default function CustomerLayout({
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { cart } = useCartStore();
-  const {
-    isInstallable,
-    installApp,
-    isInstalled,
-    showInstallPrompt,
-    isOnline,
-  } = usePWA();
-  const { isSubscribed, isSubscribing } = usePushSubscription(); // Auto-subscribe to push notifications
-  useNotificationListener(); // Listen for real-time notifications
+  // PWA features disabled for now
+  const isInstalled = false;
+  const isOnline = true;
+  // const { isSubscribed, isSubscribing } = usePushSubscription();
+  // useNotificationListener();
 
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;

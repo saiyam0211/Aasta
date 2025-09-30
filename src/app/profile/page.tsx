@@ -288,10 +288,9 @@ export default function ProfilePage() {
             onClick={handleGoBack}
             variant="ghost"
             size="sm"
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="h-10 w-20 rounded-full border border-white/20 bg-white mt-1 p-0 shadow-sm backdrop-blur-sm hover:bg-white"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back
+            <ArrowLeft className=" h-6 w-6" style={{ color: '#002a01' }} /> Back
           </Button>
 
           {/* Total Savings Display */}
@@ -314,14 +313,14 @@ export default function ProfilePage() {
       <div className="mx-auto max-w-4xl px-4 py-6">
       {/* User Profile Section */}
         <Card className="mb-6 border border-gray-200 bg-gray-50 shadow-sm">
-          <CardContent className="p-6">
+          <CardContent className="px-6">
             <div className="flex items-center gap-6">
               {/* Avatar */}
               <div className="relative">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
                   <User className="h-8 w-8 text-gray-600" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                <div className="absolute -bottom-1 -right-1 w-6  h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
                   <CheckCircle className="h-3 w-3 text-white" />
                 </div>
               </div>
@@ -353,7 +352,7 @@ export default function ProfilePage() {
             <div className="space-y-0">
               {/* Share the app */}
               <div 
-                className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                className="flex items-center justify-between p-4 border-b border-dashed border-gray-300   hover:bg-gray-50 cursor-pointer transition-colors"
                 onClick={() => {
                   if (navigator.share) {
                     navigator.share({
@@ -369,73 +368,87 @@ export default function ProfilePage() {
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Share2 className="h-5 w-5 text-blue-600" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                    <Share2 className=" h-6 w-6 text-back" />
                   </div>
-                  <span className="font-medium text-gray-900">Share the app</span>
+                  <span className="font-medium text-lg text-gray-900">Share the app</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-gray-400" />
               </div>
 
               {/* Address book */}
               <div 
-                className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                className="flex items-center justify-between p-4 border-b border-dashed border-gray-300   hover:bg-gray-50 cursor-pointer transition-colors"
                 onClick={() => setIsAddressSheetOpen(true)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-green-600" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                    <BookOpen className=" h-6 w-6 text-black" />
                   </div>
-                  <span className="font-medium text-gray-900">Address book</span>
+                  <span className="font-medium text-lg text-gray-900">Address book</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-gray-400" />
               </div>
 
               {/* About us */}
               <div 
-                className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                className="flex items-center justify-between p-4 border-b border-dashed border-gray-300   hover:bg-gray-50 cursor-pointer transition-colors"
                 onClick={() => router.push('/about')}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Info className="h-5 w-5 text-purple-600" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                    <Info className=" h-6 w-6 text-black" />
                   </div>
-                  <span className="font-medium text-gray-900">About us</span>
+                  <span className="font-medium text-lg text-gray-900">About us</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-gray-400" />
               </div>
 
               {/* Privacy policy and agreements */}
               <div 
-                className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                className="flex items-center justify-between p-4 border-b border-dashed border-gray-300   hover:bg-gray-50 cursor-pointer transition-colors"
                 onClick={() => router.push('/privacy')}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <Shield className="h-5 w-5 text-orange-600" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                    <Shield className=" h-6 w-6 text-black" />
                   </div>
-                  <span className="font-medium text-gray-900">Privacy policy and agreements</span>
+                  <span className="font-medium text-lg text-gray-900">Privacy policy and agreements</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-gray-400" />
               </div>
 
               {/* Notification preference */}
               <div 
-                className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                className="flex items-center justify-between p-4 border-b border-dashed border-gray-300   hover:bg-gray-50 cursor-pointer transition-colors"
                 onClick={() => router.push('/notifications')}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <Bell className="h-5 w-5 text-yellow-600" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                    <Bell className=" h-6 w-6 text-black" />
                   </div>
-                  <span className="font-medium text-gray-900">Notification preference</span>
+                  <span className="font-medium text-lg text-gray-900">Notification preference</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </div>
+
+              {/* View orders */}
+              <div 
+                className="flex items-center justify-between p-4 border-b border-dashed border-gray-300   hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => router.push('/orders')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                    <Package className=" h-6 w-6 text-black" />
+                  </div>
+                  <span className="font-medium text-lg text-gray-900">View orders</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-gray-400" />
               </div>
 
               {/* Logout */}
               <div 
-                className="flex items-center justify-between p-4 hover:bg-red-50 cursor-pointer transition-colors"
+                className="flex items-center justify-between p-4   hover:bg-red-50 cursor-pointer transition-colors"
                 onClick={() => {
                   if (confirm('Are you sure you want to logout?')) {
                     // Handle logout logic here
@@ -444,10 +457,10 @@ export default function ProfilePage() {
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                    <LogOut className="h-5 w-5 text-red-600" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                    <LogOut className=" h-6 w-6 text-red-600" />
                   </div>
-                  <span className="font-medium text-gray-900">Logout</span>
+                  <span className="font-medium text-lg text-red-600">Logout</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-gray-400" />
             </div>
@@ -492,7 +505,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-4">
-                {orders.map((order) => {
+                {orders.slice(0,3).map((order) => {
                   const savings = (order as any).savings || 0;
                   
                   return (
@@ -506,7 +519,7 @@ export default function ProfilePage() {
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <Store className="h-5 w-5 text-gray-600" />
+                              <Store className=" h-6 w-6 text-gray-600" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <h3 className="font-semibold text-gray-900 text-base truncate">
