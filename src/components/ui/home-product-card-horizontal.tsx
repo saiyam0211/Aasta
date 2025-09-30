@@ -129,7 +129,7 @@ export function HomeProductCardHorizontal({
             </div>
             {quantity > 0 ? (
               <div
-                className="ml-2 inline-flex items-center rounded-md border border-green-600/30 bg-white shadow"
+                className="ml-2 inline-flex items-center h-10 rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm"
                 onClick={(e) => e.stopPropagation()}
               >
                 <button
@@ -159,7 +159,7 @@ export function HomeProductCardHorizontal({
             ) : (
               <button
                 onClick={handleAddToCart}
-                className="h-8 rounded-md border border-green-600/30 bg-white px-4 text-xl font-semibold text-[#002a01] shadow"
+                className="h-10 rounded-md border border-green-600/30 bg-white px-4 text-xl font-semibold text-[#002a01] shadow"
                 aria-label={`Add ${dish.name}`}
               >
                 Add

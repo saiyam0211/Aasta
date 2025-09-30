@@ -12,6 +12,7 @@ interface HomeProductCardProps {
   className?: string;
   onClick?: (dish: Dish) => void;
   restaurantContext?: { id: string; name: string };
+  showDistance?: boolean;
 }
 
 interface HomeProductCardListProps {
@@ -19,6 +20,7 @@ interface HomeProductCardListProps {
   onAdd: (dish: Dish) => void;
   onClick?: (dish: Dish) => void;
   restaurantContext?: { id: string; name: string };
+  showDistance?: boolean;
 }
 
 function VegMark({ isVegetarian }: { isVegetarian: boolean }) {
@@ -60,6 +62,7 @@ export function HomeProductCard({
   className,
   onClick,
   restaurantContext,
+  showDistance,
 }: HomeProductCardProps) {
   const hasDiscount = !!dish.originalPrice && dish.originalPrice > dish.price;
   const discountPct = hasDiscount
@@ -135,7 +138,14 @@ export function HomeProductCard({
       {/* Chips row */}
       <div className="mb-2 flex items-center gap-2">
         <VegMark isVegetarian={isVeg} />
-        <InfoChip>Best Sellers</InfoChip>
+        {showDistance && dish.distanceText && (
+          <span className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" />
+            </svg>
+            {dish.distanceText}
+          </span>
+        )}
       </div>
 
       {/* Title */}
@@ -169,7 +179,7 @@ export function HomeProductCard({
         </div>
         <div className="absolute -bottom-5 left-35 -translate-x-1/2 border-10 border-white">
           {quantity > 0 ? (
-            <div className="-gap-2 inline-flex h-9 items-center rounded-md border border-green-600/30 bg-white shadow">
+            <div className="-gap-2 inline-flex h-10 items-center rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm">
               <button
                 onClick={handleDecrease}
                 className="h-6 w-6 rounded-md text-lg text-[#002a01]"
@@ -209,10 +219,11 @@ export function HomeProductCardList({
   onAdd,
   onClick,
   restaurantContext,
+  showDistance,
 }: HomeProductCardListProps) {
   return (
     <div className="relative">
-      <div className="scrollbar-hide flex gap-4 overflow-x-auto pb-4">
+      <div className="scrollbar-hide flex gap-8 overflow-x-auto pb-4">
         {dishes.map((dish) => (
           <div key={dish.id} className="w-48 flex-shrink-0">
             <HomeProductCard
@@ -220,6 +231,7 @@ export function HomeProductCardList({
               onAdd={onAdd}
               onClick={onClick}
               restaurantContext={restaurantContext}
+              showDistance={showDistance}
             />
           </div>
         ))}

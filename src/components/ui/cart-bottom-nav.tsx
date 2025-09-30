@@ -22,8 +22,8 @@ export function CartBottomNav({
 
   // Show/hide based on cart items AND current route
   useEffect(() => {
-    // The nav should be visible if there are items AND we are on the home page
-    const shouldBeVisible = cartItemCount > 0 && pathname === '/';
+    // The nav should be visible if there are items AND we are on the home page or restaurant pages
+    const shouldBeVisible = cartItemCount > 0 && (pathname === '/' || pathname.startsWith('/restaurants/'));
 
     if (shouldBeVisible && !isVisible) {
       setIsAnimating(true);

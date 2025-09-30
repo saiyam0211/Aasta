@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Star, Clock } from 'lucide-react';
+import { Star, Clock, Minus, Plus } from 'lucide-react';
 import type { Dish } from '@/types/dish';
 import { SafeImage } from '@/components/ui/safe-image';
 import { useCartStore } from '@/lib/store';

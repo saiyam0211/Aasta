@@ -26,6 +26,7 @@ import localFont from 'next/font/local';
 import { useLocationStore } from '@/hooks/useLocation';
 import { googleMapsService } from '@/lib/google-maps';
 import { ProductBottomSheet } from '@/components/ui/ProductBottomSheet';
+import RestaurantFooter from '@/components/ui/restaurant-footer';
 import type { Dish } from '@/types/dish';
 import { shareContent, generateRestaurantShareData } from '@/lib/share-utils';
 import { HomeProductCard } from '@/components/ui/home-product-card';
@@ -124,6 +125,50 @@ export default function RestaurantDetailPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
 
+  // Offers carousel state
+  const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  
+  // Sample offers data
+  const offers = [
+    {
+      id: 1,
+      title: "Flat ₹150 off",
+      subtitle: "USE DEALICIOUS | ABOVE ₹449",
+      icon: "%",
+      color: "orange"
+    },
+    {
+      id: 2,
+      title: "Free Delivery",
+      subtitle: "ON ORDERS ABOVE ₹199",
+      icon: "🚚",
+      color: "green"
+    },
+    {
+      id: 3,
+      title: "20% Cashback",
+      subtitle: "USE PAYTM | ABOVE ₹299",
+      icon: "💰",
+      color: "blue"
+    },
+    {
+      id: 4,
+      title: "Buy 1 Get 1",
+      subtitle: "ON SELECTED ITEMS",
+      icon: "🎁",
+      color: "purple"
+    },
+    {
+      id: 5,
+      title: "Extra ₹50 off",
+      subtitle: "USE SAVE50 | ABOVE ₹399",
+      icon: "💸",
+      color: "red"
+    }
+  ];
+
   useEffect(() => {
     const fetchRestaurantData = async () => {
       try {
@@ -209,6 +254,40 @@ export default function RestaurantDetailPage() {
     longitude,
     restaurant?.averagePreparationTime,
   ]);
+
+  // Auto-rotate offers carousel every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentOfferIndex((prevIndex) => (prevIndex + 1) % offers.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [offers.length]);
+
+  // Touch/swipe handlers for manual carousel navigation
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && currentOfferIndex < offers.length - 1) {
+      setCurrentOfferIndex(currentOfferIndex + 1);
+    }
+    if (isRightSwipe && currentOfferIndex > 0) {
+      setCurrentOfferIndex(currentOfferIndex - 1);
+    }
+  };
 
   const handleAddToCart = (item: MenuItem) => {
     if (!restaurant) return;
@@ -358,7 +437,7 @@ export default function RestaurantDetailPage() {
 
   return (
     <CustomerLayout hideHeader hideFooter>
-      <div className="mx-auto max-w-3xl bg-[#D2F86A]">
+      <div className="mx-auto max-w-3xl bg-[#002a01]">
         <div className="px-4 py-6">
           {/* Back button */}
           <div className="mb-4 flex justify-between">
@@ -381,27 +460,135 @@ export default function RestaurantDetailPage() {
             </Button>
           </div>
 
-          {/* Top header card like reference */}
-          <Card className="shadow-b-sm glass-liquid z-1 mb-4 h-40 rounded-[40px] border-gray-100 bg-white">
+          {/* Top header card with rating and offers */}
+          <Card className="shadow-b-sm glass-liquid z-1 mb-4 rounded-[40px] border-gray-100 bg-white">
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
-                <div>
-                  <h1
-                    className={`text-[25px] font-extrabold tracking-tight`}
-                    style={{ color: '#002a01' }}
-                  >
-                    {restaurant.name}
-                  </h1>
-                  <div className="mt-1 flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="h-4 w-4" /> {locationText}
-                    <span>|</span>
-                    <Clock className="h-4 w-4" /> {prepTimeText}
-                    {distanceText && (
-                      <>
+                <div className="flex-1">
+                  {/* Restaurant name and basic info */}
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <h1
+                        className={`text-[25px] font-extrabold tracking-tight`}
+                        style={{ color: '#002a01' }}
+                      >
+                        {restaurant.name}
+                      </h1>
+                      <div className="mt-1 flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin className="h-4 w-4" /> {locationText}
                         <span>|</span>
-                        <span>{distanceText}</span>
-                      </>
-                    )}
+                        <Clock className="h-4 w-4" /> {prepTimeText}
+                        {distanceText && (
+                          <>
+                            <span>|</span>
+                            <span>{distanceText}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Rating section */}
+                    <div className="flex flex-col items-end gap-1 mt-2">
+                      <div className="flex items-center gap-1 rounded-lg bg-green-600 px-2 py-1">
+                        <Star className="h-3 w-3 fill-white text-white" />
+                        <span className="text-xs font-semibold text-white">
+                          {ratingValue}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-600">
+                        {ratingsCountText} ratings
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Offers section */}
+                  <div className="mt-4 bg-[#D2F86A] rounded-xl pl-2 ">
+                    <div className="flex items-center gap-3">
+                      {/* Offer carousel indicator - sliding window of 3 dots */}
+                      <div className="flex items-center flex-col gap-1 mt-3">
+                        {(() => {
+                          // Calculate which 3 dots to show based on current position
+                          let startIndex, endIndex;
+                          let shouldAnimate = false;
+                          
+                          if (currentOfferIndex === 0) {
+                            // First offer: show dots 1, 2, 3
+                            startIndex = 0;
+                            endIndex = 2;
+                            shouldAnimate = true; // Animate when at first position
+                          } else if (currentOfferIndex === offers.length - 1) {
+                            // Last offer: show dots 3, 4, 5 (last 3)
+                            startIndex = Math.max(0, offers.length - 3);
+                            endIndex = offers.length - 1;
+                            shouldAnimate = true; // Animate when at last position
+                          } else {
+                            // Middle offers: show current-1, current, current+1
+                            startIndex = Math.max(0, currentOfferIndex - 1);
+                            endIndex = Math.min(offers.length - 1, currentOfferIndex + 1);
+                            shouldAnimate = false; // No animation for middle positions
+                          }
+                          
+                          const dotsToShow = [];
+                          for (let i = startIndex; i <= endIndex; i++) {
+                            dotsToShow.push(i);
+                          }
+                          
+                          return dotsToShow.map((index) => {
+                            const isActive = index === currentOfferIndex;
+                            return (
+                              <div
+                                key={index}
+                                className={`h-2 w-2 rounded-full ${
+                                  shouldAnimate 
+                                    ? 'transition-all duration-500 ease-in-out' 
+                                    : 'transition-none'
+                                } ${
+                                  isActive ? 'bg-[#002a01]' : 'bg-[#dee1e0]'
+                                }`}
+                              />
+                            );
+                          });
+                        })()}
+                        <span className="mt-2 mb-1 font-bold text-sm text-gray-700">
+                          {currentOfferIndex + 1}/{offers.length}
+                        </span>
+                      </div>
+                      
+                      {/* Main offer - dynamically changing with touch support */}
+                      <div 
+                        className={`flex items-center gap-2 rounded-xl px-3 py-2 w-80 h-20 transition-all duration-500 ${
+                          offers[currentOfferIndex]?.color === 'orange' ? 'bg-[#002a01]' :
+                          offers[currentOfferIndex]?.color === 'green' ? 'bg-[#002a01]' :
+                          offers[currentOfferIndex]?.color === 'blue' ? 'bg-[#002a01]' :
+                          offers[currentOfferIndex]?.color === 'purple' ? 'bg-[#002a01]' :
+                          'bg-[#002a01]'
+                        }`}
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                      >
+                        <div>
+                          <div className={`text-md ml-2 font-bold ${
+                            offers[currentOfferIndex]?.color === 'orange' ? 'text-white' :
+                            offers[currentOfferIndex]?.color === 'green' ? 'text-white' :
+                            offers[currentOfferIndex]?.color === 'blue' ? 'text-white' :
+                            offers[currentOfferIndex]?.color === 'purple' ? 'text-white' :
+                            'text-white'
+                          }`}>
+                            {offers[currentOfferIndex]?.title}
+                          </div>
+                          <div className={`text-sm ml-2 ${
+                            offers[currentOfferIndex]?.color === 'orange' ? 'text-white' :
+                            offers[currentOfferIndex]?.color === 'green' ? 'text-white' :
+                            offers[currentOfferIndex]?.color === 'blue' ? 'text-white' :
+                            offers[currentOfferIndex]?.color === 'purple' ? 'text-white' :
+                            'text-white'
+                          }`}>
+                            {offers[currentOfferIndex]?.subtitle}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -409,7 +596,7 @@ export default function RestaurantDetailPage() {
           </Card>
         </div>
 
-        <div className="shadow-t-sm rounded-t-[50px] border-gray-100 bg-white">
+        <div className="shadow-t-sm rounded-t-[50px] pb-10 border-gray-100 bg-white">
           {/* Featured items horizontal scroll */}
           {featuredItems.length > 0 && (
             <div className="mb-6 px-4 pt-5">
@@ -526,6 +713,16 @@ export default function RestaurantDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Restaurant Footer */}
+      <RestaurantFooter 
+        restaurant={{
+          id: restaurant.id,
+          name: restaurant.name,
+          address: restaurant.address,
+          phone: restaurant.phone,
+        }}
+      />
 
       <ProductBottomSheet
         open={sheetOpen}

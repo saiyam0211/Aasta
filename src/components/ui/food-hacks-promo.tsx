@@ -16,6 +16,7 @@ export function FoodHacksPromo({ className = '' }: FoodHacksPromoProps) {
   return (
     <div
       className={`border-gradient-to-br ml-10 rounded-tl-[1000px] rounded-tr-[650px] rounded-bl-[0px] bg-[#002a01] from-green-50 to-emerald-50 px-6 pt-6 pl-10 ${className}`}
+      style={{ zIndex: 2147483647, position: 'relative' }}
     >
       <div className="flex flex-col items-center justify-between">
         {/* Left side with Lottie animation */}

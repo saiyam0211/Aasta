@@ -11,6 +11,7 @@ import { usePWA } from '@/hooks/usePWA';
 import { HomeHeader } from '@/components/ui/home-header';
 import AddressSheet from '@/components/ui/AddressSheet';
 import { HomeProductCard } from '@/components/ui/home-product-card';
+import { HomeProductCardList } from '@/components/ui/home-product-card-vertical';
 import { CheckCircle } from 'lucide-react';
 import type { Dish } from '@/types/dish';
 import {
@@ -79,6 +80,9 @@ export default function HomePage() {
   // State for hack of the day items
   const [hacksOfTheDay, setHacksOfTheDay] = useState<any[]>([]);
   const [hacksLoading, setHacksLoading] = useState(false);
+  // Nearby non-featured dishes (within 5km), split into three sections with no repeats
+  const [nearbyDishesSections, setNearbyDishesSections] = useState<Dish[][]>([[], [], []]);
+  const [nearbyDishesLoading, setNearbyDishesLoading] = useState(false);
   // const [isPullRefreshing, setIsPullRefreshing] = useState(false);
 
   const cartItemCount =
@@ -119,6 +123,7 @@ export default function HomePage() {
     try {
       await loadPopularContent();
       await loadHacksOfTheDay();
+      await loadNearbyNonFeaturedDishes();
     } finally {
       // setIsPullRefreshing(false);
     }
@@ -242,6 +247,8 @@ export default function HomePage() {
     
     // Load hack of the day items
     loadHacksOfTheDay();
+    // Load nearby non-featured dishes
+    loadNearbyNonFeaturedDishes();
   }, [session, status, latitude, longitude]);
 
   // Handle veg mode changes - force refresh
@@ -253,6 +260,7 @@ export default function HomePage() {
       invalidateCache({ latitude, longitude });
       loadPopularContent();
       loadHacksOfTheDay();
+      loadNearbyNonFeaturedDishes();
     }
   }, [vegOnly, latitude, longitude, invalidateCache]);
 
@@ -282,6 +290,160 @@ export default function HomePage() {
     }
   };
 
+  // Load non-featured menu items from restaurants within 5km and split into 3 unique sections
+  const loadNearbyNonFeaturedDishes = async () => {
+    if (!latitude || !longitude) return;
+    try {
+      setNearbyDishesLoading(true);
+      // Get nearby restaurants (already respects 5km)
+      const restaurantsRes = await fetch(
+        `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=5&limit=12${vegOnly ? '&veg=1' : ''}`
+      );
+      if (!restaurantsRes.ok) {
+        setNearbyDishesSections([[], [], []]);
+        return;
+      }
+      const restaurantsPayload = await restaurantsRes.json();
+      const restaurants: RestaurantSummary[] = (restaurantsPayload?.data || []).map((x: any) => ({
+        id: x.id,
+        name: x.name,
+        imageUrl: x.image,
+        bannerImage: x.bannerImage,
+        cuisineTypes: x.cuisineTypes,
+        rating: x.rating,
+        estimatedDeliveryTime: x.deliveryTime,
+        distanceKm: x.distance,
+        minimumOrderAmount: x.minimumOrderAmount,
+        isOpen: !!x.isOpen,
+        featuredItems: x.featuredItems || [],
+      }));
+
+      // Fetch menus and collect non-featured, available items
+      const allDishes: Dish[] = [];
+      for (const r of restaurants) {
+        try {
+          const menuRes = await fetch(`/api/menu-items?restaurantId=${r.id}`);
+          if (!menuRes.ok) continue;
+          const menuPayload = await menuRes.json();
+          const items = Array.isArray(menuPayload?.data) ? menuPayload.data : [];
+          for (const it of items) {
+            const isVeg = Array.isArray(it.dietaryTags)
+              ? it.dietaryTags.includes('Veg')
+              : false;
+            if (vegOnly && !isVeg) continue;
+            // Exclude featured items
+            if (it.featured) continue;
+            const d: Dish = {
+              id: it.id,
+              name: it.name,
+              image: it.imageUrl || '/images/dish-placeholder.svg',
+              price: it.price,
+              originalPrice: it.originalPrice ?? undefined,
+              rating: 0,
+              preparationTime: it.preparationTime ?? 15,
+              restaurant: r.name,
+              category: it.category || '',
+              isVegetarian: isVeg,
+              spiceLevel: (it.spiceLevel as any) || 'mild',
+              description: it.description || undefined,
+              dietaryTags: it.dietaryTags || [],
+              restaurantId: r.id,
+              distanceText: typeof r.distanceKm === 'number' ? `${r.distanceKm.toFixed(1)} km` : undefined,
+            };
+            allDishes.push(d);
+          }
+        } catch {}
+      }
+
+      // Deduplicate by id
+      const uniqueMap = new Map<string, Dish>();
+      for (const d of allDishes) {
+        if (!uniqueMap.has(d.id)) uniqueMap.set(d.id, d);
+      }
+      let unique = Array.from(uniqueMap.values());
+
+      // Shuffle items (Fisher-Yates)
+      for (let i = unique.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [unique[i], unique[j]] = [unique[j], unique[i]];
+      }
+
+      // Arrange so that consecutive items are not from the same restaurant
+      const byRestaurant = new Map<string, Dish[]>();
+      for (const d of unique) {
+        const key = d.restaurantId || d.restaurant;
+        if (!byRestaurant.has(key)) byRestaurant.set(key, []);
+        byRestaurant.get(key)!.push(d);
+      }
+      // Shuffle each restaurant bucket
+      for (const arr of byRestaurant.values()) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+      }
+      // Round-robin pick across restaurants avoiding same as previous
+      const restaurantKeys = Array.from(byRestaurant.keys());
+      // shuffle keys
+      for (let i = restaurantKeys.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [restaurantKeys[i], restaurantKeys[j]] = [restaurantKeys[j], restaurantKeys[i]];
+      }
+      const ordered: Dish[] = [];
+      let lastKey: string | null = null;
+      while (byRestaurant.size > 0) {
+        let placed = false;
+        for (let idx = 0; idx < restaurantKeys.length; idx++) {
+          const key = restaurantKeys[idx];
+          const bucket = byRestaurant.get(key);
+          if (!bucket || bucket.length === 0) continue;
+          if (key === lastKey) continue;
+          ordered.push(bucket.shift()!);
+          lastKey = key;
+          placed = true;
+          if (bucket.length === 0) {
+            byRestaurant.delete(key);
+          }
+          break;
+        }
+        if (!placed) {
+          // all remaining buckets have the same key as last; pick any
+          const nonEmpty = restaurantKeys.find(k => (byRestaurant.get(k) || []).length > 0);
+          if (!nonEmpty) break;
+          const bucket = byRestaurant.get(nonEmpty)!;
+          ordered.push(bucket.shift()!);
+          lastKey = nonEmpty;
+          if (bucket.length === 0) byRestaurant.delete(nonEmpty);
+        }
+        // refresh keys removing emptied ones
+        for (let i = restaurantKeys.length - 1; i >= 0; i--) {
+          const k = restaurantKeys[i];
+          if (!byRestaurant.has(k)) restaurantKeys.splice(i, 1);
+        }
+        // rotate keys a bit to mix
+        if (restaurantKeys.length > 1) {
+          const first = restaurantKeys.shift()!;
+          restaurantKeys.push(first);
+        }
+      }
+
+      // Distribute into three sections in round-robin to avoid duplication across lines
+      const s1: Dish[] = [], s2: Dish[] = [], s3: Dish[] = [];
+      ordered.forEach((d, i) => {
+        const slot = i % 3;
+        if (slot === 0) s1.push(d);
+        else if (slot === 1) s2.push(d);
+        else s3.push(d);
+      });
+      setNearbyDishesSections([s1, s2, s3]);
+    } catch (e) {
+      console.error('Failed loading nearby dishes', e);
+      setNearbyDishesSections([[], [], []]);
+    } finally {
+      setNearbyDishesLoading(false);
+    }
+  };
+
   const loadPopularContent = async (backgroundRefresh = false) => {
     try {
       if (!backgroundRefresh) {
@@ -299,6 +461,8 @@ export default function HomePage() {
 
         if (restaurantsRes.ok) {
           const r = await restaurantsRes.json();
+          console.log('[Home] Nearby API raw count:', Array.isArray(r.data) ? r.data.length : 0);
+          console.log('[Home] Nearby API sample:', (r.data || []).slice(0, 5).map((x: any) => ({ id: x.id, name: x.name, status: x.status, isOpen: x.isOpen, distance: x.distance })));
           restaurantsData = (r.data || []).map((x: any) => ({
             id: x.id,
             name: x.name,
@@ -309,27 +473,28 @@ export default function HomePage() {
             estimatedDeliveryTime: x.deliveryTime, // API returns string like "25-35 min"
             distanceKm: x.distance,
             minimumOrderAmount: x.minimumOrderAmount,
-            isOpen: x.isOpen,
+            // Derive isOpen from status when available
+            isOpen:
+              typeof x.isOpen === 'boolean'
+                ? x.isOpen
+                : String(x.status || '')
+                    .toUpperCase()
+                    .trim() === 'ACTIVE',
             featuredItems: Array.isArray(x.featuredItems)
               ? x.featuredItems
               : [],
           }));
+          console.log('[Home] Nearby mapped count:', restaurantsData.length);
 
           // Filter restaurants when veg mode is on
-          const filteredRestaurants = vegOnly 
-            ? restaurantsData.filter(restaurant => {
-                // Check if restaurant has any vegetarian items
-                return restaurant.featuredItems?.some((item: any) => {
-                  const isVeg = Array.isArray(item.dietaryTags)
-                    ? item.dietaryTags.includes('Veg')
-                    : item.isVegetarian;
-                  return isVeg;
-                });
-              })
-            : restaurantsData;
+          // Show all restaurants within radius regardless of veg-only mode
+          const filteredRestaurants = restaurantsData;
+          console.log('[Home] Nearby final (no veg filter) count:', filteredRestaurants.length);
+          console.log('[Home] Nearby CLOSED count:', filteredRestaurants.filter(r => r.isOpen === false).length);
 
           if (!backgroundRefresh) {
             setPopularRestaurants(filteredRestaurants);
+            console.log('[Home] setPopularRestaurants:', filteredRestaurants.length);
           }
         }
       }
@@ -419,7 +584,13 @@ export default function HomePage() {
         estimatedDeliveryTime: r.averagePreparationTime ?? null,
         distanceKm: r.distance ?? null,
         minimumOrderAmount: r.minimumOrderAmount ?? null,
-        isOpen: r.isOpen,
+        // Derive isOpen from status when available
+        isOpen:
+          typeof r.isOpen === 'boolean'
+            ? r.isOpen
+            : String(r.status || '')
+                .toUpperCase()
+                .trim() === 'ACTIVE',
         featuredItems: Array.isArray(r.featuredItems)
           ? r.featuredItems.map((it: any) => ({
               name: it.name,
@@ -428,6 +599,7 @@ export default function HomePage() {
             }))
           : [],
       }));
+      console.log('[Home] Search mapped restaurants count:', mappedRestaurants.length);
       setRestaurantResults(mappedRestaurants);
 
       // Extract matching dishes from restaurants.menuItems
@@ -768,8 +940,8 @@ export default function HomePage() {
                 className="absolute inset-0"
                 style={{
                   backgroundImage: `
-        radial-gradient(125% 125% at 50% 90%, #ffffff 40%, #10b981 100%)
-      `,
+                    radial-gradient(125% 125% at 50% 90%, #ffffff 40%, #10b981 100%)
+                  `,
                   backgroundSize: '100% 100%',
                 }}
               /> */}
@@ -875,8 +1047,31 @@ export default function HomePage() {
               </div>
             )}
 
+        {/* Nearby Products (Non-featured, within 5km) - three deduped vertical carousels */}
+        <div className="mt-6 space-y-6">
+          {(nearbyDishesLoading && nearbyDishesSections.flat().length === 0) && (
+            <div className="flex gap-8 overflow-x-auto pb-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="min-w-[192px] h-60 animate-pulse rounded-2xl bg-gray-100" />
+              ))}
+            </div>
+          )}
+          {nearbyDishesSections.map((section, idx) => (
+            section.length > 0 ? (
+              <div key={idx} className="gap-8">
+                <HomeProductCardList
+                  dishes={section}
+                  onAdd={handleAdd}
+                  onClick={openProduct}
+                  showDistance
+                />
+              </div>
+            ) : null
+          ))}
+        </div>
+
             {/* Restaurants list */}
-            <div className="space-y-4 pt-6">
+            <div className="space-y-8 pt-6">
               <div className="flex items-center justify-end">
                 <h2
                   className={`${brandFont.className} font-brand text-[70px] font-semibold`}

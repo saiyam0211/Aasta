@@ -29,10 +29,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all active restaurants
+    // Get restaurants including INACTIVE so we can show closed ones too
     const allRestaurants = await prisma.restaurant.findMany({
       where: {
-        status: 'ACTIVE',
+        status: { in: ['ACTIVE', 'INACTIVE'] as any },
         ...(vegOnly && {
           menuItems: {
             some: {
@@ -111,13 +111,15 @@ export async function GET(request: NextRequest) {
         deliveryTime: `${restaurant.averagePreparationTime + 10}-${restaurant.averagePreparationTime + 20} min`,
         deliveryFee: restaurant.minimumOrderAmount > 250 ? 0 : 25, // Free delivery for orders above ₹250
         distance: parseFloat(restaurant.distance.toFixed(1)),
+        status: restaurant.status,
         isPromoted: false, // We can add a promoted field later
         isFavorite: false, // We can check against user favorites later
         discount:
           restaurant.minimumOrderAmount > 200 ? '20% OFF' : 'Free Delivery',
         minOrderAmount: restaurant.minimumOrderAmount,
         avgCostForTwo: restaurant.minimumOrderAmount * 2, // Rough estimate
-        isOpen: isRestaurantOpen(),
+        // Mark open/closed directly from DB status so INACTIVE shows as closed
+        isOpen: String(restaurant.status || '').toUpperCase() === 'ACTIVE',
         featuredItems: (featuredItems || []).map((it) => ({
           name: it.name,
           price: it.price,

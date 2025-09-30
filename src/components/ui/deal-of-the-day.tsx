@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { SafeImage } from '@/components/ui/safe-image';
 import { useCartStore } from '@/lib/store';
+import { Minus, Plus } from 'lucide-react';
 
 interface Deal {
   id: string;
@@ -111,25 +112,15 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
 
   return (
     <div className={cn(
-      "relative rounded-3xl overflow-hidden min-w-[320px] flex-shrink-0 snap-center",
-      deal.isVegetarian 
-        ? "bg-gradient-to-br from-gray-900 to-green-900" 
-        : "bg-gradient-to-br from-gray-900 to-red-900"
+      "relative rounded-3xl overflow-hidden min-w-[320px] flex-shrink-0 snap-center bg-neutral-900 mt-10",
+      "border border-white/10 shadow-lg"
     )}>
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
+      {/* Subtle background gradient */}
+      <div className="absolute inset-0 opacity-30">
         <div className={cn(
           "absolute inset-0 bg-gradient-to-br from-transparent to-transparent",
-          deal.isVegetarian ? "via-green-500/20" : "via-red-500/20"
+          deal.isVegetarian ? "via-emerald-700/30" : "via-rose-700/30"
         )} />
-        {/* Geometric pattern overlay */}
-        <div className="absolute inset-0" style={{
-          backgroundImage: `
-            radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 1px, transparent 1px),
-            radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '60px 60px'
-        }} />
       </div>
 
       {/* Content */}
@@ -140,33 +131,35 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
             <img 
               src={deal.isVegetarian ? "/HACK-VEG.svg" : "/HACK-NONVEG.svg"}
               alt={deal.isVegetarian ? "Hack Veg" : "Hack Non-Veg"}
-              className="h-20 w-auto"
+              className="h-24 w-auto opacity-90"
             />
           </div>
         </div>
 
         {/* Dish Image */}
         <div className="relative mx-auto w-64 h-40 mb-6">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20 rounded-2xl" />
-          <SafeImage
-            src={deal.image}
-            alt={deal.name}
-            className="w-full h-full object-cover rounded-2xl"
-            fallbackSrc="/images/dish-placeholder.svg"
-          />
+          <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-1 border border-white/10">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30 rounded-2xl" />
+            <SafeImage
+              src={deal.image}
+              alt={deal.name}
+              className="w-full h-48 object-cover rounded-2xl"
+              fallbackSrc="/images/dish-placeholder.svg"
+            />
+          </div>
           
           {/* Price Badge */}
-          <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
+          <div className="absolute top-46 left-1/2 transform -translate-x-1/2 z-10">
             <div className={cn(
-              "px-6 py-2 rounded-full shadow-lg",
+              "px-5 py-2 rounded-xl shadow-lg border border-white/10",
               deal.isVegetarian 
-                ? "bg-gradient-to-r from-green-500 to-emerald-500" 
-                : "bg-gradient-to-r from-pink-500 to-red-500"
+                ? "bg-gradient-to-r from-emerald-500 to-emerald-600" 
+                : "bg-gradient-to-r from-rose-500 to-rose-600"
             )}>
               <div className="flex items-center gap-2 text-white">
-                <span className="text-2xl font-bold">₹{deal.price}</span>
+                <span className="text-2xl font-semibold">₹{deal.price}</span>
                 {hasDiscount && (
-                  <span className="text-sm line-through opacity-75">₹{deal.originalPrice}</span>
+                  <span className="text-sm line-through/80 opacity-80">₹{deal.originalPrice}</span>
                 )}
               </div>
             </div>
@@ -174,104 +167,97 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
         </div>
 
         {/* Info Pills */}
-        <div className="flex items-center justify-center gap-4 mb-6 mt-8">
+        <div className="flex items-center justify-center gap-3 mb-6 mt-24">
           {/* Time */}
           <div className={cn(
-            "flex items-center gap-1 backdrop-blur-sm border rounded-full px-3 py-1",
+            "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium border",
             deal.isVegetarian 
-              ? "bg-green-600/20 border-green-500/30" 
-              : "bg-red-600/20 border-red-500/30"
+              ? "bg-emerald-900/40 border-emerald-700 text-emerald-100" 
+              : "bg-rose-900/40 border-rose-700 text-rose-100"
           )}>
-            <div className={cn(
-              "w-3 h-3 rounded-full flex items-center justify-center",
-              deal.isVegetarian ? "bg-green-500" : "bg-red-500"
-            )}>
-              <div className="w-1.5 h-1.5 bg-white rounded-full" />
-            </div>
-            <span className="text-white text-sm font-medium">{deal.preparationTime} mins</span>
+            <span className={cn(
+              "inline-block h-2 w-2 rounded-full",
+              deal.isVegetarian ? "bg-emerald-400" : "bg-rose-400"
+            )} />
+            <span>{deal.preparationTime} mins</span>
           </div>
 
           {/* Serving Size */}
-          <div className="bg-gray-700/50 backdrop-blur-sm border border-gray-600 rounded-full px-3 py-1">
-            <span className="text-white text-sm font-medium">
-              {deal.servingSize || 'Serves 1'}
-            </span>
+          <div className="rounded-full px-3 py-1.5 text-xs font-medium border bg-white/5 border-white/10 text-white/90">
+            <span>{deal.servingSize || 'Serves 1'}</span>
           </div>
         </div>
 
         {/* Dish Name */}
-        <h3 className="text-center text-xl font-bold text-white mb-2 leading-tight">
+        <h3 className="text-center text-2xl font-semibold text-white mb-2 leading-tight">
           {deal.name}
         </h3>
 
-        {/* Dynamic Text with Transition */}
-        <div className="h-6 text-center text-sm font-medium mb-8 relative overflow-hidden">
+        {/* Dynamic Text with Enhanced Transition */}
+        <div className="h-6 text-center text-sm font-medium mb-8 relative overflow-hidden text-white/90">
           {hasDiscount ? (
             <>
               <div
                 className={cn(
                   "absolute inset-0 flex items-center justify-center transition-all duration-500 ease-in-out",
                   showDiscountText 
-                    ? "transform translate-y-0 opacity-100" 
-                    : "transform -translate-y-full opacity-0",
-                  deal.isVegetarian ? "text-green-400" : "text-red-400"
+                    ? "translate-y-0 opacity-100" 
+                    : "-translate-y-full opacity-0",
+                  deal.isVegetarian ? "text-emerald-300" : "text-rose-300"
                 )}
               >
-                {discountPct}% OFF
+                <span>{discountPct}% OFF</span>
               </div>
               <div
                 className={cn(
                   "absolute inset-0 flex items-center justify-center transition-all duration-500 ease-in-out",
                   !showDiscountText 
-                    ? "transform translate-y-0 opacity-100" 
-                    : "transform translate-y-full opacity-0",
-                  deal.isVegetarian ? "text-green-400" : "text-red-400"
+                    ? "translate-y-0 opacity-100" 
+                    : "translate-y-full opacity-0",
+                  deal.isVegetarian ? "text-emerald-300" : "text-rose-300"
                 )}
               >
-                You'll save ₹{savedAmount}
+                <span>You'll save ₹{savedAmount}</span>
               </div>
             </>
           ) : (
-            <div className={cn(
-              "text-center",
-              deal.isVegetarian ? "text-green-400" : "text-red-400"
-            )}>
-              Limited stock
-            </div>
+            <div className="text-center">Limited stock</div>
           )}
         </div>
 
         {/* Add Button / Quantity Controls */}
         <div className="flex justify-center">
           {quantity > 0 ? (
-            <div className="inline-flex h-16 items-center rounded-2xl border border-green-600/30 bg-[#d3fb6b] shadow-xl">
-              <button
-                onClick={handleDecrease}
-                className="h-10 w-10 rounded-xl text-xl text-[#002a01] font-bold"
-                aria-label={`Decrease ${deal.name}`}
-              >
-                −
-              </button>
-              <span className="text-lg min-w-[2rem] text-center font-bold text-[#002a01]">
-                {quantity}
-              </span>
-              <button
-                onClick={handleIncrease}
-                className="h-10 w-10 rounded-xl text-xl text-[#002a01] font-bold"
-                aria-label={`Increase ${deal.name}`}
-              >
-                +
-              </button>
+            <div className="flex items-center gap-3 mx-8 h-14">
+              <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-[#cefd4f] px-5 py-2 h-14">
+                <button
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-[#002a01] shadow-sm hover:bg-gray-100 transition-colors"
+                  onClick={handleDecrease}
+                  aria-label={`Decrease ${deal.name}`}
+                >
+                  <Minus className="h-3 w-3 text-white" />
+                </button>
+                <span className="min-w-[20px] text-center text-lg font-semibold text-gray-600">{quantity}</span>
+                <button
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-[#002a01] shadow-sm hover:bg-gray-100 transition-colors"
+                  onClick={handleIncrease}
+                  aria-label={`Increase ${deal.name}`}
+                >
+                  <Plus className="h-3 w-3 text-white" />
+                </button>
+              </div>
             </div>
           ) : (
             <button
               onClick={handleAddToCart}
               className={cn(
-                "bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-black font-bold text-lg px-12 py-4 rounded-2xl shadow-xl transform transition-all duration-200 hover:scale-105 active:scale-95",
-                deal.isVegetarian ? "bg-green-400" : "bg-red-400"
+                "px-6 py-4 rounded-xl text-md font-semibold shadow-lg border",
+                deal.isVegetarian 
+                  ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-500 text-white" 
+                  : "bg-rose-600 hover:bg-rose-700 border-rose-500 text-white"
               )}
             >
-              ADD
+              Add to cart
             </button>
           )}
         </div>

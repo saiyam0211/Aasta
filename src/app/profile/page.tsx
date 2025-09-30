@@ -7,6 +7,8 @@ import CustomerLayout from '@/components/layouts/customer-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import AddressSheet from '@/components/ui/AddressSheet';
+import { useCartStore } from '@/lib/store';
 import {
   User,
   Phone,
@@ -20,6 +22,15 @@ import {
   Package,
   ChefHat,
   CheckCircle,
+  Share2,
+  BookOpen,
+  Info,
+  Shield,
+  Bell,
+  LogOut,
+  Menu,
+  ChevronRight,
+  RefreshCw,
 } from 'lucide-react';
 import localFont from 'next/font/local';
 import { toast } from 'sonner';
@@ -67,6 +78,8 @@ export default function ProfilePage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddressSheetOpen, setIsAddressSheetOpen] = useState(false);
+  const { addItem: addToCart, clearCart } = useCartStore();
 
   // Calculate total savings across all orders
   const totalSavings = useMemo(() => {
@@ -168,6 +181,51 @@ export default function ProfilePage() {
     router.back();
   };
 
+  const handleReorder = async (order: Order) => {
+    try {
+      // Clear existing cart first
+      clearCart();
+      
+      // Get restaurant details (we'll need to fetch this or use existing data)
+      const restaurant = {
+        id: 'unknown', // We'll need to get this from the order data
+        name: order.restaurant?.name || 'Unknown Restaurant',
+        // Add other restaurant properties as needed
+      };
+
+      // Add each item from the order to cart
+      if (order.orderItems && order.orderItems.length > 0) {
+        for (const orderItem of order.orderItems) {
+          if (orderItem.menuItem && orderItem.quantity && orderItem.unitPrice) {
+            const cartItem = {
+              menuItemId: `item-${Date.now()}-${Math.random()}`, // Generate unique ID
+              menuItem: {
+                id: `item-${Date.now()}-${Math.random()}`,
+                name: orderItem.menuItem.name || 'Unknown Item',
+                price: orderItem.unitPrice,
+                // Add other menu item properties as needed
+              },
+              quantity: orderItem.quantity,
+              customizations: {}, // No customizations for reorder
+              subtotal: orderItem.totalPrice || (orderItem.unitPrice * orderItem.quantity),
+            };
+
+            addToCart(cartItem, restaurant);
+          }
+        }
+      }
+
+      // Show success message
+      toast.success('Items added to cart!');
+      
+      // Redirect to cart page
+      router.push('/cart');
+    } catch (error) {
+      console.error('Error reordering:', error);
+      toast.error('Failed to add items to cart');
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'PLACED':
@@ -222,233 +280,315 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="">
-      <div className="sticky top-0 z-50 bg-white px-4 py-4">
-        <div className="mb-2 flex items-center justify-between">
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+        <div className="flex items-center justify-between">
           <Button
             onClick={handleGoBack}
             variant="ghost"
             size="sm"
-            className="h-10 w-20 rounded-full border border-[#D2F86A] bg-white/10 p-0 shadow-sm backdrop-blur-sm hover:bg-white"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <ArrowLeft className="h-5 w-5" style={{ color: '#002a01' }} /> Back
+            <ArrowLeft className="h-4 w-4" />
+            Back
           </Button>
 
           {/* Total Savings Display */}
           {totalSavings > 0 && (
-            <div className="flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-4 py-2">
+            <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2">
               <div className="flex items-center gap-1">
-                <span className="text-lg font-bold text-green-600">₹</span>
-                <span className="text-lg font-bold text-green-600">
+                <span className="text-sm font-bold text-green-700">₹</span>
+                <span className="text-sm font-bold text-green-700">
                   {totalSavings.toFixed(0)}
                 </span>
               </div>
-              <span className="text-sm font-medium text-green-700">
+              <span className="text-xs font-medium text-green-600">
                 Total Saved
               </span>
             </div>
           )}
         </div>
       </div>
-      {/* User Profile Section */}
-      <Card className="shadow-t-xl via-[#D2F86A]-50/30 relative mb-8 overflow-hidden rounded-t-3xl rounded-b-[60px] border-0 bg-gradient-to-br from-white to-white">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#D2F86A]/5 to-[#002a01]/5"></div>
-        <div className="absolute top-0 right-0 h-32 w-32 translate-x-16 -translate-y-16 rounded-full bg-gradient-to-br from-[#002a01]/10 to-transparent"></div>
 
-        <CardContent className="relative z-10">
-          <div className="flex items-center gap-8">
-            {/* Enhanced User Info */}
-            <div className="flex-1 space-y-4">
-              <div>
-                <h2 className="mb-1 text-3xl font-bold text-gray-900">
-                  {session.user?.name || 'User'}
-                </h2>
-                <p className="text-sm font-medium text-gray-500">
-                  Aasta's Member
-                </p>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white/60 px-4 py-3 text-gray-700 shadow-sm backdrop-blur-sm">
-                  <div className="rounded-lg bg-[#002a01]/10 p-2">
-                    <Phone className="h-4 w-4 text-[#002a01]" />
-                  </div>
-                  <span className="font-medium">
-                    {session.user?.phone || 'No phone'}
-                  </span>
+      <div className="mx-auto max-w-4xl px-4 py-6">
+      {/* User Profile Section */}
+        <Card className="mb-6 border border-gray-200 bg-gray-50 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-6">
+              {/* Avatar */}
+              <div className="relative">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                  <User className="h-8 w-8 text-gray-600" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                  <CheckCircle className="h-3 w-3 text-white" />
                 </div>
               </div>
+              
+              {/* User Info */}
+              <div className="flex-1 min-w-0">
+                <h2 className="text-2xl font-bold text-gray-900 truncate">
+                  {session.user?.name || 'User'}
+                </h2>
+
+                
+                <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                  <Phone className="h-4 w-4" />
+                  <span className="truncate">{session.user?.phone || 'No phone'}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Profile Options Section */}
+        <Card className="mb-6 border border-gray-200 bg-gray-50 shadow-sm">
+          <CardHeader className="border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6 sm:py-4">
+            <CardTitle className="text-2xl sm:text-2xl font-semibold text-gray-900">
+              Account Options
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="space-y-0">
+              {/* Share the app */}
+              <div 
+                className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: 'Aasta Food Delivery',
+                      text: 'Check out Aasta for amazing food delivery!',
+                      url: window.location.origin
+                    });
+                  } else {
+                    // Fallback for browsers that don't support Web Share API
+                    navigator.clipboard.writeText(window.location.origin);
+                    toast.success('App link copied to clipboard!');
+                  }
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Share2 className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">Share the app</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </div>
+
+              {/* Address book */}
+              <div 
+                className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => setIsAddressSheetOpen(true)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-green-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">Address book</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </div>
+
+              {/* About us */}
+              <div 
+                className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => router.push('/about')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Info className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">About us</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </div>
+
+              {/* Privacy policy and agreements */}
+              <div 
+                className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => router.push('/privacy')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">Privacy policy and agreements</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </div>
+
+              {/* Notification preference */}
+              <div 
+                className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => router.push('/notifications')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <Bell className="h-5 w-5 text-yellow-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">Notification preference</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </div>
+
+              {/* Logout */}
+              <div 
+                className="flex items-center justify-between p-4 hover:bg-red-50 cursor-pointer transition-colors"
+                onClick={() => {
+                  if (confirm('Are you sure you want to logout?')) {
+                    // Handle logout logic here
+                    router.push('/auth/signin');
+                  }
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                    <LogOut className="h-5 w-5 text-red-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">Logout</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Recent Orders Section */}
-      <Card className="shadow-t-xl relative overflow-hidden rounded-t-[60px] border-0 bg-gradient-to-br from-white via-gray-200 to-white">
-        {/* Background Pattern */}
-        <div className="from-[#D2F86A]5 absolute inset-0 bg-gradient-to-br to-[#002a01]/5"></div>
-        <div className="absolute bottom-0 left-0 h-24 w-24 -translate-x-12 translate-y-12 rounded-full bg-gradient-to-tr from-[#002a01]/10 to-transparent"></div>
-
-        <CardHeader className="relative z-10">
-          <div className="flex items-center justify-center">
-            <CardTitle
-              className={`${brandFont.className} flex items-center gap-3 text-[70px] text-[#002a01]`}
-              style={{ letterSpacing: '-0.08em' }}
-            >
+        <Card className="border border-gray-200 bg-gray-50 shadow-sm">
+          
+          <CardHeader className="border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6 sm:py-4">
+            <CardTitle className="text-2xl sm:text-2xl font-semibold text-gray-900">
               Recent Orders
-              <span className="-ml-2 text-[60px] text-[#002a01]">.</span>
             </CardTitle>
-          </div>
         </CardHeader>
-        <CardContent>
+          <CardContent className="p-4 sm:p-6">
           {loading ? (
-            <div className="space-y-6">
+              <div className="space-y-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="animate-pulse">
-                  <div className="h-32 rounded-2xl bg-gradient-to-r from-gray-200 to-gray-100"></div>
+                  <div className="h-24 rounded-lg bg-gray-200"></div>
                 </div>
               ))}
             </div>
           ) : orders.length === 0 ? (
-            <div className="py-16 text-center">
-              <div className="from-[#D2F86A]10 mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br to-[#002a01]/10">
-                <Package className="h-12 w-12 text-[#002a01]" />
+            <div className="py-12 text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                  <Package className="h-8 w-8 text-gray-400" />
               </div>
-              <h3 className="mb-3 text-2xl font-bold text-gray-900">
-                Your plate’s still empty.
+                <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                  No orders yet
               </h3>
-              <p className="mx-auto mb-8 max-w-md text-gray-600">
-                Time to fill it up! Place your first order and watch your
-                history grow.
+                <p className="mb-6 text-sm text-gray-500">
+                  Start your food journey by placing your first order
               </p>
               <Button
                 onClick={() => router.push('/')}
-                className="hover:from-[#D2F86A]90 rounded-xl bg-gradient-to-r from-[#002a01] to-[#002a01] px-8 py-3 text-white shadow-lg transition-all duration-200 hover:to-[#002a01]/90 hover:shadow-xl"
+                  className="bg-gray-900 text-white hover:bg-gray-800"
               >
-                Order Now
+                  Browse Restaurants
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
-              {orders.map((order) => (
+                {orders.map((order) => {
+                  const savings = (order as any).savings || 0;
+                  
+                  return (
                 <div
                   key={order.id}
-                  className="group relative cursor-pointer overflow-hidden rounded-2xl border-r-1 border-[#002a01] bg-white/80 p-6 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
+                      className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => router.push(`/orders/${order.orderNumber}`)}
                 >
-                  {/* Hover Effect Background */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#D2F86A] to-[#002a01]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-
-                  <div className="relative z-10">
-                    <div className="mb-4 flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`rounded-xl border p-3 ${
-                            ((order as any).savings || 0) > 50
-                              ? 'animate-pulse border-yellow-200 bg-gradient-to-br from-yellow-100 to-orange-100'
-                              : 'border-green-200 bg-gradient-to-br from-green-100 to-emerald-100'
-                          }`}
-                        >
-                          <div className="flex h-6 w-6 items-center justify-center">
-                            <span
-                              className={`text-lg font-bold ${
-                                ((order as any).savings || 0) > 50
-                                  ? 'text-orange-600'
-                                  : 'text-green-600'
-                              }`}
-                            >
-                              ₹
+                      <div className="p-4">
+                        {/* Header */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Store className="h-5 w-5 text-gray-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 text-base truncate">
+                                {order.restaurant?.name || 'Unknown Restaurant'}
+                              </h3>
+                              <div className="flex items-center gap-1 text-sm text-gray-500">
+                                <Clock className="h-3 w-3" />
+                                <span>
+                                  {order.createdAt ? formatDate(order.createdAt) : 'N/A'}, {order.createdAt ? formatTime(order.createdAt) : 'N/A'}
                             </span>
                           </div>
                         </div>
-                        <div>
-                          <h3
-                            className={`text-xl font-bold ${
-                              ((order as any).savings || 0) > 50
-                                ? 'text-orange-600'
-                                : 'text-green-600'
-                            }`}
-                          >
-                            ₹{((order as any).savings || 0).toFixed(2)}
-                          </h3>
-                          <p
-                            className={`text-xs font-medium ${
-                              ((order as any).savings || 0) > 50
-                                ? 'text-orange-500'
-                                : 'text-green-500'
-                            }`}
-                          >
-                            {((order as any).savings || 0) > 50
-                              ? 'Great Savings!'
-                              : 'Money Saved'}
-                          </p>
                         </div>
+                          <div className="text-right flex-shrink-0 ml-3">
+                            <div className="text-lg font-bold text-gray-900">
+                              ₹{(order.total || order.totalAmount || 0).toFixed(2)}
+                      </div>
+                            <div className="text-sm text-gray-500">total</div>
                       </div>
                     </div>
 
-                    <div className="mb-4 grid grid-cols-2 gap-4">
-                      <div className="flex items-center gap-2 rounded-lg border-t-1 border-l-1 border-[#002a01] bg-gray-50 px-3 py-2 text-sm text-gray-600">
-                        <div className="rounded bg-[#002a01]/10 p-1">
-                          <MapPin className="h-3 w-3 text-[#002a01]" />
-                        </div>
-                        <span className="truncate font-medium">
-                          {order.restaurant?.name || 'Unknown Restaurant'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mb-4">
-                      <p className="rounded-lg border-b-1 border-l-1 border-[#002a01] bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                        {/* Order Items */}
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                            <span className="text-sm text-gray-600">
                         {(order.orderItems || [])
-                          .slice(0, 2)
+                                .slice(0, 1)
                           .map(
                             (item) =>
-                              `${item.menuItem?.name || 'Unknown Item'} (${item.quantity || 0})`
+                                    `${item.quantity || 1} x ${item.menuItem?.name || 'Unknown Item'}`
                           )
                           .join(', ')}
-                        {(order.orderItems || []).length > 2 &&
-                          ` +${(order.orderItems || []).length - 2} more`}
-                      </p>
+                              {(order.orderItems || []).length > 1 &&
+                                ` +${(order.orderItems || []).length - 1} more`}
+                            </span>
+                          </div>
                     </div>
 
+                        {/* Footer */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        <div className="flex items-center gap-1 rounded-lg bg-white px-2 py-1 shadow-sm">
-                          <Clock className="h-3 w-3" />
-                          <span>
-                            {order.createdAt
-                              ? formatDate(order.createdAt)
-                              : 'N/A'}
-                          </span>
-                          <span>
-                            ,{' '}
-                            {order.createdAt
-                              ? formatTime(order.createdAt)
-                              : 'N/A'}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {savings > 0 && (
+                              <div className=" px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">
+                                Saved ₹{savings.toFixed(0)}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 border-red-200 hover:bg-red-50 text-sm px-3 py-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReorder(order);
+                            }}
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Reorder
+                          </Button>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-[#002a01]">
-                          ₹{(order.total || order.totalAmount || 0).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-gray-500">Total Amount</p>
-                      </div>
                     </div>
-                  </div>
-
-                  {/* Arrow Icon */}
-                  <div className="absolute top-4 right-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    <div className="rounded-full bg-[#002a01] p-2 shadow-lg">
-                      <ArrowRight className="h-4 w-4 text-white" />
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
             </div>
           )}
         </CardContent>
       </Card>
+      </div>
+
+      {/* Address Sheet */}
+      <AddressSheet
+        open={isAddressSheetOpen}
+        onOpenChange={setIsAddressSheetOpen}
+        onSelect={(address) => {
+          // Handle address selection
+          console.log('Selected address:', address);
+          toast.success('Address selected successfully!');
+          setIsAddressSheetOpen(false);
+        }}
+      />
     </div>
   );
 }

@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { useLocationStore } from '@/hooks/useLocation';
 import { googleMapsService } from '@/lib/google-maps';
+import Lottie from 'lottie-react';
+import closedAnim from '../../../public/lotties/closed.json';
 
 export interface RestaurantSummary {
   id: string;
@@ -151,9 +153,13 @@ export function RestaurantCard({
     <div
       className={cn(
         'w-full overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-md',
+        restaurant.isOpen === false ? 'cursor-not-allowed' : undefined,
         className
       )}
-      onClick={() => onClick?.(restaurant.id)}
+      onClick={() => {
+        if (restaurant.isOpen === false) return;
+        onClick?.(restaurant.id);
+      }}
     >
       {/* Image with swipe */}
       <div
@@ -166,9 +172,18 @@ export function RestaurantCard({
           key={index}
           src={heroImage}
           alt={restaurant.name}
-          className="absolute inset-0 h-full w-full object-cover"
+          className={cn(
+            'absolute inset-0 h-full w-full object-cover',
+            restaurant.isOpen === false ? 'opacity-70' : undefined
+          )}
           fallbackSrc="/images/restaurant-placeholder.svg"
         />
+        {/* Closed Lottie on top when restaurant is inactive */}
+        {restaurant.isOpen === false && (
+          <div className="pointer-events-none absolute -top-35 left-1/2 z-20 -translate-x-1/2">
+            <Lottie animationData={closedAnim as any} loop autoplay style={{ width: 400, height: 400 }} />
+          </div>
+        )}
         {/* Featured dish chip */}
         {current && (
           <div className="absolute top-3 left-3">
@@ -203,6 +218,11 @@ export function RestaurantCard({
             <div className="mb-2 line-clamp-1 text-2xl leading-5 font-semibold text-gray-900">
               {restaurant.name}
             </div>
+            {restaurant.isOpen === false && (
+              <div className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700">
+                Closed currently
+              </div>
+            )}
             {/* {restaurant.cuisineTypes && restaurant.cuisineTypes.length > 0 && (
               <div className="mt-1 line-clamp-1 text-xs text-gray-500">
                 {restaurant.cuisineTypes.join(', ')}
@@ -232,7 +252,7 @@ export function RestaurantCard({
     </div>
   );
 
-  if (href) {
+  if (href && restaurant.isOpen !== false) {
     return (
       <Link href={href} className="block">
         {content}

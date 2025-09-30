@@ -34,6 +34,7 @@ import CustomerLayout from '@/components/layouts/customer-layout';
 import { toast } from 'sonner';
 import LocationInput from '@/components/location/location-input';
 import BillBreakdownSheet from '@/components/ui/BillBreakdownSheet';
+import CouponSheet from '@/components/ui/CouponSheet';
 import { locationService } from '@/lib/location-service';
 import AddressSheet from '@/components/ui/AddressSheet';
 
@@ -64,9 +65,31 @@ export default function CartPage() {
   const [mode, setMode] = useState<'delivery' | 'pickup'>('delivery');
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [billOpen, setBillOpen] = useState(false);
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [etaText, setEtaText] = useState<string | null>(null);
   const [addressSheetOpen, setAddressSheetOpen] = useState(false);
   const [placing, setPlacing] = useState(false);
+
+  // Determine veg/non-veg strictly from backend values; do not auto-assign
+  type VegStatus = 'veg' | 'nonveg' | 'unknown';
+  const getVegStatus = (menuItem: any): VegStatus => {
+    const tags: string[] = Array.isArray(menuItem?.dietaryTags)
+      ? menuItem.dietaryTags
+      : [];
+    const normalized = tags.map((t) => String(t).trim().toLowerCase());
+    
+    // Debug logging
+    console.log('Menu item:', menuItem.name, 'dietaryTags:', menuItem?.dietaryTags, 'normalized:', normalized);
+    
+    if (normalized.some((t) => t === 'veg')) return 'veg';
+    if (normalized.some((t) => t === 'non-veg' || t === 'non veg' || t === 'nonveg'))
+      return 'nonveg';
+    if (typeof menuItem?.isVegetarian === 'boolean') {
+      return menuItem.isVegetarian ? 'veg' : 'nonveg';
+    }
+    return 'unknown';
+  };
 
   // Razorpay helper
   const loadRazorpayScript = () => {
@@ -280,60 +303,31 @@ export default function CartPage() {
     computeEta();
   }, [cart?.restaurant, currentLocation]);
 
-  if (!cart || cart.items.length === 0) {
-    return (
-      <CustomerLayout hideHeader hideFooter>
-        <div className="min-h-screen bg-white px-4 py-8">
-          <div className="mx-auto max-w-md">
-            <Card className="border-0 shadow-sm">
-              <CardContent className="px-6 py-12 text-center">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
-                  <ShoppingCart className="h-10 w-10 text-gray-400" />
-                </div>
-                <h3 className="mb-2 text-xl font-semibold text-gray-900">
-                  Your cart is empty
-                </h3>
-                <p className="mb-6 text-sm text-gray-500">
-                  Discover delicious food and add items to your cart
-                </p>
-                <Button
-                  onClick={() => router.push('/')}
-                  className="h-11 w-full rounded-xl bg-orange-500 font-medium text-white hover:bg-orange-600"
-                >
-                  Discover Restaurants
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </CustomerLayout>
-    );
-  }
+  // Check if cart is empty - but don't return early to avoid hooks rule violation
+  const isCartEmpty = !cart || cart.items.length === 0;
 
   // Totals based strictly on menu item fields
   const aastaSubtotal = useMemo(() => {
+    if (!cart?.items) return 0;
     return cart.items.reduce((sum, item) => {
       const price = Number(item.menuItem?.price ?? 0);
       return sum + price * item.quantity;
     }, 0);
-  }, [cart.items]);
+  }, [cart?.items]);
 
   const originalSubtotal = useMemo(() => {
+    if (!cart?.items) return 0;
     return cart.items.reduce((sum, item) => {
       const original = Number(item.menuItem?.originalPrice ?? 0);
       return sum + original * item.quantity;
     }, 0);
-  }, [cart.items]);
-
-  const handleGoBack = () => {
-    router.back();
-  };
+  }, [cart?.items]);
 
   const platformFee = 6;
   const handlingCharge = Number((aastaSubtotal * 0.02).toFixed(2));
   const packagingFeeOriginal = 10;
   const packagingFeeDisplay = 0;
-  const deliveryFee = mode === 'delivery' ? cart.deliveryFee : 0;
+  const deliveryFee = mode === 'delivery' ? (cart?.deliveryFee || 0) : 0;
 
   const computedTotal = useMemo(() => {
     return (
@@ -352,6 +346,8 @@ export default function CartPage() {
   ]);
 
   const savings = useMemo(() => {
+    if (!cart?.items) return 0;
+    
     // Calculate item savings (same as orders API)
     const itemSavings = cart.items.reduce((sum, item) => {
       const original = Number(item.menuItem?.originalPrice ?? 0);
@@ -362,7 +358,7 @@ export default function CartPage() {
 
     // Calculate delivery fee savings (same as orders API)
     const estimatedDeliveryFee = 50; // Typical delivery fee
-    const actualDeliveryFee = mode === 'delivery' ? cart.deliveryFee || 0 : 0;
+    const actualDeliveryFee = mode === 'delivery' ? (cart.deliveryFee || 0) : 0;
     const deliverySavings = Math.max(
       0,
       estimatedDeliveryFee - actualDeliveryFee
@@ -385,7 +381,7 @@ export default function CartPage() {
     });
 
     return totalSavings;
-  }, [cart.items, mode, cart.deliveryFee]);
+  }, [cart?.items, mode, cart?.deliveryFee]);
 
   // etaText is computed in effect above
 
@@ -401,18 +397,47 @@ export default function CartPage() {
     savings,
   };
 
+  const handleGoBack = () => {
+    router.back();
+  };
+
   return (
     <CustomerLayout hideHeader hideFooter>
-      <div className="min-h-screen bg-white">
-        <div className="mx-auto max-w-md bg-white">
+      <div className="min-h-screen bg-[#f3f3f3]">
+        {isCartEmpty ? (
+          <div className="px-4 py-8 bg-[#f3f3f3]">
+            <div className="mx-auto max-w-md">
+              <Card className="border-0 shadow-sm">
+                <CardContent className="px-6 py-12 text-center">
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
+                    <ShoppingCart className="h-10 w-10 text-gray-400" />
+                  </div>
+                  <h3 className="mb-2 text-xl font-semibold text-gray-900">
+                    Your cart is empty
+                  </h3>
+                  <p className="mb-6 text-sm text-gray-500">
+                    Discover delicious food and add items to your cart
+                  </p>
+                  <Button
+                    onClick={() => router.push('/')}
+                    className="h-11 w-full rounded-xl bg-orange-500 font-medium text-white hover:bg-orange-600"
+                  >
+                    Discover Restaurants
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        ) : (
+          <div className="mx-auto max-w-md bg-gradient-to-b from-[#f3f3f3] via-[#fafafa] to-white pb-20">
           {/* Back button */}
-          <div className="sticky top-0 z-10 bg-white px-4 pt-4">
+          <div className="sticky top-0 z-10 bg-[#f3f3f3] px-4 pt-4">
             <div className="mb-4 flex justify-between">
               <Button
                 onClick={handleGoBack}
                 variant="ghost"
                 size="sm"
-                className="h-10 w-20 rounded-full border border-white/20 bg-white/10 p-0 shadow-sm backdrop-blur-sm hover:bg-white"
+                className="h-10 w-20 rounded-full border border-white/20 bg-white mt-1 p-0 shadow-sm backdrop-blur-sm hover:bg-white"
               >
                 <ArrowLeft className="h-5 w-5" style={{ color: '#002a01' }} />{' '}
                 Back
@@ -450,117 +475,129 @@ export default function CartPage() {
           <div className="px-4">
             {/* Savings Banner */}
             {savings > 0 && (
-              <div className="mb-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
-                <Tag className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium text-green-700">
-                  You saved ₹{Math.round(savings)} on this order!
-                </span>
+              <div className="mb-4">
+                <div className="flex items-center gap-2 rounded-xl border-t border-green-200 bg-green-50 px-4 py-3 relative">
+                  <Tag className="h-5 w-5 text-green-600" />
+                  <span className="text-md font-medium text-green-700">
+                    You saved ₹{Math.round(savings)} on this order!
+                  </span>
+                </div>
+                {/* Wavy SVG border at the bottom of the banner */}
+                <div
+                  style={{
+                    lineHeight: 0,
+                    marginTop: '-7px',
+                    transform: 'rotate(180deg)',
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 400 24"
+                    width="100%"
+                    height="24"
+                    preserveAspectRatio="none"
+                    style={{
+                      display: 'block',
+                    }}
+                  >
+                    <path
+                      d="
+                        M0 12
+                        Q 12.5 0, 25 12
+                        Q 37.5 24, 50 12
+                        Q 62.5 0, 75 12
+                        Q 87.5 24, 100 12
+                        Q 112.5 0, 125 12
+                        Q 137.5 24, 150 12
+                        Q 162.5 0, 175 12
+                        Q 187.5 24, 200 12
+                        Q 212.5 0, 225 12
+                        Q 237.5 24, 250 12
+                        Q 262.5 0, 275 12
+                        Q 287.5 24, 300 12
+                        Q 312.5 0, 325 12
+                        Q 337.5 24, 350 12
+                        Q 362.5 0, 375 12
+                        Q 387.5 24, 400 12
+                        V24 H0 Z"
+                      fill="#ECFDF3"
+                    />
+                  </svg>
+                </div>
+
               </div>
             )}
+            
 
-            {/* Cart Items */}
+            {/* Cart Items - Redesigned */}
             <div className="mb-6">
-              {/* <h2 className="-mb-1 flex items-center text-lg font-semibold text-gray-900">
-                <span
-                  className={`${brandFont.className} text-[60px]`}
-                  style={{ letterSpacing: '-0.08em' }}
-                >
-                  Items
-                </span>
-                <span className="ml-2 text-3xl text-orange-500">
-                  {' '}
-                  ({cart.items.length})
-                </span>
-              </h2> */}
-              <div className="space-y-4">
-                {cart.items.map((item, index) => (
-                  <div
-                    key={item.menuItemId}
-                    className="rounded-xl border border-gray-200 bg-white p-4"
-                  >
-                    <div className="flex gap-4">
-                      {/* Item Image */}
-                      <div className="flex-shrink-0">
-                        <img
-                          src={item.menuItem.imageUrl || '/placeholder.png'}
-                          alt={item.menuItem.name}
-                          className="h-24 w-24 rounded-lg object-cover"
-                        />
-                      </div>
-
-                      {/* Item Details */}
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">
-                          {item.menuItem.name}
-                        </h3>
-                        <div className="mt-1 flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900">
-                            ₹{item.menuItem.price}
-                          </span>
-                          {Number(item.menuItem?.originalPrice) > 0 && (
-                            <span className="text-sm text-gray-500 line-through">
-                              ₹{item.menuItem.originalPrice}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Quantity Controls */}
-                        <div className="mt-3 flex items-center justify-between">
-                          <div className="flex items-center rounded-xl border border-gray-200">
-                            <button
-                              className="flex h-8 w-8 items-center justify-center text-gray-600 hover:bg-white"
-                              onClick={() =>
-                                updateQuantity(
-                                  item.menuItemId,
-                                  item.quantity - 1
-                                )
-                              }
-                            >
-                              <Minus className="h-3 w-3" />
-                            </button>
-                            <span className="flex h-8 w-10 items-center justify-center text-sm font-medium">
-                              {item.quantity}
-                            </span>
-                            <button
-                              className="flex h-8 w-8 items-center justify-center text-gray-600 hover:bg-white"
-                              onClick={() =>
-                                updateQuantity(
-                                  item.menuItemId,
-                                  item.quantity + 1
-                                )
-                              }
-                            >
-                              <Plus className="h-3 w-3" />
-                            </button>
+              <div className="mb-3">
+                <p className="text-[15px] font-semibold text-gray-900">Order Item(s)</p>
+                <p className="text-xs text-gray-500">Use coupons or reward balance to save more</p>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                {cart.items.map((item, index) => {
+                  const status = getVegStatus(item.menuItem);
+                  const vegBorder = status === 'veg' ? 'border-green-600' : status === 'nonveg' ? 'border-red-600' : 'border-gray-400';
+                  const vegDot = status === 'veg' ? 'bg-green-600' : status === 'nonveg' ? 'bg-red-600' : 'bg-gray-400';
+                  return (
+                    <div key={item.menuItemId}>
+                      <div className="p-4">
+                        <div className="flex items-center justify-between">
+                          {/* Item name and veg indicator */}
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <h3 className="text-base font-semibold text-gray-900 truncate">{item.menuItem.name}</h3>
                           </div>
-
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-gray-900">
-                              ₹{item.subtotal.toFixed(0)}
-                            </span>
-                            <button
-                              className="flex h-8 w-8 items-center justify-center rounded-xl text-red-500 hover:bg-red-50"
-                              onClick={() => {
-                                removeItem(item.menuItemId);
-                                toast.success(`${item.menuItem.name} removed`);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                          
+                          {/* Quantity controls */}
+                          <div className="flex items-center gap-3 mx-4 h-10">
+                            <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 h-10">
+                              <button
+                                className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm hover:bg-gray-100 transition-colors"
+                                onClick={() => updateQuantity(item.menuItemId, item.quantity - 1)}
+                              >
+                                <Minus className="h-3 w-3 text-gray-600" />
+                              </button>
+                              <span className="min-w-[20px] text-center text-sm font-semibold text-gray-700">{item.quantity}</span>
+                              <button
+                                className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm hover:bg-gray-100 transition-colors"
+                                onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)}
+                              >
+                                <Plus className="h-3 w-3 text-gray-600" />
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Price section */}
+                          <div className="text-right min-w-0">
+                            {Number(item.menuItem?.originalPrice) > 0 && (
+                              <div className="text-sm text-gray-400 line-through">₹{item.menuItem.originalPrice}</div>
+                            )}
+                            <div className="text-lg font-bold text-gray-900">₹{(Number(item.menuItem?.price) * item.quantity).toFixed(0)}</div>
                           </div>
                         </div>
                       </div>
+                      {/* Slashed dotted line separator */}
+                      {index < cart.items.length - 1 && (
+                        <div className="border-b border-dashed border-gray-300 mx-4"></div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             {/* Add More Items */}
-            <div className="mb-8 text-center">
+            <div className="mb-8 -mt-2 text-center">
               <button
-                onClick={() => router.push('/')}
-                className="text-sm font-medium text-orange-500 hover:text-orange-600"
+                onClick={() => {
+                  const rid = (cart as any)?.restaurantId || (cart as any)?.restaurant?.id;
+                  if (rid) {
+                    router.push(`/restaurants/${rid}`);
+                  } else {
+                    router.push('/');
+                  }
+                }}
+                className="text-md font-semibold text-orange-500 hover:text-orange-600"
               >
                 + Add more items
               </button>
@@ -568,7 +605,28 @@ export default function CartPage() {
           </div>
 
           {/* Delivery Info */}
-          <div className="mb-14 overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div className=" overflow-hidden shadow-sm rounded-2xl border border-gray-200 bg-white mx-4">
+            {/* Coupons row */}
+            <button
+              className="flex w-full items-center justify-between px-4 py-4"
+              onClick={() => setCouponOpen(true)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                  <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 7h18M5 7v12a2 2 0 002 2h10a2 2 0 002-2V7" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-gray-900">Use Coupons</p>
+                  <p className="text-xs text-gray-500">
+                    {appliedCoupon ? `Applied: ${appliedCoupon}` : 'Tap to apply a coupon'}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            </button>
+            <div className="border-t border-dashed border-gray-300 mx-4"></div>
             {/* ETA */}
             <div className="flex items-center justify-between px-4 py-4">
               <div className="flex items-center gap-3">
@@ -590,7 +648,7 @@ export default function CartPage() {
             {/* Address (only for delivery) */}
             {mode === 'delivery' && (
               <>
-                <div className="border-t border-gray-100"></div>
+                <div className="border-t border-dashed border-gray-300 mx-4"></div>
                 <button
                   className="flex w-full items-center justify-between px-4 py-4 text-left hover:bg-white"
                   onClick={() => setAddressSheetOpen(true)}
@@ -616,7 +674,7 @@ export default function CartPage() {
             {/* Contact Info */}
             {session?.user?.phone && (
               <>
-                <div className="border-t border-gray-100"></div>
+                <div className="border-t border-dashed border-gray-300 mx-4"></div>
                 <div className="flex items-center gap-3 px-4 py-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
                     <Phone className="h-5 w-5 text-gray-600" />
@@ -634,7 +692,7 @@ export default function CartPage() {
             )}
 
             {/* Bill Summary */}
-            <div className="border-t border-gray-100"></div>
+            <div className="border-t border-dashed border-gray-300 mx-4"></div>
             <button
               className="flex w-full items-center justify-between px-4 py-4 hover:bg-white"
               onClick={() => setBillOpen(true)}
@@ -718,6 +776,15 @@ export default function CartPage() {
             onOpenChange={setBillOpen}
             values={billValues}
           />
+          <CouponSheet
+            open={couponOpen}
+            onOpenChange={setCouponOpen}
+            onApply={(code) => {
+              setAppliedCoupon(code);
+              setCouponOpen(false);
+              toast.success(`Coupon ${code} applied`);
+            }}
+          />
           <AddressSheet
             open={addressSheetOpen}
             onOpenChange={setAddressSheetOpen}
@@ -741,7 +808,8 @@ export default function CartPage() {
               toast.success('Address selected');
             }}
           />
-        </div>
+          </div>
+        )}
       </div>
     </CustomerLayout>
   );

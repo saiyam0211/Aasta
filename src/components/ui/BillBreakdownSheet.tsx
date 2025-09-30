@@ -73,7 +73,7 @@ export function BillBreakdownSheet({
               </div>
 
               {/* Fees */}
-              <div className="mt-2 border-t pt-2">
+              <div className="mt-2 border-t border-dashed border-gray-300 pt-2">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Platform fee</span>
                   <span>₹{platformFee.toFixed(2)}</span>
@@ -100,7 +100,7 @@ export function BillBreakdownSheet({
               </div>
 
               {/* Total */}
-              <div className="mt-3 border-t pt-3">
+              <div className="mt-3 border-t border-dashed border-gray-300 pt-3">
                 <div className="flex items-center justify-between text-base font-semibold">
                   <span>To pay</span>
                   <span>₹{total.toFixed(2)}</span>
