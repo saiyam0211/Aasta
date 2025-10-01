@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -456,6 +458,9 @@ export async function GET(request: NextRequest) {
               name: true,
               phone: true,
               address: true,
+              latitude: true,
+              longitude: true,
+              status: true,
             },
           },
           deliveryAddress: true,
@@ -469,6 +474,10 @@ export async function GET(request: NextRequest) {
                   imageUrl: true,
                   price: true,
                   originalPrice: true,
+                  restaurantId: true,
+                  available: true,
+                  stockLeft: true,
+                  dietaryTags: true,
                 },
               },
             },
@@ -633,11 +642,16 @@ export async function GET(request: NextRequest) {
             } else if (item.unitPrice && item.quantity) {
               itemTotal = Number(item.unitPrice) * Number(item.quantity);
             }
-
+            const soldOut =
+              (item as any)?.menuItem?.available === false ||
+              (typeof (item as any)?.menuItem?.stockLeft === 'number' &&
+                (item as any).menuItem.stockLeft <= 0) ||
+              String((order as any)?.restaurant?.status || '').toUpperCase() !== 'ACTIVE';
             return {
               ...item,
               total: itemTotal,
               price: item.unitPrice || 0,
+              soldOut,
             };
           }),
         };

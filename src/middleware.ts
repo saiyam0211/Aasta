@@ -6,8 +6,8 @@ export default withAuth(
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
 
-    // Log API requests for debugging
-    if (pathname.startsWith('/api/')) {
+    // Log API requests for debugging (dev only)
+    if (process.env.NODE_ENV !== 'production' && pathname.startsWith('/api/')) {
       console.log('🌐 API REQUEST:', {
         method: req.method,
         url: req.url,

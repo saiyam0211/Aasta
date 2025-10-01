@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const restaurantId = searchParams.get('restaurantId');
+    const vegOnly = searchParams.get('veg') === '1';
 
     if (!restaurantId) {
       return NextResponse.json(
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest) {
       where: {
         restaurantId,
         available: true,
+        ...(vegOnly && { dietaryTags: { has: 'Veg' } }),
       },
       orderBy: {
         name: 'asc',

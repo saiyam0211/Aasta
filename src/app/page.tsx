@@ -25,6 +25,7 @@ import { useCacheStore } from '@/lib/cache-store';
 import { FoodHacksPromo } from '@/components/ui/food-hacks-promo';
 import { useVegMode } from '@/contexts/VegModeContext';
 import { HackOfTheDay } from '@/components/ui/deal-of-the-day';
+// Custom inline animation (no JSON)
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
@@ -83,15 +84,38 @@ export default function HomePage() {
   // Recently ordered items (last 4 order items)
   const [recentDishes, setRecentDishes] = useState<Dish[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
+  // Real-time: backend update tag to trigger refreshes
+  const [updateEtag, setUpdateEtag] = useState<string>('');
   // Nearby non-featured dishes (within 5km), split into three sections with no repeats
   const [nearbyDishesSections, setNearbyDishesSections] = useState<Dish[][]>([[], [], []]);
   const [nearbyDishesLoading, setNearbyDishesLoading] = useState(false);
   // Smooth veg-toggle UX (quick local filter + subtle animation)
   const [vegToggleAnimating, setVegToggleAnimating] = useState(false);
   // const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+  const [isRelocating, setIsRelocating] = useState(false);
 
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
+
+  const RADIUS = Number(process.env.NEXT_PUBLIC_RADIUS_KM || '5');
+
+  // Hydrate previously selected coordinates (from AddressSheet search) before any fetches
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('aasta_selected_coords_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const lat = Number(parsed?.lat);
+        const lng = Number(parsed?.lng);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          setLocation(lat, lng);
+          const savedLabel = localStorage.getItem('aasta_selected_label_v1');
+          if (savedLabel) setSelectedLocationLabel(savedLabel);
+        }
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Show location prompt only once after first sign-in; otherwise prefer AddressSheet input
   useEffect(() => {
@@ -183,6 +207,12 @@ export default function HomePage() {
   useEffect(() => {
     const loadDefaultAddress = async () => {
       try {
+        // If user has a manually selected coordinate saved, don't override it with default address
+        try {
+          const saved = localStorage.getItem('aasta_selected_coords_v1');
+          if (saved) return;
+        } catch {}
+
         const res = await fetch('/api/user/address');
         if (!res.ok) return;
         const data = await res.json();
@@ -259,6 +289,35 @@ export default function HomePage() {
     loadRecentlyOrdered();
   }, [session, status, latitude, longitude]);
 
+  // Lightweight polling for DB changes (restaurants/menu): refetch on etag change
+  useEffect(() => {
+    let stop = false;
+    let last = '';
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/updates/etag?_=${Date.now()}`);
+        const data = await res.json();
+        const etag = String(data?.etag || '');
+        if (etag && etag !== last) {
+          last = etag;
+          setUpdateEtag(etag);
+          if (latitude && longitude) {
+            loadPopularContent(true);
+            loadHacksOfTheDay();
+            // background refresh with order preservation to avoid UI jumps
+            loadNearbyNonFeaturedDishes(true);
+            loadRecentlyOrdered();
+          }
+        }
+      } catch {}
+      if (!stop) setTimeout(poll, 2000); // tighten to ~2s
+    };
+    poll();
+    return () => {
+      stop = true;
+    };
+  }, [latitude, longitude]);
+
   // Handle veg mode changes - force refresh
   useEffect(() => {
     if (status !== 'authenticated') return;
@@ -280,22 +339,47 @@ export default function HomePage() {
 
   const loadHacksOfTheDay = async () => {
     if (!latitude || !longitude) return;
-    
     try {
       setHacksLoading(true);
-      const hacksRes = await fetch(
-        `/api/hack-of-the-day?lat=${latitude}&lng=${longitude}&radius=5${vegOnly ? '&veg=1' : ''}`
+      const res = await fetch(
+        `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=${RADIUS}${vegOnly ? '&veg=1' : ''}`
       );
-
-      if (hacksRes.ok) {
-        const hacksData = await hacksRes.json();
-        setHacksOfTheDay(hacksData.data || []);
-        console.log('Loaded hack of the day items:', hacksData.data?.length || 0);
-      } else {
-        const errorData = await hacksRes.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('Failed to fetch hack of the day:', hacksRes.status, errorData);
+      if (!res.ok) {
         setHacksOfTheDay([]);
+        return;
       }
+      const payload = await res.json();
+      const data = Array.isArray(payload?.data) ? payload.data : [];
+      const allowedRestaurantIds = new Set((data as any[]).map((r: any) => r.id));
+      const hacks: any[] = [];
+      for (const r of data) {
+        const arr = Array.isArray(r.hackItems) ? r.hackItems : [];
+        for (const it of arr) {
+          const tags = Array.isArray(it.dietaryTags) ? it.dietaryTags : [];
+          const lower = tags.map((t: any) => String(t).toLowerCase());
+          const hasNonVeg = lower.some((t: any) => /(non[-\s]?veg)/i.test(t));
+          const hasVeg = lower.some((t: any) => /(\bveg\b|vegetarian|vegan)/i.test(t));
+          const isVeg = !hasNonVeg && hasVeg;
+          hacks.push({
+            id: it.id,
+            name: it.name,
+            image: it.image,
+            price: it.price,
+            originalPrice: it.originalPrice,
+            restaurant: r.name,
+            restaurantId: r.id,
+            dietaryTags: tags,
+            isVegetarian: isVeg,
+            soldOut: it.soldOut === true,
+            distanceText:
+              typeof r.distance === 'number'
+                ? `${Number(r.distance).toFixed(1)} km`
+                : undefined,
+          });
+        }
+      }
+      // Defensive: ensure hacks belong to allowed restaurants
+      setHacksOfTheDay(hacks.filter((h) => allowedRestaurantIds.has(h.restaurantId)));
     } catch (error) {
       console.error('Error fetching hack of the day items:', error);
       setHacksOfTheDay([]);
@@ -308,7 +392,7 @@ export default function HomePage() {
   const loadRecentlyOrdered = async () => {
     try {
       setRecentLoading(true);
-      const res = await fetch('/api/orders?limit=4&paymentStatus=COMPLETED');
+      const res = await fetch(`/api/orders?limit=4&paymentStatus=COMPLETED&_=${Date.now()}`);
       if (!res.ok) {
         setRecentDishes([]);
         return;
@@ -328,6 +412,28 @@ export default function HomePage() {
           const isVegetarian = Array.isArray(it?.menuItem?.dietaryTags)
             ? it.menuItem.dietaryTags.includes('Veg')
             : false;
+          const rLat = (order?.restaurant as any)?.latitude as number | undefined;
+          const rLng = (order?.restaurant as any)?.longitude as number | undefined;
+          let distText: string | undefined = undefined;
+          if (
+            typeof latitude === 'number' &&
+            typeof longitude === 'number' &&
+            typeof rLat === 'number' &&
+            typeof rLng === 'number'
+          ) {
+            const R = 6371;
+            const dLat = ((rLat - latitude) * Math.PI) / 180;
+            const dLon = ((rLng - longitude) * Math.PI) / 180;
+            const a =
+              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos((latitude * Math.PI) / 180) *
+                Math.cos((rLat * Math.PI) / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const km = R * c;
+            distText = `${km.toFixed(1)} km`;
+          }
+
           items.push({
             id,
             name,
@@ -343,13 +449,24 @@ export default function HomePage() {
             description: it?.menuItem?.description || undefined,
             dietaryTags: it?.menuItem?.dietaryTags || [],
             restaurantId: it?.menuItem?.restaurantId,
-            distanceText: undefined,
+            soldOut:
+              it?.menuItem?.available === false ||
+              (typeof it?.menuItem?.stockLeft === 'number' && it?.menuItem?.stockLeft <= 0),
+            distanceText: distText,
             // Keep createdAt implicitly via sort stage
           } as Dish & { _ts?: number });
         }
       }
-      // Take top 4 in order already limited; in case more items, slice 4
-      setRecentDishes(items.slice(0, 4));
+      // Veg filter when toggle is ON
+      const finalItems = vegOnly
+        ? items.filter((d) =>
+            Array.isArray(d.dietaryTags)
+              ? d.dietaryTags.includes('Veg')
+              : !!(d as any).isVegetarian
+          )
+        : items;
+      // Do not depend on nearby restaurants; show last 4 completed items
+      setRecentDishes(finalItems.slice(0, 4));
     } catch (e) {
       console.error('Failed to load recently ordered', e);
       setRecentDishes([]);
@@ -359,20 +476,24 @@ export default function HomePage() {
   };
 
   // Load non-featured menu items from restaurants within 5km and split into 3 unique sections
-  const loadNearbyNonFeaturedDishes = async () => {
+  const loadNearbyNonFeaturedDishes = async (preserveOrder: boolean = false) => {
     if (!latitude || !longitude) return;
     try {
       setNearbyDishesLoading(true);
-      // Get nearby restaurants (already respects 5km)
+      // Get nearby restaurants (composite response includes item buckets)
       const restaurantsRes = await fetch(
-        `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=5&limit=12${vegOnly ? '&veg=1' : ''}`
+        `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=${RADIUS}&limit=12${vegOnly ? '&veg=1' : ''}`
       );
       if (!restaurantsRes.ok) {
         setNearbyDishesSections([[], [], []]);
         return;
       }
       const restaurantsPayload = await restaurantsRes.json();
-      const restaurants: RestaurantSummary[] = (restaurantsPayload?.data || []).map((x: any) => ({
+      const restaurantsRaw: any[] = Array.isArray(restaurantsPayload?.data)
+        ? restaurantsPayload.data
+        : [];
+
+      const restaurants: RestaurantSummary[] = restaurantsRaw.map((x: any) => ({
         id: x.id,
         name: x.name,
         imageUrl: x.image,
@@ -386,41 +507,40 @@ export default function HomePage() {
         featuredItems: x.featuredItems || [],
       }));
 
-      // Fetch menus and collect non-featured, available items
+      // Collect non-featured items directly from composite payload
       const allDishes: Dish[] = [];
-      for (const r of restaurants) {
-        try {
-          const menuRes = await fetch(`/api/menu-items?restaurantId=${r.id}`);
-          if (!menuRes.ok) continue;
-          const menuPayload = await menuRes.json();
-          const items = Array.isArray(menuPayload?.data) ? menuPayload.data : [];
-          for (const it of items) {
-            const isVeg = Array.isArray(it.dietaryTags)
-              ? it.dietaryTags.includes('Veg')
-              : false;
-            if (vegOnly && !isVeg) continue;
-            // Exclude featured items
-            if (it.featured) continue;
-            const d: Dish = {
-              id: it.id,
-              name: it.name,
-              image: it.imageUrl || '/images/dish-placeholder.svg',
-              price: it.price,
-              originalPrice: it.originalPrice ?? undefined,
-              rating: 0,
-              preparationTime: it.preparationTime ?? 15,
-              restaurant: r.name,
-              category: it.category || '',
-              isVegetarian: isVeg,
-              spiceLevel: (it.spiceLevel as any) || 'mild',
-              description: it.description || undefined,
-              dietaryTags: it.dietaryTags || [],
-              restaurantId: r.id,
-              distanceText: typeof r.distanceKm === 'number' ? `${r.distanceKm.toFixed(1)} km` : undefined,
-            };
-            allDishes.push(d);
-          }
-        } catch {}
+      for (const r of restaurantsRaw) {
+        const non: any[] = Array.isArray(r.nonFeaturedItems)
+          ? r.nonFeaturedItems
+          : [];
+        for (const it of non) {
+          const isVeg = Array.isArray(it.dietaryTags)
+            ? it.dietaryTags.includes('Veg')
+            : false;
+          if (vegOnly && !isVeg) continue;
+          const d: Dish = {
+            id: it.id,
+            name: it.name,
+            image: it.image || '/images/dish-placeholder.svg',
+            price: it.price,
+            originalPrice: it.originalPrice ?? undefined,
+            rating: 0,
+            preparationTime: it.preparationTime ?? 15,
+            restaurant: r.name,
+            category: it.category || '',
+            isVegetarian: isVeg,
+            spiceLevel: (it.spiceLevel as any) || 'mild',
+            description: it.description || undefined,
+            dietaryTags: it.dietaryTags || [],
+            restaurantId: r.id,
+            soldOut: it.soldOut === true,
+            distanceText:
+              typeof r.distance === 'number'
+                ? `${Number(r.distance).toFixed(1)} km`
+                : undefined,
+          } as Dish;
+          allDishes.push(d);
+        }
       }
 
       // Deduplicate by id
@@ -430,10 +550,12 @@ export default function HomePage() {
       }
       let unique = Array.from(uniqueMap.values());
 
-      // Shuffle items (Fisher-Yates)
-      for (let i = unique.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [unique[i], unique[j]] = [unique[j], unique[i]];
+      // When preserving order (background refresh), do not reshuffle.
+      if (!preserveOrder) {
+        for (let i = unique.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [unique[i], unique[j]] = [unique[j], unique[i]];
+        }
       }
 
       // Arrange so that consecutive items are not from the same restaurant
@@ -503,7 +625,37 @@ export default function HomePage() {
         else if (slot === 1) s2.push(d);
         else s3.push(d);
       });
-      setNearbyDishesSections([s1, s2, s3]);
+
+      if (preserveOrder) {
+        // Preserve current visual order: keep ids order per section, update item fields in place, append new ids at the end
+        const current = nearbyDishesSections;
+        const mergeSection = (prev: Dish[], nextPool: Dish[]): Dish[] => {
+          const byId = new Map(nextPool.map((d) => [d.id, d] as const));
+          const result: Dish[] = [];
+          const seen = new Set<string>();
+          // Keep previous order where possible
+          for (const old of prev) {
+            const updated = byId.get(old.id);
+            if (updated) {
+              result.push(updated);
+              seen.add(old.id);
+            }
+          }
+          // Append new ones (not seen yet)
+          for (const d of nextPool) {
+            if (!seen.has(d.id)) result.push(d);
+          }
+          return result;
+        };
+        const merged: Dish[][] = [
+          mergeSection(current[0] || [], s1),
+          mergeSection(current[1] || [], s2),
+          mergeSection(current[2] || [], s3),
+        ];
+        setNearbyDishesSections(merged);
+      } else {
+        setNearbyDishesSections([s1, s2, s3]);
+      }
     } catch (e) {
       console.error('Failed loading nearby dishes', e);
       setNearbyDishesSections([[], [], []]);
@@ -524,14 +676,15 @@ export default function HomePage() {
 
       if (latitude && longitude) {
         const restaurantsRes = await fetch(
-          `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=5&limit=8${vegOnly ? '&veg=1' : ''}`
+          `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=${RADIUS}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`
         );
 
         if (restaurantsRes.ok) {
           const r = await restaurantsRes.json();
           console.log('[Home] Nearby API raw count:', Array.isArray(r.data) ? r.data.length : 0);
           console.log('[Home] Nearby API sample:', (r.data || []).slice(0, 5).map((x: any) => ({ id: x.id, name: x.name, status: x.status, isOpen: x.isOpen, distance: x.distance })));
-          restaurantsData = (r.data || []).map((x: any) => ({
+          const raw: any[] = Array.isArray(r.data) ? r.data : [];
+          restaurantsData = raw.map((x: any) => ({
             id: x.id,
             name: x.name,
             imageUrl: x.image, // API returns `image`
@@ -560,32 +713,45 @@ export default function HomePage() {
           console.log('[Home] Nearby final (no veg filter) count:', filteredRestaurants.length);
           console.log('[Home] Nearby CLOSED count:', filteredRestaurants.filter(r => r.isOpen === false).length);
 
-          if (!backgroundRefresh) {
-            setPopularRestaurants(filteredRestaurants);
-            console.log('[Home] setPopularRestaurants:', filteredRestaurants.length);
-          }
+          // Always update UI state; skip only the loading spinner for background refresh
+          setPopularRestaurants(filteredRestaurants);
+          console.log('[Home] setPopularRestaurants:', filteredRestaurants.length);
         }
       }
 
-      // Only get dishes if we have restaurants within 5km
+      // Featured dishes come directly from composite payload (attach distance)
       if (restaurantsData.length > 0) {
-        const dishesRes = await fetch(
-          `/api/featured-dishes?limit=8${latitude && longitude ? `&lat=${latitude}&lng=${longitude}&radius=5` : ''}${vegOnly ? '&veg=1' : ''}`
-        );
-
-        if (dishesRes.ok) {
-          const dishesResponse = await dishesRes.json();
-          dishesData = dishesResponse.data || [];
-          if (!backgroundRefresh) {
-            setPopularDishes(dishesData);
-          }
-        }
+        const raw = await (await fetch(
+          `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=${RADIUS}${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`
+        )).json();
+        const arr: any[] = Array.isArray(raw?.data) ? raw.data : [];
+        const allowedRestaurantIds = new Set(arr.map((r: any) => r.id));
+        dishesData = arr.flatMap((r: any) => {
+          const items = Array.isArray(r.featuredItems) ? r.featuredItems : [];
+          return items.map((it: any) => ({
+            id: it.id,
+            name: it.name,
+            image: it.image || '/images/dish-placeholder.svg',
+            price: it.price,
+            originalPrice: it.originalPrice,
+            restaurant: r.name,
+            restaurantId: it.restaurantId,
+            dietaryTags: it.dietaryTags || [],
+            soldOut: it.soldOut === true,
+            distanceText:
+              typeof r.distance === 'number'
+                ? `${Number(r.distance).toFixed(1)} km`
+                : undefined,
+          }));
+        });
+        // Defensive filter: only items from allowed restaurants
+        dishesData = dishesData.filter((d: any) => allowedRestaurantIds.has(d.restaurantId));
+        // Always update dishes in state
+        setPopularDishes(dishesData);
       } else {
         // No restaurants in 5km radius, so no dishes either
         dishesData = [];
-        if (!backgroundRefresh) {
-          setPopularDishes([]);
-        }
+        setPopularDishes([]);
       }
 
       // Cache the results for future use
@@ -634,7 +800,7 @@ export default function HomePage() {
     try {
       setSearchLoading(true);
       const res = await fetch(
-        `/api/restaurants/search?query=${encodeURIComponent(trimmed)}&latitude=${latitude}&longitude=${longitude}`
+        `/api/restaurants/search?query=${encodeURIComponent(trimmed)}&latitude=${latitude}&longitude=${longitude}&radius=${RADIUS}${vegOnly ? '&veg=1' : ''}`
       );
       const data = await res.json();
       if (!res.ok || !data?.success) throw new Error('Search failed');
@@ -797,6 +963,22 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#d3fb6b]">
+      {isRelocating && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white">
+          {/* Spinner */}
+          <div className="h-24 w-24 rounded-full border-4 border-[#002a01] border-t-transparent animate-spin" />
+          {/* Dots loader */}
+          <div className="mt-6 flex items-center gap-2">
+            <div className="h-2 w-2 animate-bounce rounded-full bg-[#002a01]" />
+            <div className="h-2 w-2 animate-bounce rounded-full bg-[#002a01] [animation-delay:120ms]" />
+            <div className="h-2 w-2 animate-bounce rounded-full bg-[#002a01] [animation-delay:240ms]" />
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-lg font-semibold text-[#002a01]">Changing address…</p>
+            <p className="mt-1 text-sm text-gray-600">Fetching hacks for you</p>
+          </div>
+        </div>
+      )}
       {/* Full-screen onboarding handles location; fallback UI kept for legacy */}
       {showLocationPrompt && (
         <LocationPrompt
@@ -834,28 +1016,51 @@ export default function HomePage() {
             // Ensure the selected coordinates are set globally
             if (typeof addr.latitude === 'number' && typeof addr.longitude === 'number') {
               setLocation(addr.latitude!, addr.longitude!);
+              try {
+                localStorage.setItem('aasta_selected_coords_v1', JSON.stringify({ lat: addr.latitude, lng: addr.longitude }));
+              } catch {}
             }
             const name = (addr as any).locality ? String((addr as any).locality) : '';
             const full = [name, addr.street].filter(Boolean).join(', ');
             const words = full.split(/\s+/);
             const truncated = words.length > 50 ? words.slice(0, 50).join(' ') + '…' : full;
             setSelectedLocationLabel(truncated);
+            try {
+              localStorage.setItem('aasta_selected_label_v1', truncated);
+            } catch {}
           } else if (addr.id !== 'live' && (addr.houseNumber || addr.locality || addr.street)) {
             // For saved addresses, show house no, locality, street area
             const summary = [addr.houseNumber, addr.locality, addr.street]
               .filter(Boolean)
               .join(', ');
             setSelectedLocationLabel(summary || 'Saved address');
+            // Clear any previously stored manual coordinates so defaults can take over next time
+            try {
+              localStorage.removeItem('aasta_selected_coords_v1');
+              localStorage.removeItem('aasta_selected_label_v1');
+            } catch {}
           } else {
             // For live location, use the reverse-geocoded address with truncation
             const label = addr.street || 'Using live location';
             const words = String(label).split(/\s+/);
             const truncated = words.length > 50 ? words.slice(0, 50).join(' ') + '…' : String(label);
             setSelectedLocationLabel(truncated);
+            // Clear stored manual selection when switching to live
+            try {
+              localStorage.removeItem('aasta_selected_coords_v1');
+              localStorage.removeItem('aasta_selected_label_v1');
+            } catch {}
           }
           setAddressSheetOpen(false);
-          // Trigger refresh based on new coordinates
-          refreshData();
+          // Hard refresh with loader to reload all data for new coordinates
+          setIsRelocating(true);
+          try {
+            setTimeout(() => {
+              if (typeof window !== 'undefined') {
+                window.location.replace(window.location.pathname);
+              }
+            }, 120);
+          } catch {}
         }}
       />
 

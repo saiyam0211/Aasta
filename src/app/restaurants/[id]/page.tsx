@@ -181,7 +181,7 @@ export default function RestaurantDetailPage() {
           throw new Error(restaurantData.error || 'Failed to fetch restaurant');
 
         const menuResponse = await fetch(
-          `/api/menu-items?restaurantId=${params?.id}`
+          `/api/menu-items?restaurantId=${params?.id}${vegOnly ? '&veg=1' : ''}`
         );
         const menuData = await menuResponse.json();
         if (!menuResponse.ok || !menuData.success)

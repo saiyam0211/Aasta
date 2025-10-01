@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Star, Clock, Minus, Plus } from 'lucide-react';
+import { Star, Minus, Plus } from 'lucide-react';
 import type { Dish } from '@/types/dish';
 import { SafeImage } from '@/components/ui/safe-image';
 import { useCartStore } from '@/lib/store';
@@ -77,9 +77,13 @@ export function HomeProductCard({
     return () => clearInterval(interval);
   }, [hasDiscount]);
 
-  const isVeg = Array.isArray(dish.dietaryTags)
-    ? dish.dietaryTags.includes('Veg')
-    : dish.isVegetarian;
+  // Prefer Non-Veg tag if both present; otherwise treat Veg/Vegetarian/Vegan as veg
+  const tagsLower = Array.isArray(dish.dietaryTags)
+    ? dish.dietaryTags.map((t) => String(t).toLowerCase())
+    : [];
+  const hasNonVegTag = tagsLower.some((t) => /(non[-\s]?veg)/i.test(t));
+  const hasVegTag = tagsLower.some((t) => /(\bveg\b|vegetarian|vegan)/i.test(t));
+  const isVeg = !hasNonVegTag && (hasVegTag || !!dish.isVegetarian);
 
   const getItemQuantityInCart = useCartStore((s) => s.getItemQuantityInCart);
   const addItem = useCartStore((s) => s.addItem);
@@ -141,20 +145,32 @@ export function HomeProductCard({
       aria-label={`View ${dish.name}`}
     >
       {/* Image with centered ADD overlay */}
+      
       <div className="relative mb-6 h-36 w-full overflow-hidden rounded-xl bg-gray-100">
+        
         <SafeImage
           src={dish.image}
           alt={dish.name}
-          className="absolute inset-0 h-full w-full object-cover"
+          className={cn(
+            "absolute inset-0 h-full w-full object-cover",
+            dish.soldOut && "grayscale"
+          )}
           fallbackSrc="/images/dish-placeholder.svg"
         />
+        {dish.soldOut && (
+          <img
+            src="/images/sold-out.png"
+            alt="Sold Out"
+            className="absolute inset-0 m-auto h-[100%] w-[100%]"
+          />
+        )}
       </div>
 
-      {/* Chips row */}
+      {/* Chips row: show distance only; hide when not available */}
       <div className="mb-2 flex items-center gap-2">
         <VegMark isVegetarian={isVeg} />
-        <InfoChip>
-          {dish.distanceText ? (
+        {dish.distanceText && (
+          <InfoChip>
             <>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -166,12 +182,8 @@ export function HomeProductCard({
               </svg>
               {dish.distanceText}
             </>
-          ) : (
-            <>
-              <Clock className="h-3 w-3" /> {dish.preparationTime} mins
-            </>
-          )}
-        </InfoChip>
+          </InfoChip>
+        )}
       </div>
 
       {/* Title */}
@@ -245,11 +257,15 @@ export function HomeProductCard({
             </div>
           ) : (
             <button
-              onClick={handleAddToCart}
-              className="h-9 rounded-md border border-green-600/30 bg-white px-4 text-xl font-semibold text-[#002a01] shadow-sm"
+              onClick={dish.soldOut ? undefined : handleAddToCart}
+              disabled={dish.soldOut}
+              className={cn(
+                "h-9 rounded-md border border-green-600/30 bg-white px-4 text-xl font-semibold text-[#002a01] shadow-sm",
+                dish.soldOut && "cursor-not-allowed opacity-50"
+              )}
               aria-label={`Add ${dish.name}`}
             >
-              Add
+              {dish.soldOut ? 'Sold' : 'Add'}
             </button>
           )}
         </div>

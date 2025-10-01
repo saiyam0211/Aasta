@@ -66,7 +66,10 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('query') || '';
     const latitude = parseFloat(searchParams.get('latitude') || '0');
     const longitude = parseFloat(searchParams.get('longitude') || '0');
-    const radius = parseFloat(searchParams.get('radius') || '3'); // Default 3km
+    const radius = parseFloat(
+      searchParams.get('radius') || process.env.RADIUS_KM || '5'
+    );
+    const vegOnly = searchParams.get('veg') === '1';
 
     if (!latitude || !longitude) {
       return NextResponse.json(
@@ -131,7 +134,10 @@ export async function GET(request: NextRequest) {
       where: searchConditions,
       include: {
         menuItems: {
-          where: { available: true },
+          where: {
+            available: true,
+            ...(vegOnly && { dietaryTags: { has: 'Veg' } }),
+          },
           select: {
             id: true,
             name: true,
@@ -175,7 +181,9 @@ export async function GET(request: NextRequest) {
       });
 
     // Transform data for client
-    const clientRestaurants = nearbyRestaurants.map((restaurant) => ({
+    const clientRestaurants = nearbyRestaurants
+      .filter((r) => (vegOnly ? (r.menuItems || []).length > 0 : true))
+      .map((restaurant) => ({
       id: restaurant.id,
       name: restaurant.name,
       ownerName: restaurant.ownerName,

@@ -297,7 +297,9 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      console.log('Redirect URL:', url, 'Base URL:', baseUrl);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Redirect URL:', url, 'Base URL:', baseUrl);
+      }
 
       // If the URL is from our domain, allow it
       if (url.startsWith(baseUrl)) {
@@ -325,12 +327,14 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn({ user, isNewUser }) {
-      if (isNewUser) {
+      if (isNewUser && process.env.NODE_ENV !== 'production') {
         console.log(`New user signed up: ${user?.email}`);
       }
     },
     async signOut({ session }) {
-      console.log(`User signed out: ${session?.user?.email}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`User signed out: ${session?.user?.email}`);
+      }
     },
   },
   debug: process.env.NODE_ENV === 'development',

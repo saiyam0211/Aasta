@@ -131,9 +131,12 @@ export function HomeProductCard({
         <SafeImage
           src={dish.image}
           alt={dish.name}
-          className="absolute inset-0 h-full w-full object-cover"
+          className={cn("absolute inset-0 h-full w-full object-cover", dish.soldOut && "grayscale")}
           fallbackSrc="/images/dish-placeholder.svg"
         />
+        {dish.soldOut && (
+          <img src="/images/sold-out.png" alt="Sold Out" className="absolute inset-0 m-auto h-full w-full opacity-100" />
+        )}
       </div>
 
       {/* Chips row */}
@@ -177,9 +180,17 @@ export function HomeProductCard({
               ₹{dish.originalPrice}
             </span>
           )}
-        </div>
+        </div>x
         <div className="absolute -bottom-5 left-35 -translate-x-1/2 border-10 border-white">
-          {quantity > 0 ? (
+          {dish.soldOut ? (
+            <button
+              disabled
+              className="h-8 rounded-md border border-gray-300 bg-gray-100 px-4 text-sm font-semibold text-gray-500 cursor-not-allowed"
+              aria-label={`Sold out ${dish.name}`}
+            >
+              Sold
+            </button>
+          ) : quantity > 0 ? (
             <div className="-gap-2 inline-flex h-10 items-center rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm">
               <button
                 onClick={handleDecrease}

@@ -16,4 +16,5 @@ export interface Dish {
   distanceMeters?: number;
   durationText?: string;
   restaurantId?: string; // stable id for cart scoping
+  soldOut?: boolean;
 }

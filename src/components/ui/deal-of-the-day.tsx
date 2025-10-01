@@ -17,6 +17,8 @@ interface Deal {
   isVegetarian: boolean;
   restaurant: string;
   restaurantId?: string;
+  dietaryTags?: string[];
+  soldOut?: boolean;
 }
 
 interface HackOfTheDayProps {
@@ -143,10 +145,13 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
             <SafeImage
               src={deal.image}
               alt={deal.name}
-              className="w-full h-48 object-cover rounded-2xl"
+              className={cn("w-full h-48 object-cover rounded-2xl", deal.soldOut && "grayscale")}
               fallbackSrc="/images/dish-placeholder.svg"
             />
           </div>
+          {deal.soldOut && (
+            <img src="/images/sold-out.png" alt="Sold Out" className="absolute inset-0  h-full w-full" />
+          )}
           
           {/* Price Badge */}
           <div className="absolute top-46 left-1/2 transform -translate-x-1/2 z-10">
@@ -249,15 +254,17 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
             </div>
           ) : (
             <button
-              onClick={handleAddToCart}
+              onClick={deal.soldOut ? undefined : handleAddToCart}
+              disabled={deal.soldOut}
               className={cn(
                 "px-6 py-4 rounded-xl text-md font-semibold shadow-lg border",
                 deal.isVegetarian 
                   ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-500 text-white" 
-                  : "bg-rose-600 hover:bg-rose-700 border-rose-500 text-white"
+                  : "bg-rose-600 hover:bg-rose-700 border-rose-500 text-white",
+                deal.soldOut && "cursor-not-allowed opacity-50"
               )}
             >
-              Add to cart
+              {deal.soldOut ? 'Sold out' : 'Add to cart'}
             </button>
           )}
         </div>
