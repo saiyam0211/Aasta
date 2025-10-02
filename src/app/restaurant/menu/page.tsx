@@ -13,9 +13,18 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Eye, EyeOff, ChefHat, Clock, DollarSign, Package } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Eye, EyeOff, ChefHat, Clock, DollarSign, Package, Save, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import RestaurantLayout from '@/components/layouts/restaurant-layout';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface MenuItem {
   id: string;
@@ -42,6 +51,11 @@ export default function MenuStockManagement() {
   const [loading, setLoading] = useState(true);
   const [restaurant, setRestaurant] = useState<any>(null);
   const [stockInputs, setStockInputs] = useState<Record<string, string>>({});
+  const [loadingItems, setLoadingItems] = useState<Set<string>>(new Set());
+  const [showStockDialog, setShowStockDialog] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [stockDialogValue, setStockDialogValue] = useState<string>('');
+  const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!session) {
@@ -78,7 +92,22 @@ export default function MenuStockManagement() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setMenuItems(data.data || []);
+        // Ensure all items have available: true
+        const itemsWithAvailableTrue = (data.data || []).map((item: MenuItem) => ({
+          ...item,
+          available: true // Force available to true
+        }));
+        setMenuItems(itemsWithAvailableTrue);
+
+        // Initialize stock inputs with current stock values
+        const initialStockInputs: Record<string, string> = {};
+        itemsWithAvailableTrue.forEach((item: MenuItem) => {
+          initialStockInputs[item.id] = (item.stockLeft || 0).toString();
+        });
+        setStockInputs(initialStockInputs);
+        
+        // Clear any pending changes on load
+        setPendingChanges(new Set());
 
         // Set first category as selected
         const categories = getCategories(data.data || []);
@@ -95,41 +124,23 @@ export default function MenuStockManagement() {
   };
 
   const toggleItemAvailability = async (itemId: string) => {
-    try {
-      const item = menuItems.find((i) => i.id === itemId);
-      if (!item) return;
+    const item = menuItems.find((i) => i.id === itemId);
+    if (!item) return;
 
-      const response = await fetch(`/api/menu-items/${itemId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          available: !item.available,
-        }),
-      });
-
-      if (response.ok) {
-        setMenuItems((prev) =>
-          prev.map((i) =>
-            i.id === itemId ? { ...i, available: !i.available } : i
-          )
-        );
-
-        toast.success(
-          `${item.name} marked as ${!item.available ? 'available' : 'out of stock'}`
-        );
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to update item availability');
-      }
-    } catch (error) {
-      console.error('Error toggling item availability:', error);
-      toast.error('Failed to update item availability');
+    // If item has stock, mark as out of stock (set stock to 0)
+    if ((item.stockLeft || 0) > 0) {
+      await updateStock(itemId, 0);
+    } else {
+      // If item is out of stock, show dialog to set stock
+      setSelectedItem(item);
+      setStockDialogValue('');
+      setShowStockDialog(true);
     }
   };
 
   const updateStock = async (itemId: string, newStock: number) => {
+    setLoadingItems(prev => new Set(prev).add(itemId));
+    
     try {
       const item = menuItems.find((i) => i.id === itemId);
       if (!item) return;
@@ -138,12 +149,15 @@ export default function MenuStockManagement() {
       const formData = new FormData();
       formData.append('stockLeft', newStock.toString());
 
-      // If stock is 0, mark as unavailable
-      if (newStock === 0) {
-        formData.append('available', 'false');
-      } else if (!item.available && newStock > 0) {
-        formData.append('available', 'true');
-      }
+      // ALWAYS keep available as true - never set to false
+      formData.append('available', 'true');
+      
+      console.log('Updating stock for item:', {
+        itemId,
+        itemName: item.name,
+        newStock,
+        available: 'true' // Always true
+      });
 
       const response = await fetch(`/api/menu-items/${itemId}`, {
         method: 'PUT',
@@ -151,19 +165,30 @@ export default function MenuStockManagement() {
       });
 
       if (response.ok) {
-        const result = await response.json();
         setMenuItems((prev) =>
           prev.map((i) =>
             i.id === itemId
               ? {
                   ...i,
                   stockLeft: newStock,
-                  available:
-                    newStock > 0 ? item.available || newStock > 0 : false,
+                  available: true, // ALWAYS keep as available - never false
                 }
               : i
           )
         );
+
+        // Update the stock input to reflect the new value
+        setStockInputs(prev => ({
+          ...prev,
+          [itemId]: newStock.toString()
+        }));
+
+        // Remove from pending changes
+        setPendingChanges(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(itemId);
+          return newSet;
+        });
 
         if (newStock === 0) {
           toast.success(`${item.name} is now out of stock`);
@@ -177,7 +202,74 @@ export default function MenuStockManagement() {
     } catch (error) {
       console.error('Error updating stock:', error);
       toast.error('Failed to update stock');
+    } finally {
+      setLoadingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
     }
+  };
+
+  const handleStockInputChange = (itemId: string, value: string) => {
+    setStockInputs(prev => ({
+      ...prev,
+      [itemId]: value
+    }));
+    
+    // Add to pending changes if value is different from current stock
+    const item = menuItems.find(i => i.id === itemId);
+    const currentStock = item?.stockLeft || 0;
+    const newStock = parseInt(value) || 0;
+    
+    // Check if there's a meaningful change
+    const hasChanged = value !== '' && value !== currentStock.toString() && newStock !== currentStock;
+    
+    console.log('Stock input change:', {
+      itemId,
+      value,
+      currentStock,
+      newStock,
+      hasChanged
+    });
+    
+    if (hasChanged) {
+      setPendingChanges(prev => new Set(prev).add(itemId));
+    } else {
+      setPendingChanges(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleSaveStock = async (itemId: string) => {
+    const stockValue = stockInputs[itemId];
+    if (stockValue === undefined || stockValue === '') return;
+    
+    const newStock = parseInt(stockValue);
+    if (isNaN(newStock) || newStock < 0) {
+      toast.error('Please enter a valid stock quantity');
+      return;
+    }
+    
+    await updateStock(itemId, newStock);
+  };
+
+  const handleStockDialogSubmit = async () => {
+    if (!selectedItem) return;
+    
+    const stockValue = parseInt(stockDialogValue);
+    if (isNaN(stockValue) || stockValue < 0) {
+      toast.error('Please enter a valid stock quantity');
+      return;
+    }
+    
+    await updateStock(selectedItem.id, stockValue);
+    setShowStockDialog(false);
+    setSelectedItem(null);
+    setStockDialogValue('');
   };
 
   const getCategories = (items: MenuItem[]): string[] => {
@@ -306,18 +398,18 @@ export default function MenuStockManagement() {
                                 )}
                                 <Badge
                                   variant={
-                                    item.available ? 'default' : 'destructive'
+                                    (item.stockLeft || 0) > 0 ? 'default' : 'destructive'
                                   }
                                   style={{
-                                    backgroundColor: item.available
+                                    backgroundColor: (item.stockLeft || 0) > 0
                                       ? '#d1f86a'
                                       : undefined,
-                                    color: item.available
+                                    color: (item.stockLeft || 0) > 0
                                       ? '#002a01'
                                       : undefined,
                                   }}
                                 >
-                                  {item.available
+                                  {(item.stockLeft || 0) > 0
                                     ? 'Available'
                                     : 'Out of Stock'}
                                 </Badge>
@@ -375,12 +467,27 @@ export default function MenuStockManagement() {
                                 </div>
                               )}
 
-                              {/* Stock Management */}
-                              <div className="mt-4 rounded-lg bg-gray-50 p-3">
+                              {/* Enhanced Stock Management */}
+                              <div className={`mt-4 rounded-lg p-4 transition-colors ${
+                                pendingChanges.has(item.id) 
+                                  ? 'bg-yellow-50 border-2 border-yellow-300 shadow-sm' 
+                                  : 'bg-gray-50 border border-gray-200'
+                              }`}>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium text-gray-700">
-                                    Stock Left
-                                  </span>
+                                  <div className="flex items-center gap-3">
+                                    <Label className="text-sm font-medium text-gray-700">
+                                      Stock Left
+                                    </Label>
+                                    {loadingItems.has(item.id) && (
+                                      <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                                    )}
+                                    {pendingChanges.has(item.id) && !loadingItems.has(item.id) && (
+                                      <div className="flex items-center gap-1 text-xs text-yellow-700 bg-yellow-100 px-2 py-1 rounded">
+                                        <AlertCircle className="h-3 w-3" />
+                                        <span className="font-medium">Unsaved changes</span>
+                                      </div>
+                                    )}
+                                  </div>
                                   <div className="flex items-center gap-2">
                                     <Input
                                       type="number"
@@ -389,62 +496,67 @@ export default function MenuStockManagement() {
                                         item.stockLeft ??
                                         ''
                                       }
-                                      onChange={(e) =>
-                                        setStockInputs((prev) => ({
-                                          ...prev,
-                                          [item.id]: e.target.value,
-                                        }))
-                                      }
-                                      onBlur={(e) => {
-                                        const newStock = parseInt(
-                                          e.target.value
-                                        );
-                                        if (
-                                          !isNaN(newStock) &&
-                                          newStock !== (item.stockLeft ?? 0)
-                                        ) {
-                                          updateStock(item.id, newStock);
-                                        } else if (
-                                          e.target.value === '' ||
-                                          isNaN(newStock)
-                                        ) {
-                                          setStockInputs((prev) => ({
-                                            ...prev,
-                                            [item.id]: (
-                                              item.stockLeft ?? 0
-                                            ).toString(),
-                                          }));
+                                      onChange={(e) => handleStockInputChange(item.id, e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && pendingChanges.has(item.id)) {
+                                          handleSaveStock(item.id);
                                         }
                                       }}
-                                      className="h-8 w-20 text-center"
+                                      className="h-8 w-20 text-center font-medium"
                                       min="0"
+                                      disabled={loadingItems.has(item.id)}
+                                      placeholder="0"
+                                      // NO onBlur - no auto-save!
                                     />
+                                    {pendingChanges.has(item.id) && (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleSaveStock(item.id)}
+                                        disabled={loadingItems.has(item.id)}
+                                        className="h-8 px-3 bg-green-600 hover:bg-green-700 text-white font-medium shadow-sm"
+                                      >
+                                        {loadingItems.has(item.id) ? (
+                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : (
+                                          <>
+                                            <Save className="h-3 w-3 mr-1" />
+                                            Save
+                                          </>
+                                        )}
+                                      </Button>
+                                    )}
                                   </div>
                                 </div>
+                                {item.stockLeft === 0 && (
+                                  <div className="mt-2 flex items-center gap-2 text-sm text-red-600 bg-red-50 px-2 py-1 rounded">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <span className="font-medium">Out of stock</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
 
                             <div className="ml-4 flex flex-col gap-2">
                               <Button
                                 size="sm"
-                                variant={item.available ? 'default' : 'outline'}
+                                variant={(item.stockLeft || 0) > 0 ? 'outline' : 'default'}
                                 onClick={() => toggleItemAvailability(item.id)}
                                 style={{
-                                  backgroundColor: item.available
-                                    ? '#002a01'
-                                    : undefined,
-                                  color: item.available ? 'white' : undefined,
+                                  backgroundColor: (item.stockLeft || 0) > 0
+                                    ? undefined
+                                    : '#002a01',
+                                  color: (item.stockLeft || 0) > 0 ? undefined : 'white',
                                 }}
                               >
-                                {item.available ? (
+                                {(item.stockLeft || 0) > 0 ? (
                                   <>
                                     <EyeOff className="mr-2 h-4 w-4" />
-                                    Out of Stock
+                                    Mark Out of Stock
                                   </>
                                 ) : (
                                   <>
                                     <Eye className="mr-2 h-4 w-4" />
-                                    Mark Available
+                                    Add Stock
                                   </>
                                 )}
                               </Button>
@@ -469,6 +581,49 @@ export default function MenuStockManagement() {
           </div>
         </div>
       </div>
+
+      {/* Stock Dialog */}
+      <Dialog open={showStockDialog} onOpenChange={setShowStockDialog}>
+        <DialogContent className="sm:max-w-md bg-white border-2 border-gray-200 shadow-2xl rounded-lg">
+          <DialogHeader className="bg-white pb-4">
+            <DialogTitle className="text-xl font-semibold text-gray-900">Set Stock Quantity</DialogTitle>
+            <DialogDescription className="text-gray-600 mt-2">
+              Enter the stock quantity for <span className="font-medium text-gray-800">{selectedItem?.name}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 bg-white py-4">
+            <div>
+              <Label htmlFor="stock-dialog-input" className="text-gray-700 font-medium text-sm">Stock Quantity</Label>
+              <Input
+                id="stock-dialog-input"
+                type="number"
+                value={stockDialogValue}
+                onChange={(e) => setStockDialogValue(e.target.value)}
+                placeholder="Enter stock quantity"
+                min="0"
+                className="mt-2 bg-white border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 rounded-md h-10 text-center font-medium"
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter className="bg-white pt-4 border-t border-gray-100">
+            <Button
+              variant="outline"
+              onClick={() => setShowStockDialog(false)}
+              className="bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-700 font-medium"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleStockDialogSubmit}
+              className="bg-green-600 hover:bg-green-700 text-white font-medium px-6"
+            >
+              Set Stock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </RestaurantLayout>
   );
 }
+

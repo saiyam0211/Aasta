@@ -145,16 +145,22 @@ export async function PUT(
       spiceLevel: data.spiceLevel
         ? (data.spiceLevel as string)
         : existingItem.spiceLevel,
-      available:
-        data.available !== undefined
-          ? data.available === 'true'
-          : existingItem.available,
+      available: true, // ALWAYS keep available as true - never allow false
       featured:
         data.featured !== undefined
           ? data.featured === 'true'
           : existingItem.featured,
       stockLeft: data.stockLeft ? parseInt(data.stockLeft as string) : null,
     };
+
+    console.log('API: Updating menu item:', {
+      itemId: id,
+      itemName: existingItem.name,
+      receivedAvailable: data.available,
+      finalAvailable: updateData.available,
+      stockLeft: updateData.stockLeft,
+      originalAvailable: existingItem.available
+    });
 
     // Only add hackOfTheDay if it exists on the existing item or is being set
     if (data.hackOfTheDay !== undefined || existingItem.hackOfTheDay !== undefined) {
