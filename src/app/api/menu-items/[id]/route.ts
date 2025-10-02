@@ -166,6 +166,27 @@ export async function PUT(
     const updatedItem = await prisma.menuItem.update({
       where: { id },
       data: updateData,
+      select: {
+        id: true,
+        restaurantId: true,
+        name: true,
+        description: true,
+        price: true,
+        originalPrice: true,
+        category: true,
+        preparationTime: true,
+        imageUrl: true,
+        dietaryTags: true,
+        spiceLevel: true,
+        available: true,
+        featured: true,
+        hackOfTheDay: true,
+        createdAt: true,
+        updatedAt: true,
+        stockLeft: true,
+        rating: true,
+        ratingCount: true,
+      },
     });
 
     return NextResponse.json({
@@ -238,7 +259,26 @@ export async function GET(
 
     const menuItem = await prisma.menuItem.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        restaurantId: true,
+        name: true,
+        description: true,
+        price: true,
+        originalPrice: true,
+        category: true,
+        preparationTime: true,
+        imageUrl: true,
+        dietaryTags: true,
+        spiceLevel: true,
+        available: true,
+        featured: true,
+        hackOfTheDay: true,
+        createdAt: true,
+        updatedAt: true,
+        stockLeft: true,
+        rating: true,
+        ratingCount: true,
         restaurant: {
           select: {
             name: true,
@@ -272,7 +312,7 @@ export async function GET(
         spiceLevel: menuItem.spiceLevel,
         available: menuItem.available,
         featured: menuItem.featured,
-        hackOfTheDay: menuItem.hackOfTheDay || false,
+        hackOfTheDay: menuItem.hackOfTheDay,
         stockLeft: menuItem.stockLeft,
         restaurantId: menuItem.restaurantId,
         restaurantName: menuItem.restaurant.name,

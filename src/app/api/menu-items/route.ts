@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 import { prisma } from '@/lib/prisma';
 import { uploadBufferToS3 } from '@/lib/s3';
 
@@ -27,6 +28,27 @@ export async function GET(request: NextRequest) {
         available: true,
         ...(vegOnly && { dietaryTags: { has: 'Veg' } }),
       },
+      select: {
+        id: true,
+        restaurantId: true,
+        name: true,
+        description: true,
+        price: true,
+        originalPrice: true,
+        category: true,
+        preparationTime: true,
+        imageUrl: true,
+        dietaryTags: true,
+        spiceLevel: true,
+        available: true,
+        featured: true,
+        hackOfTheDay: true,
+        createdAt: true,
+        updatedAt: true,
+        stockLeft: true,
+        rating: true,
+        ratingCount: true,
+      },
       orderBy: {
         name: 'asc',
       },
@@ -38,7 +60,11 @@ export async function GET(request: NextRequest) {
       message: 'Menu items fetched successfully',
     });
   } catch (error) {
-    console.error('Error fetching menu items:', error);
+    console.error('Error fetching menu items:', {
+      error,
+      restaurantId: new URL(request.url).searchParams.get('restaurantId'),
+      vegOnly: new URL(request.url).searchParams.get('veg') === '1',
+    });
     return NextResponse.json(
       {
         success: false,
@@ -103,23 +129,82 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validate numeric fields
+    const parsedPrice = parseFloat(data.price as string);
+    if (Number.isNaN(parsedPrice)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid price' },
+        { status: 400 }
+      );
+    }
+
+    const parsedOriginalPrice = data.originalPrice
+      ? parseFloat(data.originalPrice as string)
+      : null;
+    if (data.originalPrice && Number.isNaN(parsedOriginalPrice as number)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid originalPrice' },
+        { status: 400 }
+      );
+    }
+
+    const parsedPreparationTime = parseInt(
+      (data.preparationTime as string) || '15',
+      10
+    );
+    if (Number.isNaN(parsedPreparationTime)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid preparationTime' },
+        { status: 400 }
+      );
+    }
+
+    const parsedStockLeft = data.stockLeft
+      ? parseInt(data.stockLeft as string, 10)
+      : null;
+    if (data.stockLeft && Number.isNaN(parsedStockLeft as number)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid stockLeft' },
+        { status: 400 }
+      );
+    }
+
     // Create the menu item
     const menuItem = await prisma.menuItem.create({
       data: {
         restaurantId: data.restaurantId as string,
         name: data.name as string,
         description: (data.description as string) || '',
-        price: parseFloat(data.price as string),
-        originalPrice: data.originalPrice
-          ? parseFloat(data.originalPrice as string)
-          : null,
+        price: parsedPrice,
+        originalPrice: parsedOriginalPrice,
         category: 'General', // Default category since we removed it from form
-        preparationTime: parseInt(data.preparationTime as string) || 15,
+        preparationTime: parsedPreparationTime,
         dietaryTags: [data.dietaryType as string], // Store dietary type in dietaryTags for now
         imageUrl: imageUrl,
         featured: data.featured === 'true',
         hackOfTheDay: data.hackOfTheDay === 'true',
-        stockLeft: data.stockLeft ? parseInt(data.stockLeft as string) : null,
+        stockLeft: parsedStockLeft,
+      },
+      select: {
+        id: true,
+        restaurantId: true,
+        name: true,
+        description: true,
+        price: true,
+        originalPrice: true,
+        category: true,
+        preparationTime: true,
+        imageUrl: true,
+        dietaryTags: true,
+        spiceLevel: true,
+        available: true,
+        featured: true,
+        hackOfTheDay: true,
+        createdAt: true,
+        updatedAt: true,
+        stockLeft: true,
+        rating: true,
+        ratingCount: true,
       },
     });
 
