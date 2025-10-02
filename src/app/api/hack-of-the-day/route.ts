@@ -63,12 +63,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Ensure we have at most 2 items (1 veg, 1 non-veg)
+    // Ensure we have at most 2 items (1 veg, 1 non-veg) with proper ordering
     const vegItem = filteredItems.find(item => checkIfVegetarian(item));
     const nonVegItem = filteredItems.find(item => !checkIfVegetarian(item));
 
     const finalItems = [];
+    // Always show veg item first if available
     if (vegItem) finalItems.push(vegItem);
+    // Show non-veg item second if available and not veg-only mode
     if (nonVegItem && !vegOnly) finalItems.push(nonVegItem);
 
     // Transform to match the expected format

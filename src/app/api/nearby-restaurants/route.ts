@@ -199,8 +199,8 @@ export async function GET(request: NextRequest) {
         isOpen: String(restaurant.status || '').toUpperCase() === 'ACTIVE',
         minOrderAmount: restaurant.minimumOrderAmount,
         avgCostForTwo: restaurant.minimumOrderAmount * 2,
-        // Ensure we surface hack items prominently
-        hackItems: (buckets.hack || []).slice(0, 4).map(mapItem),
+        // Ensure we surface hack items prominently - limit to 2 items globally
+        hackItems: (buckets.hack || []).slice(0, 2).map(mapItem),
         featuredItems: (buckets.featured || []).slice(0, 6).map(mapItem),
         nonFeaturedItems: (buckets.nonFeatured || [])
           .slice(0, 24)

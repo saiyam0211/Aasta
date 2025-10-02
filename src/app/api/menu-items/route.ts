@@ -54,9 +54,40 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Transform menu items to include dietaryType computed from dietaryTags
+    const transformedMenuItems = menuItems.map(item => {
+      let dietaryType: 'Veg' | 'Non-Veg' = 'Veg'; // Default to Veg
+      
+      if (item.dietaryTags && item.dietaryTags.length > 0) {
+        const hasVegTag = item.dietaryTags.some(tag => 
+          tag.toLowerCase().includes('veg') && !tag.toLowerCase().includes('non')
+        );
+        const hasNonVegTag = item.dietaryTags.some(tag => 
+          tag.toLowerCase().includes('non') && tag.toLowerCase().includes('veg')
+        );
+        
+        if (hasVegTag) {
+          dietaryType = 'Veg';
+        } else if (hasNonVegTag) {
+          dietaryType = 'Non-Veg';
+        } else {
+          // If no clear dietary tags, check if any tag contains 'veg'
+          const isVeg = item.dietaryTags.some(tag => 
+            tag.toLowerCase().includes('veg')
+          );
+          dietaryType = isVeg ? 'Veg' : 'Non-Veg';
+        }
+      }
+      
+      return {
+        ...item,
+        dietaryType
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      data: menuItems,
+      data: transformedMenuItems,
       message: 'Menu items fetched successfully',
     });
   } catch (error) {

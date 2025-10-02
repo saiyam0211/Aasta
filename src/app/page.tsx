@@ -378,8 +378,18 @@ export default function HomePage() {
           });
         }
       }
-      // Defensive: ensure hacks belong to allowed restaurants
-      setHacksOfTheDay(hacks.filter((h) => allowedRestaurantIds.has(h.restaurantId)));
+      // Defensive: ensure hacks belong to allowed restaurants and limit to 2 items
+      const filteredHacks = hacks.filter((h) => allowedRestaurantIds.has(h.restaurantId));
+      
+      // Sort to ensure veg items come first, then non-veg
+      const sortedHacks = filteredHacks.sort((a, b) => {
+        if (a.isVegetarian && !b.isVegetarian) return -1;
+        if (!a.isVegetarian && b.isVegetarian) return 1;
+        return 0;
+      });
+      
+      // Limit to maximum 2 items (1 veg + 1 non-veg)
+      setHacksOfTheDay(sortedHacks.slice(0, 2));
     } catch (error) {
       console.error('Error fetching hack of the day items:', error);
       setHacksOfTheDay([]);
@@ -1316,29 +1326,23 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Recently ordered */}
-          <div className="relative mt-10">
-            <div className="relative mb-3 flex items-center justify-end">
-              <h2
-                className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
-                style={{ letterSpacing: '-0.08em' }}
-              >
-                Recently ordered
-                <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
-                <span
-                  className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
-                  style={{ backgroundImage: "url('/highlighter.png')" }}
-                />
-              </h2>
-            </div>
-
-            {recentLoading && recentDishes.length === 0 ? (
-              <div className="grid grid-cols-2 gap-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-48 animate-pulse rounded-2xl bg-gray-100" />
-                ))}
+          {/* Recently ordered - only show if there are recent dishes */}
+          {recentDishes.length > 0 && (
+            <div className="relative mt-10">
+              <div className="relative mb-3 flex items-center justify-end">
+                <h2
+                  className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
+                  style={{ letterSpacing: '-0.08em' }}
+                >
+                  Recently ordered
+                  <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
+                  <span
+                    className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
+                    style={{ backgroundImage: "url('/highlighter.png')" }}
+                  />
+                </h2>
               </div>
-            ) : recentDishes.length > 0 ? (
+
               <div className="grid grid-cols-2 gap-4">
                 {recentDishes.slice(0, 4).map((dish) => (
                   <HomeProductCard
@@ -1349,8 +1353,19 @@ export default function HomePage() {
                   />
                 ))}
               </div>
-            ) : null}
-          </div>
+            </div>
+          )}
+
+          {/* Show loading state only when loading and no dishes yet */}
+          {recentLoading && recentDishes.length === 0 && (
+            <div className="relative mt-10">
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-48 animate-pulse rounded-2xl bg-gray-100" />
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Hack of the Day Section */}
             {(hacksLoading || hacksOfTheDay.length > 0) && (

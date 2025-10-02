@@ -274,14 +274,22 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
 }
 
 export function HackOfTheDay({ deals, onAdd, className }: HackOfTheDayProps) {
+  // Limit to maximum 2 items
+  const limitedDeals = deals.slice(0, 2);
+  
   return (
     <div className={cn("relative", className)}>
       {/* Carousel Container */}
       <div 
-        className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden" 
+        className={cn(
+          "flex gap-4 pb-4 [&::-webkit-scrollbar]:hidden",
+          limitedDeals.length === 1 
+            ? "justify-center" 
+            : "overflow-x-auto snap-x snap-mandatory"
+        )}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {deals.map((deal, index) => (
+        {limitedDeals.map((deal, index) => (
           <DealCard
             key={deal.id}
             deal={deal}
@@ -290,10 +298,10 @@ export function HackOfTheDay({ deals, onAdd, className }: HackOfTheDayProps) {
         ))}
       </div>
       
-      {/* Carousel Indicators */}
-      {deals.length > 1 && (
+      {/* Carousel Indicators - only show if more than 1 item */}
+      {limitedDeals.length > 1 && (
         <div className="flex justify-center gap-2 mt-4">
-          {deals.map((_, index) => (
+          {limitedDeals.map((_, index) => (
             <div
               key={index}
               className="w-2 h-2 rounded-full bg-gray-400 opacity-50"

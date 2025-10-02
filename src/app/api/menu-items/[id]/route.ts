@@ -158,9 +158,92 @@ export async function PUT(
 
     // Only add hackOfTheDay if it exists on the existing item or is being set
     if (data.hackOfTheDay !== undefined || existingItem.hackOfTheDay !== undefined) {
-      updateData.hackOfTheDay = data.hackOfTheDay !== undefined
+      const newHackStatus = data.hackOfTheDay !== undefined
         ? data.hackOfTheDay === 'true'
         : (existingItem.hackOfTheDay || false);
+      
+      // If setting hack of the day to true, validate global limits
+      if (newHackStatus && !existingItem.hackOfTheDay) {
+        // Get all current hack of the day items
+        const allHackItems = await prisma.menuItem.findMany({
+          where: {
+            hackOfTheDay: true,
+            available: true,
+            id: { not: id }, // Exclude current item
+          },
+          include: {
+            restaurant: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        });
+
+        // Determine dietary type of current item
+        const currentItemDietaryTags = data.dietaryType 
+          ? [data.dietaryType as string]
+          : existingItem.dietaryTags || [];
+        
+        // Check if current item is vegetarian
+        const isCurrentItemVeg = data.dietaryType === 'Veg' || 
+          currentItemDietaryTags.includes('Veg') || 
+          currentItemDietaryTags.some(tag => 
+            tag.toLowerCase().includes('veg') && !tag.toLowerCase().includes('non')
+          );
+
+        console.log('Hack of the day validation:', {
+          currentItemId: id,
+          dietaryType: data.dietaryType,
+          dietaryTags: currentItemDietaryTags,
+          isCurrentItemVeg: isCurrentItemVeg,
+          allHackItems: allHackItems.map(item => ({
+            id: item.id,
+            name: item.name,
+            dietaryTags: item.dietaryTags,
+            restaurant: item.restaurant.name
+          }))
+        });
+
+        // Check if there's already a veg or non-veg hack item
+        const existingVegItem = allHackItems.find(item => 
+          item.dietaryTags?.includes('Veg') || 
+          item.dietaryTags?.some(tag => 
+            tag.toLowerCase().includes('veg') && !tag.toLowerCase().includes('non')
+          )
+        );
+        
+        const existingNonVegItem = allHackItems.find(item => 
+          item.dietaryTags?.includes('Non-Veg') ||
+          item.dietaryTags?.some(tag => 
+            tag.toLowerCase().includes('non') && tag.toLowerCase().includes('veg')
+          ) ||
+          (!item.dietaryTags?.includes('Veg') && 
+           !item.dietaryTags?.some(tag => tag.toLowerCase().includes('veg')))
+        );
+
+        if (isCurrentItemVeg && existingVegItem) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Only one vegetarian hack of the day is allowed globally. Please uncheck "${existingVegItem.name}" from ${existingVegItem.restaurant.name} first.`,
+            },
+            { status: 400 }
+          );
+        }
+
+        if (!isCurrentItemVeg && existingNonVegItem) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Only one non-vegetarian hack of the day is allowed globally. Please uncheck "${existingNonVegItem.name}" from ${existingNonVegItem.restaurant.name} first.`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+      
+      updateData.hackOfTheDay = newHackStatus;
     }
 
     const updatedItem = await prisma.menuItem.update({

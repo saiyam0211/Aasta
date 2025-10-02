@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import OperationsLayout from '@/components/layouts/operations-layout';
 import {
@@ -92,46 +92,45 @@ export default function RestaurantMenuManagementPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [showHackLimitPopup, setShowHackLimitPopup] = useState(false);
   const [hackLimitMessage, setHackLimitMessage] = useState('');
+  const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData();
   }, [restaurantId]);
 
-  const validateHackOfTheDay = (newHackStatus: boolean, dietaryType: 'Veg' | 'Non-Veg', currentItemId?: string) => {
+  // Auto-scroll to form when it's shown
+  useEffect(() => {
+    if (showAddForm && formRef.current) {
+      // Small delay to ensure the form is rendered
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }, 100);
+    }
+  }, [showAddForm]);
+
+  const validateHackOfTheDay = async (newHackStatus: boolean, dietaryType: 'Veg' | 'Non-Veg', currentItemId?: string) => {
     try {
       if (!newHackStatus) return true; // If unchecking, always allow
 
-      const currentHackItems = menuItems.filter(item => 
-        item.hackOfTheDay && 
-        (!currentItemId || item.id !== currentItemId) // Exclude current item if editing
-      );
+      // Call global validation API
+      const response = await fetch('/api/operations/validate-hack-of-the-day', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dietaryType,
+          currentItemId,
+        }),
+      });
 
-      const vegHackCount = currentHackItems.filter(item => 
-        item.dietaryType === 'Veg' || 
-        (Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg'))
-      ).length;
+      const result = await response.json();
 
-      const nonVegHackCount = currentHackItems.filter(item => 
-        item.dietaryType === 'Non-Veg' || 
-        (Array.isArray(item.dietaryTags) && !item.dietaryTags.includes('Veg'))
-      ).length;
-
-      if (dietaryType === 'Veg' && vegHackCount >= 1) {
-        const existingVegHack = currentHackItems.find(item => 
-          item.dietaryType === 'Veg' || 
-          (Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg'))
-        );
-        setHackLimitMessage(`Only one vegetarian hack of the day is allowed. Please uncheck "${existingVegHack?.name || 'the existing item'}" first.`);
-        setShowHackLimitPopup(true);
-        return false;
-      }
-
-      if (dietaryType === 'Non-Veg' && nonVegHackCount >= 1) {
-        const existingNonVegHack = currentHackItems.find(item => 
-          item.dietaryType === 'Non-Veg' || 
-          (Array.isArray(item.dietaryTags) && !item.dietaryTags.includes('Veg'))
-        );
-        setHackLimitMessage(`Only one non-vegetarian hack of the day is allowed. Please uncheck "${existingNonVegHack?.name || 'the existing item'}" first.`);
+      if (!result.success || !result.isValid) {
+        setHackLimitMessage(result.errorMessage || 'Validation failed');
         setShowHackLimitPopup(true);
         return false;
       }
@@ -233,7 +232,19 @@ export default function RestaurantMenuManagementPage() {
         loadData();
       } else {
         const errorData = await response.json();
-        alert(`Error: ${errorData.error || 'Failed to save menu item'}`);
+        
+        // If it's a hack of the day validation error, show the popup
+        if (errorData.error && errorData.error.includes('hack of the day')) {
+          setHackLimitMessage(errorData.error);
+          setShowHackLimitPopup(true);
+          // Reset the hack of the day checkbox
+          setFormData(prev => ({
+            ...prev,
+            hackOfTheDay: false,
+          }));
+        } else {
+          alert(`Error: ${errorData.error || 'Failed to save menu item'}`);
+        }
       }
     } catch (error) {
       console.error('Error saving menu item:', error);
@@ -242,7 +253,16 @@ export default function RestaurantMenuManagementPage() {
   };
 
   const handleEdit = (item: MenuItem) => {
-    setFormData(item);
+    console.log('Editing item:', {
+      name: item.name,
+      dietaryTags: item.dietaryTags,
+      dietaryType: item.dietaryType
+    });
+    
+    setFormData({
+      ...item,
+      dietaryType: item.dietaryType || 'Veg', // Use dietaryType from API or default to Veg
+    });
     setEditingItem(item);
     setShowAddForm(true);
   };
@@ -387,7 +407,7 @@ export default function RestaurantMenuManagementPage() {
 
         {/* Add/Edit Menu Item Form */}
         {showAddForm && (
-          <Card className="border-0 bg-white/70 shadow-lg backdrop-blur-sm">
+          <Card ref={formRef} className="border-0 bg-white/70 shadow-lg backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-xl font-bold text-[#002a01]">
                 {editingItem ? 'Edit Menu Item' : 'Add New Menu Item'}
@@ -596,13 +616,28 @@ export default function RestaurantMenuManagementPage() {
                         id="hackOfTheDay"
                         type="checkbox"
                         checked={formData.hackOfTheDay || false}
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const newHackStatus = e.target.checked;
-                          if (validateHackOfTheDay(newHackStatus, formData.dietaryType || 'Veg', editingItem?.id)) {
+                          
+                          // If unchecking, always allow
+                          if (!newHackStatus) {
                             setFormData({
                               ...formData,
                               hackOfTheDay: newHackStatus,
                             });
+                            return;
+                          }
+                          
+                          // If checking, validate first
+                          const isValid = await validateHackOfTheDay(newHackStatus, formData.dietaryType || 'Veg', editingItem?.id);
+                          if (isValid) {
+                            setFormData({
+                              ...formData,
+                              hackOfTheDay: newHackStatus,
+                            });
+                          } else {
+                            // Reset checkbox to previous state if validation fails
+                            e.target.checked = formData.hackOfTheDay || false;
                           }
                         }}
                         className="text-primary-dark-green focus:ring-primary-dark-green h-4 w-4 rounded border-gray-300"
