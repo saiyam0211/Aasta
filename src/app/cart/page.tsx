@@ -788,6 +788,7 @@ export default function CartPage() {
           <AddressSheet
             open={addressSheetOpen}
             onOpenChange={setAddressSheetOpen}
+            context="cart"
             onSelect={(addr) => {
               const summary = [
                 addr.houseNumber,

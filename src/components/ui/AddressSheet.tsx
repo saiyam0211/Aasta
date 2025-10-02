@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useSession } from 'next-auth/react';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
   X,
@@ -40,13 +41,16 @@ interface AddressSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (address: AddressRecord) => void;
+  context?: 'home' | 'cart' | 'profile'; // New context prop
 }
 
 export default function AddressSheet({
   open,
   onOpenChange,
   onSelect,
+  context = 'home', // Default to home for backward compatibility
 }: AddressSheetProps) {
+  const { data: session } = useSession();
   const requestLocation = useLocationStore((s) => s.requestLocation);
   const currentLocation = useLocationStore((s) => s.currentLocation);
   const [loading, setLoading] = React.useState(false);
@@ -104,24 +108,37 @@ export default function AddressSheet({
   }) => {
     // Set coordinates from search selection
     useLocationStore.getState().setLocation({ latitude: s.latitude, longitude: s.longitude });
-    // Immediately select and close the sheet with a lightweight AddressRecord
-    onSelect({
-      id: 'search',
-      type: 'OTHER',
-      street: s.address,
-      city: null,
-      state: null,
-      zipCode: null,
-      latitude: s.latitude,
-      longitude: s.longitude,
-      landmark: null,
-      instructions: null,
-      isDefault: false,
-      houseNumber: null,
-      locality: s.name || null, // put place name into locality for header title usage
-      contactPhone: null,
-    } as any);
-    onOpenChange(false);
+    
+    if (context === 'home') {
+      // For home page, immediately select and close the sheet
+      onSelect({
+        id: 'search',
+        type: 'OTHER',
+        street: s.address,
+        city: null,
+        state: null,
+        zipCode: null,
+        latitude: s.latitude,
+        longitude: s.longitude,
+        landmark: null,
+        instructions: null,
+        isDefault: false,
+        houseNumber: null,
+        locality: s.name || null,
+        contactPhone: null,
+      } as any);
+      onOpenChange(false);
+    } else {
+      // For cart/profile, switch to form mode and pre-fill fields
+      setMode('form');
+      setForm(prev => ({
+        ...prev,
+        street: s.address,
+        locality: s.name || '',
+        // Keep other fields as they were
+      }));
+      setSelectedBySearch(true);
+    }
   };
 
   const fetchAddresses = React.useCallback(async () => {
@@ -139,6 +156,16 @@ export default function AddressSheet({
     if (open) fetchAddresses();
   }, [open, fetchAddresses]);
 
+  // Prefill phone for cart/profile contexts
+  React.useEffect(() => {
+    if (!open) return;
+    if (context === 'home') return;
+    const phone = (session as any)?.user?.phone || (session as any)?.user?.mobile || '';
+    if (phone) {
+      setForm((f) => ({ ...f, contactPhone: String(phone) }));
+    }
+  }, [open, context, session]);
+
   const handleUseLiveLocation = async () => {
     try {
       setLoading(true);
@@ -152,47 +179,72 @@ export default function AddressSheet({
           );
           const data = await res.json();
           const formatted = data?.data?.address || 'Using live location';
-          // Notify parent using a lightweight AddressRecord shape
-          onSelect({
-            id: 'live',
-            type: 'OTHER',
-            street: formatted,
-            city: null,
-            state: null,
-            zipCode: null,
-            latitude: loc.latitude,
-            longitude: loc.longitude,
-            landmark: null,
-            instructions: null,
-            isDefault: false,
-            houseNumber: null,
-            locality: null,
-            contactPhone: null,
-          } as any);
+          
+          if (context === 'home') {
+            // For home page, immediately select and close
+            onSelect({
+              id: 'live',
+              type: 'OTHER',
+              street: formatted,
+              city: null,
+              state: null,
+              zipCode: null,
+              latitude: loc.latitude,
+              longitude: loc.longitude,
+              landmark: null,
+              instructions: null,
+              isDefault: false,
+              houseNumber: null,
+              locality: null,
+              contactPhone: null,
+            } as any);
+            onOpenChange(false);
+          } else {
+            // For cart/profile, switch to form mode and pre-fill
+            setMode('form');
+            setForm(prev => ({
+              ...prev,
+              street: formatted,
+              // Keep other fields as they were
+            }));
+            setSelectedBySearch(false); // This was from live location, not search
+          }
         } catch {
-          // If reverse geocoding fails, still select live location
-          onSelect({
-            id: 'live',
-            type: 'OTHER',
-            street: 'Using live location',
-            city: null,
-            state: null,
-            zipCode: null,
-            latitude: loc.latitude,
-            longitude: loc.longitude,
-            landmark: null,
-            instructions: null,
-            isDefault: false,
-            houseNumber: null,
-            locality: null,
-            contactPhone: null,
-          } as any);
+          // If reverse geocoding fails, still handle based on context
+          if (context === 'home') {
+            onSelect({
+              id: 'live',
+              type: 'OTHER',
+              street: 'Using live location',
+              city: null,
+              state: null,
+              zipCode: null,
+              latitude: loc.latitude,
+              longitude: loc.longitude,
+              landmark: null,
+              instructions: null,
+              isDefault: false,
+              houseNumber: null,
+              locality: null,
+              contactPhone: null,
+            } as any);
+            onOpenChange(false);
+          } else {
+            setMode('form');
+            setForm(prev => ({
+              ...prev,
+              street: 'Using live location',
+            }));
+            setSelectedBySearch(false);
+          }
         }
       }
     } finally {
       setLoading(false);
-      // Always close sheet after attempting to use live location
-      onOpenChange(false);
+      // Only close sheet for home context
+      if (context === 'home') {
+        onOpenChange(false);
+      }
     }
   };
 
@@ -240,6 +292,12 @@ export default function AddressSheet({
         toast.success('Address saved');
         setMode('list');
         await fetchAddresses();
+        
+        // For cart/profile context, select the newly saved address
+        if (context !== 'home' && data?.address) {
+          onSelect(data.address);
+          onOpenChange(false);
+        }
       } else {
         toast.error('Failed to save address');
       }
@@ -274,7 +332,7 @@ export default function AddressSheet({
             {mode === 'list' ? (
               <>
                 {/* Search field */}
-                <div className="mb-4">
+            <div className="mb-4">
                   <div className="relative">
                     <input
                       className="w-full rounded-2xl border border-gray-200 bg-white px-12 py-3 text-[15px] text-gray-900 placeholder:text-gray-400"
@@ -335,21 +393,23 @@ export default function AddressSheet({
                   <ChevronRight className="h-5 w-5 text-gray-400" />
                 </button>
 
-                {/* Add new address */}
-                <button
-                  className="mb-3 flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-4 text-left"
-                  onClick={() => setMode('form')}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-                      <Plus className="h-5 w-5 text-gray-700" />
+                {/* Add new address - hidden for cart/profile contexts */}
+                {context === 'home' && (
+                  <button
+                    className="mb-3 flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-4 text-left"
+                    onClick={() => setMode('form')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+                        <Plus className="h-5 w-5 text-gray-700" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-[15px] font-semibold text-gray-900">Add new address</p>
+                      </div>
                     </div>
-                    <div className="text-left">
-                      <p className="text-[15px] font-semibold text-gray-900">Add new address</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                </button>
+                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                  </button>
+                )}
 
                 {/* Saved addresses */}
                 <div className="mb-2 text-sm font-semibold text-gray-700">Your saved addresses</div>
@@ -414,57 +474,62 @@ export default function AddressSheet({
                   </button>
                 </div>
                 <div className="rounded-xl border border-gray-200 p-4">
-                  <button
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                    onClick={handleUseLiveLocation}
-                    disabled={loading}
-                  >
-                    <MapPin className="h-4 w-4" /> Use live location{' '}
-                    <span className="ml-1 text-red-500">*</span>
-                  </button>
-                  {/* Search address */}
-                  <div className="mt-3">
-                    <label className="mb-1 block text-xs font-medium text-gray-700">
-                      Or search address <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                        placeholder="Type to search via Google Maps"
-                        value={searchQuery}
-                        onChange={(e) => {
-                          setSearchQuery(e.target.value);
-                          setSelectedBySearch(false);
-                        }}
-                      />
-                      {searching && (
-                        <div className="absolute top-2 right-2 text-xs text-gray-400">
-                          Searching...
-                        </div>
-                      )}
-                      {searchResults.length > 0 && (
-                        <div className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
-                          {searchResults.map((s, i) => (
-                            <div
-                              key={i}
-                              className="cursor-pointer border-b p-2 text-sm last:border-b-0 hover:bg-gray-50"
-                              onClick={() => applySuggestion(s)}
-                            >
-                              {s.address}
+                  {/* For cart/profile, hide in-form live/search controls */}
+                  {context === 'home' && (
+                    <>
+                      <button
+                        className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                        onClick={handleUseLiveLocation}
+                        disabled={loading}
+                      >
+                        <MapPin className="h-4 w-4" /> Use live location{' '}
+                        <span className="ml-1 text-red-500">*</span>
+                      </button>
+                      {/* Search address */}
+                      <div className="mt-3">
+                        <label className="mb-1 block text-xs font-medium text-gray-700">
+                          Or search address <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                            placeholder="Type to search via Google Maps"
+                            value={searchQuery}
+                            onChange={(e) => {
+                              setSearchQuery(e.target.value);
+                              setSelectedBySearch(false);
+                            }}
+                          />
+                          {searching && (
+                            <div className="absolute top-2 right-2 text-xs text-gray-400">
+                              Searching...
                             </div>
-                          ))}
+                          )}
+                          {searchResults.length > 0 && (
+                            <div className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+                              {searchResults.map((s, i) => (
+                                <div
+                                  key={i}
+                                  className="cursor-pointer border-b p-2 text-sm last:border-b-0 hover:bg-gray-50"
+                                  onClick={() => applySuggestion(s)}
+                                >
+                                  {s.address}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    {(selectedBySearch || currentLocation) && (
-                      <div className="mt-1 text-xs text-green-600">
-                        Coordinates set{' '}
-                        {selectedBySearch
-                          ? 'from search'
-                          : 'from live location'}
+                        {(selectedBySearch || currentLocation) && (
+                          <div className="mt-1 text-xs text-green-600">
+                            Coordinates set{' '}
+                            {selectedBySearch
+                              ? 'from search'
+                              : 'from live location'}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                   {/* Static Map Preview */}
                   {currentLocation && (
                     <div className="mt-3 overflow-hidden rounded-lg border">
@@ -510,12 +575,14 @@ export default function AddressSheet({
                         Street/Area <span className="text-red-500">*</span>
                       </label>
                       <input
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm disabled:bg-gray-100"
                         placeholder="e.g., Extension Road"
                         value={form.street}
                         onChange={(e) =>
                           setForm((f) => ({ ...f, street: e.target.value }))
                         }
+                        readOnly={context !== 'home'}
+                        disabled={context !== 'home'}
                       />
                     </div>
                     <div className="col-span-2">

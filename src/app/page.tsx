@@ -370,6 +370,7 @@ export default function HomePage() {
             restaurantId: r.id,
             dietaryTags: tags,
             isVegetarian: isVeg,
+            stockLeft: typeof it.stockLeft === 'number' ? it.stockLeft : null,
             soldOut: it.soldOut === true,
             distanceText:
               typeof r.distance === 'number'
@@ -459,6 +460,7 @@ export default function HomePage() {
             description: it?.menuItem?.description || undefined,
             dietaryTags: it?.menuItem?.dietaryTags || [],
             restaurantId: it?.menuItem?.restaurantId,
+            stockLeft: typeof it?.menuItem?.stockLeft === 'number' ? it?.menuItem?.stockLeft : null,
             soldOut:
               it?.menuItem?.available === false ||
               (typeof it?.menuItem?.stockLeft === 'number' && it?.menuItem?.stockLeft <= 0) ||
@@ -544,6 +546,7 @@ export default function HomePage() {
             description: it.description || undefined,
             dietaryTags: it.dietaryTags || [],
             restaurantId: r.id,
+            stockLeft: typeof it.stockLeft === 'number' ? it.stockLeft : null,
             soldOut: it.soldOut === true,
             distanceText:
               typeof r.distance === 'number'
@@ -748,6 +751,7 @@ export default function HomePage() {
             restaurant: r.name,
             restaurantId: it.restaurantId,
             dietaryTags: it.dietaryTags || [],
+            stockLeft: typeof it.stockLeft === 'number' ? it.stockLeft : null,
             soldOut: it.soldOut === true,
             distanceText:
               typeof r.distance === 'number'
@@ -756,6 +760,8 @@ export default function HomePage() {
           }));
         });
         // Defensive filter: only items from allowed restaurants
+        dishesData = dishesData.filter((d: any) => allowedRestaurantIds.has(d.restaurantId));
+        // Popular Foods should show FEATURED items only
         dishesData = dishesData.filter((d: any) => allowedRestaurantIds.has(d.restaurantId));
         // Always update dishes in state
         setPopularDishes(dishesData);
@@ -881,6 +887,7 @@ export default function HomePage() {
               description: it.description || undefined,
               dietaryTags: it.dietaryTags || [],
               restaurantId: r.id,
+            stockLeft: typeof it.stockLeft === 'number' ? it.stockLeft : null,
             };
             items.push(dish);
           }
@@ -922,6 +929,12 @@ export default function HomePage() {
   };
 
   const addFromSheet = (dish: Dish, quantity: number) => {
+    const maxStock = (dish as any).stockLeft;
+    if (typeof maxStock === 'number' && maxStock >= 0 && quantity > maxStock) {
+      toast.error(`Only ${maxStock} left in stock`);
+      quantity = maxStock;
+      if (maxStock === 0) return;
+    }
     const byId = dish.restaurantId
       ? { id: dish.restaurantId, name: dish.restaurant }
       : undefined;
@@ -944,6 +957,7 @@ export default function HomePage() {
         price: dish.price,
         imageUrl: dish.image,
         originalPrice: dish.originalPrice,
+        stockLeft: (dish as any).stockLeft,
       },
       quantity,
       subtotal: dish.price * quantity,

@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import type { Dish } from '@/types/dish';
 import { SafeImage } from '@/components/ui/safe-image';
 import { Clock, MapPin } from 'lucide-react';
@@ -60,9 +61,17 @@ export function HomeProductCardHorizontal({
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const maxStock = (dish as any).stockLeft;
+    const currentQty = quantity || 0;
+    if (typeof maxStock === 'number' && maxStock >= 0 && currentQty + 1 > maxStock) {
+      toast.error(`Only ${maxStock} left in stock`);
+      return;
+    }
     const restaurant =
       restaurantContext ??
-      ({ id: `rest-${dish.restaurant}`, name: dish.restaurant } as any);
+      (dish.restaurantId
+        ? ({ id: dish.restaurantId, name: dish.restaurant } as any)
+        : ({ id: `rest-${dish.restaurant}`, name: dish.restaurant } as any));
     const cartItem = {
       menuItemId: dish.id,
       menuItem: {
@@ -71,6 +80,7 @@ export function HomeProductCardHorizontal({
         price: dish.price,
         imageUrl: dish.image,
         originalPrice: dish.originalPrice,
+        stockLeft: (dish as any).stockLeft,
       },
       quantity: 1,
       subtotal: dish.price,

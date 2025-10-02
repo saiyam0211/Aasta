@@ -291,9 +291,15 @@ export default function RestaurantDetailPage() {
 
   const handleAddToCart = (item: MenuItem) => {
     if (!restaurant) return;
+    const maxStock = (item as any)?.stockLeft;
+    const currentQty = getItemQuantityInCart(item.id);
+    if (typeof maxStock === 'number' && maxStock >= 0 && currentQty + 1 > maxStock) {
+      toast.error(`Only ${maxStock} left in stock`);
+      return;
+    }
     const cartItem = {
       menuItemId: item.id,
-      menuItem: item,
+      menuItem: { ...item },
       quantity: 1,
       subtotal: item.price,
     } as any;

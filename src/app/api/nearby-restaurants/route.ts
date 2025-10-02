@@ -172,6 +172,7 @@ export async function GET(request: NextRequest) {
           price: it.price,
           originalPrice: it.originalPrice ?? undefined,
           image: it.imageUrl || '/images/dish-placeholder.svg',
+          stockLeft: it.stockLeft ?? null,
           dietaryTags: Array.from(normalized),
           preparationTime: it.preparationTime ?? 15,
           category: it.category || '',

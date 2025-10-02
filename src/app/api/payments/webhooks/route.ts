@@ -85,7 +85,7 @@ async function handlePaymentCaptured(payment: any) {
     await prisma.order.update({
       where: { id: existingPayment.orderId },
       data: {
-        paymentStatus: 'completed',
+        paymentStatus: 'COMPLETED',
       },
     });
 
@@ -119,7 +119,7 @@ async function handlePaymentFailed(payment: any) {
     await prisma.order.update({
       where: { id: existingPayment.orderId },
       data: {
-        paymentStatus: 'failed',
+        paymentStatus: 'FAILED',
       },
     });
 
@@ -144,7 +144,7 @@ async function handleOrderPaid(order: any) {
     await prisma.order.update({
       where: { id: existingOrder.id },
       data: {
-        paymentStatus: 'completed',
+        paymentStatus: 'COMPLETED',
         status: 'CONFIRMED',
       },
     });

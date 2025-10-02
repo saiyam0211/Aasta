@@ -17,4 +17,5 @@ export interface Dish {
   durationText?: string;
   restaurantId?: string; // stable id for cart scoping
   soldOut?: boolean;
+  stockLeft?: number | null;
 }

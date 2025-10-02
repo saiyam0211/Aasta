@@ -121,10 +121,18 @@ export default function SearchPage() {
         return;
       }
 
+      // Check stock limit
+      const maxStock = (menuItem as any)?.stockLeft;
+      const currentQty = useCartStore.getState().getItemQuantityInCart(menuItem.id);
+      if (typeof maxStock === 'number' && maxStock >= 0 && currentQty + 1 > maxStock) {
+        toast.error(`Only ${maxStock} left in stock`);
+        return;
+      }
+
       // Create cart item
       const cartItem = {
         menuItemId: menuItem.id,
-        menuItem: menuItem,
+        menuItem: { ...menuItem },
         quantity: 1,
         subtotal: menuItem.price,
       };

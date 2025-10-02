@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { SafeImage } from '@/components/ui/safe-image';
+import { toast } from 'sonner';
 import { useCartStore } from '@/lib/store';
 import { Minus, Plus } from 'lucide-react';
 
@@ -19,6 +20,7 @@ interface Deal {
   restaurantId?: string;
   dietaryTags?: string[];
   soldOut?: boolean;
+  stockLeft?: number | null;
 }
 
 interface HackOfTheDayProps {
@@ -82,6 +84,12 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const maxStock = typeof deal.stockLeft === 'number' ? deal.stockLeft : undefined;
+    const currentQty = quantity || 0;
+    if (typeof maxStock === 'number' && maxStock >= 0 && currentQty + 1 > maxStock) {
+      toast.error(`Only ${maxStock} left in stock`);
+      return;
+    }
     const restaurant = {
       id: deal.restaurantId || `rest-${slugify(deal.restaurant)}`,
       name: deal.restaurant,
@@ -94,6 +102,7 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
         price: deal.price,
         imageUrl: deal.image,
         originalPrice: deal.originalPrice,
+        stockLeft: deal.stockLeft,
       },
       quantity: 1,
       subtotal: deal.price,
@@ -104,6 +113,11 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
 
   const handleIncrease = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const maxStock = typeof deal.stockLeft === 'number' ? deal.stockLeft : undefined;
+    if (typeof maxStock === 'number' && maxStock >= 0 && quantity + 1 > maxStock) {
+      toast.error(`Only ${maxStock} left in stock`);
+      return;
+    }
     updateQuantity(deal.id, quantity + 1);
   };
 

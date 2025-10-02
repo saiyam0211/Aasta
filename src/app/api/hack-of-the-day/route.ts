@@ -103,6 +103,7 @@ export async function GET(request: NextRequest) {
         isVegetarian: checkIfVegetarian(item),
         restaurant: item.restaurant.name,
         restaurantId: item.restaurantId,
+        stockLeft: item.stockLeft ?? null,
         description: item.description,
         distanceText: distanceText,
       };

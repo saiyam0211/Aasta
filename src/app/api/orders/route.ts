@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
           deliveryFee,
           taxes: gst,
           totalAmount,
-          paymentStatus: 'pending',
+          paymentStatus: 'PENDING',
           estimatedPreparationTime: restaurant.averagePreparationTime,
           specialInstructions,
           verificationCode,
@@ -448,7 +448,15 @@ export async function GET(request: NextRequest) {
         where.restaurantId = restaurantId;
       }
     } else {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      // Fallback: if user has a Customer record, treat as customer scope
+      const customer = await prisma.customer.findUnique({
+        where: { userId: session.user.id },
+      });
+      if (customer) {
+        where.customerId = customer.id;
+      } else {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
     }
 
     if (status) {
@@ -456,9 +464,17 @@ export async function GET(request: NextRequest) {
     }
 
     if (paymentStatus) {
-      // Filter for completed payments only - hardcode to COMPLETED
-      where.paymentStatus = 'COMPLETED';
-      console.log('Payment status filter applied: COMPLETED only');
+      // Accept both explicit COMPLETED and legacy lowercase values
+      if (paymentStatus.toUpperCase() === 'COMPLETED') {
+        where.paymentStatus = { in: ['COMPLETED', 'completed'] } as any;
+      } else if (paymentStatus.toUpperCase() === 'PENDING') {
+        where.paymentStatus = { in: ['PENDING', 'pending'] } as any;
+      } else if (paymentStatus.toUpperCase() === 'FAILED') {
+        where.paymentStatus = { in: ['FAILED', 'failed'] } as any;
+      } else {
+        where.paymentStatus = paymentStatus;
+      }
+      console.log('Payment status filter applied:', paymentStatus);
     }
 
     console.log(

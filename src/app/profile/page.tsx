@@ -595,6 +595,7 @@ export default function ProfilePage() {
       <AddressSheet
         open={isAddressSheetOpen}
         onOpenChange={setIsAddressSheetOpen}
+        context="profile"
         onSelect={(address) => {
           // Handle address selection
           console.log('Selected address:', address);

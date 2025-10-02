@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { toast } from 'sonner';
 import { persist } from 'zustand/middleware';
 
 // Auth Store
@@ -51,6 +52,8 @@ interface CartState {
   getItemQuantityInCart: (menuItemId: string) => number;
   clearCart: () => void;
   calculateTotals: () => void;
+  // cache last known stock per item to enforce caps even if some UIs miss stockLeft
+  _lastKnownStock?: Record<string, number | null>;
 }
 
 export const useCartStore = create<CartState>()(
@@ -59,8 +62,16 @@ export const useCartStore = create<CartState>()(
       cart: null,
       isLoading: false,
       error: null,
+      _lastKnownStock: {},
       addItem: (item, restaurant) => {
         const currentCart = get().cart;
+        // cache stock for this item if provided
+        const stk = (item as any)?.menuItem?.stockLeft;
+        if (typeof stk === 'number' || stk === null) {
+          const cache = { ...(get()._lastKnownStock || {}) };
+          cache[item.menuItemId] = stk as any;
+          set({ _lastKnownStock: cache } as any);
+        }
 
         // If cart is empty or from different restaurant, create new cart
         if (!currentCart || currentCart.restaurantId !== restaurant.id) {
@@ -84,8 +95,27 @@ export const useCartStore = create<CartState>()(
           if (existingItemIndex >= 0) {
             // Update existing item
             const updatedItems = [...currentCart.items];
-            updatedItems[existingItemIndex].quantity += item.quantity;
-            updatedItems[existingItemIndex].subtotal += item.subtotal;
+            const existing = updatedItems[existingItemIndex];
+            const desiredQty = existing.quantity + item.quantity;
+            const cached = (get()._lastKnownStock || {})[item.menuItemId];
+            const maxStock = Number(
+              existing.menuItem?.stockLeft ?? item.menuItem?.stockLeft ??
+              (typeof cached === 'number' ? cached : Infinity)
+            );
+            if (!Number.isNaN(maxStock) && maxStock !== Infinity && desiredQty > maxStock) {
+              const allowed = Math.max(0, maxStock - existing.quantity);
+              if (allowed <= 0) {
+                toast.error(`Only ${maxStock} left in stock`);
+                return;
+              }
+              existing.quantity += allowed;
+              const unitPrice = existing.subtotal / Math.max(1, existing.quantity - allowed);
+              existing.subtotal += unitPrice * allowed;
+              toast.error(`Only ${maxStock} left in stock`);
+            } else {
+              existing.quantity = desiredQty;
+              existing.subtotal += item.subtotal;
+            }
 
             set({
               cart: {
@@ -95,6 +125,12 @@ export const useCartStore = create<CartState>()(
             });
           } else {
             // Add new item
+            const cached = (get()._lastKnownStock || {})[item.menuItemId];
+            const maxStock = Number(item.menuItem?.stockLeft ?? (typeof cached === 'number' ? cached : Infinity));
+            if (!Number.isNaN(maxStock) && maxStock !== Infinity && item.quantity > maxStock) {
+              item = { ...item, quantity: Math.max(0, maxStock), subtotal: (item.subtotal / Math.max(1, item.quantity)) * Math.max(0, maxStock) } as any;
+              toast.error(`Only ${maxStock} left in stock`);
+            }
             set({
               cart: {
                 ...currentCart,
@@ -137,6 +173,12 @@ export const useCartStore = create<CartState>()(
 
         const updatedItems = currentCart.items.map((item) => {
           if (item.menuItemId === menuItemId) {
+            const cached = (get()._lastKnownStock || {})[menuItemId];
+            const maxStock = Number(item.menuItem?.stockLeft ?? (typeof cached === 'number' ? cached : Infinity));
+            if (!Number.isNaN(maxStock) && maxStock !== Infinity && quantity > maxStock) {
+              toast.error(`Only ${maxStock} left in stock`);
+              quantity = maxStock;
+            }
             const unitPrice = item.subtotal / item.quantity;
             return {
               ...item,
