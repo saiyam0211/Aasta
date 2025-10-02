@@ -87,7 +87,7 @@ export default function MenuStockManagement() {
   const fetchMenuItems = async (restaurantId: string) => {
     try {
       const response = await fetch(
-        `/api/menu-items?restaurantId=${restaurantId}`
+        `/api/menu-items?restaurantId=${restaurantId}&showAll=1`
       );
       const data = await response.json();
 

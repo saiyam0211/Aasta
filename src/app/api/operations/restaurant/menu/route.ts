@@ -68,6 +68,7 @@ export async function POST(request: Request) {
         category,
         restaurantId: targetRestaurantId,
         available: true,
+        stockLeft: 10, // Default stock of 10
       },
     });
 

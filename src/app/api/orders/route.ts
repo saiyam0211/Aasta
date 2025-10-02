@@ -114,6 +114,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check stock availability for each item
+    for (const item of items) {
+      const menuItem = menuItems.find(mi => mi.id === item.menuItemId);
+      if (menuItem) {
+        const currentStock = menuItem.stockLeft || 0;
+        if (currentStock < item.quantity) {
+          return NextResponse.json(
+            { 
+              error: `Insufficient stock for ${menuItem.name}. Available: ${currentStock}, Requested: ${item.quantity}` 
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     // Calculate order totals
     let subtotal = 0;
     const orderItems = items.map((item) => {
@@ -229,6 +245,20 @@ export async function POST(request: NextRequest) {
           customizations: item.customizations,
         })),
       });
+
+      // Reduce stock for each ordered item
+      for (const item of orderItems) {
+        await tx.menuItem.update({
+          where: { id: item.menuItemId },
+          data: {
+            stockLeft: {
+              decrement: item.quantity,
+            },
+            // Keep available as true even if stock reaches 0
+            available: true,
+          },
+        });
+      }
 
       // Update restaurant statistics
       await tx.restaurant.update({
@@ -646,6 +676,7 @@ export async function GET(request: NextRequest) {
               (item as any)?.menuItem?.available === false ||
               (typeof (item as any)?.menuItem?.stockLeft === 'number' &&
                 (item as any).menuItem.stockLeft <= 0) ||
+              (item as any)?.menuItem?.stockLeft === null ||
               String((order as any)?.restaurant?.status || '').toUpperCase() !== 'ACTIVE';
             return {
               ...item,

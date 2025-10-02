@@ -88,9 +88,9 @@ export default function RestaurantDetailPage() {
         setRestaurant(restaurantData.data);
       }
 
-      // Load menu items to calculate stats
+      // Load menu items to calculate stats (show all items including out of stock)
       const menuRes = await fetch(
-        `/api/menu-items?restaurantId=${restaurantId}`
+        `/api/menu-items?restaurantId=${restaurantId}&showAll=1`
       );
       const menuData = await menuRes.json();
       if (menuData.success) {

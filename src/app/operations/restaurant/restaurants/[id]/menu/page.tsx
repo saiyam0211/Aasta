@@ -88,6 +88,7 @@ export default function RestaurantMenuManagementPage() {
     dietaryType: 'Veg',
     restaurantId: restaurantId,
     hackOfTheDay: false,
+    stockLeft: 10, // Default stock of 10
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [showHackLimitPopup, setShowHackLimitPopup] = useState(false);
@@ -153,9 +154,9 @@ export default function RestaurantMenuManagementPage() {
         setRestaurant(restaurantData.data);
       }
 
-      // Load menu items
+      // Load menu items (show all items including out of stock)
       const menuRes = await fetch(
-        `/api/menu-items?restaurantId=${restaurantId}`
+        `/api/menu-items?restaurantId=${restaurantId}&showAll=1`
       );
       const menuData = await menuRes.json();
       if (menuData.success) {
@@ -190,6 +191,7 @@ export default function RestaurantMenuManagementPage() {
       formDataToSend.append('dietaryType', formData.dietaryType || 'Veg');
       formDataToSend.append('featured', formData.featured ? 'true' : 'false');
       formDataToSend.append('hackOfTheDay', formData.hackOfTheDay ? 'true' : 'false');
+      formDataToSend.append('stockLeft', (formData.stockLeft || 10).toString());
 
       if (formData.originalPrice) {
         formDataToSend.append(
@@ -223,6 +225,7 @@ export default function RestaurantMenuManagementPage() {
           dietaryType: 'Veg',
           restaurantId: restaurantId,
           hackOfTheDay: false,
+          stockLeft: 10, // Default stock of 10
         });
         setSelectedImage(null);
         setShowAddForm(false);
@@ -566,6 +569,33 @@ export default function RestaurantMenuManagementPage() {
                         min="1"
                         className="selectable mt-1 h-10 rounded-lg border-2 border-gray-300"
                       />
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="stockLeft"
+                        className="text-primary-dark-green text-sm font-medium"
+                      >
+                        Initial Stock *
+                      </Label>
+                      <Input
+                        id="stockLeft"
+                        type="number"
+                        placeholder="10"
+                        value={formData.stockLeft || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            stockLeft: Number(e.target.value),
+                          })
+                        }
+                        required
+                        min="0"
+                        className="selectable mt-1 h-10 rounded-lg border-2 border-gray-300"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Set the initial stock quantity for this item
+                      </p>
                     </div>
 
                     <div>

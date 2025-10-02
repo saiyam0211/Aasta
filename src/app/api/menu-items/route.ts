@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const restaurantId = searchParams.get('restaurantId');
     const vegOnly = searchParams.get('veg') === '1';
+    const showAll = searchParams.get('showAll') === '1'; // For restaurant operations
 
     if (!restaurantId) {
       return NextResponse.json(
@@ -21,13 +22,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get menu items for the restaurant (only available items)
+    // Build where clause based on context
+    const whereClause: any = {
+      restaurantId,
+      ...(vegOnly && { dietaryTags: { has: 'Veg' } }),
+    };
+
+    // For restaurant operations (showAll=1), show all items regardless of available/stock status
+    if (showAll) {
+      // Show all items - no additional filters
+    } else {
+      // For customer-facing requests, only show available items with stock > 0
+      whereClause.available = true;
+      whereClause.stockLeft = {
+        gt: 0,
+      };
+    }
+
+    // Get menu items for the restaurant
     const menuItems = await prisma.menuItem.findMany({
-      where: {
-        restaurantId,
-        available: true,
-        ...(vegOnly && { dietaryTags: { has: 'Veg' } }),
-      },
+      where: whereClause,
       select: {
         id: true,
         restaurantId: true,
@@ -192,7 +206,7 @@ export async function POST(request: NextRequest) {
 
     const parsedStockLeft = data.stockLeft
       ? parseInt(data.stockLeft as string, 10)
-      : null;
+      : 10; // Default stock of 10 if not provided
     if (data.stockLeft && Number.isNaN(parsedStockLeft as number)) {
       return NextResponse.json(
         { success: false, error: 'Invalid stockLeft' },

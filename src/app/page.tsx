@@ -461,7 +461,8 @@ export default function HomePage() {
             restaurantId: it?.menuItem?.restaurantId,
             soldOut:
               it?.menuItem?.available === false ||
-              (typeof it?.menuItem?.stockLeft === 'number' && it?.menuItem?.stockLeft <= 0),
+              (typeof it?.menuItem?.stockLeft === 'number' && it?.menuItem?.stockLeft <= 0) ||
+              it?.menuItem?.stockLeft === null,
             distanceText: distText,
             // Keep createdAt implicitly via sort stage
           } as Dish & { _ts?: number });

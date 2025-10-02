@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate menu items availability
+    // Validate menu items availability and stock
     const menuItemIds = cart.items.map((item: any) => item.menuItemId);
     const menuItems = await prisma.menuItem.findMany({
       where: {
@@ -75,6 +75,23 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Some items are no longer available' },
         { status: 400 }
       );
+    }
+
+    // Check stock availability for each item
+    for (const cartItem of cart.items) {
+      const menuItem = menuItems.find(item => item.id === cartItem.menuItemId);
+      if (menuItem) {
+        const currentStock = menuItem.stockLeft || 0;
+        if (currentStock < cartItem.quantity) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: `Insufficient stock for ${menuItem.name}. Available: ${currentStock}, Requested: ${cartItem.quantity}` 
+            },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     // Calculate totals
@@ -293,6 +310,20 @@ export async function POST(request: NextRequest) {
         deliveryAddress: true,
       },
     });
+
+    // Reduce stock for each ordered item
+    for (const item of cart.items) {
+      await prisma.menuItem.update({
+        where: { id: item.menuItemId },
+        data: {
+          stockLeft: {
+            decrement: item.quantity,
+          },
+          // Keep available as true even if stock reaches 0
+          available: true,
+        },
+      });
+    }
 
     // Note: Do not notify delivery partners here. Notifications should be sent only after payment confirmation.
 

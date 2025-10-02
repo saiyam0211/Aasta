@@ -77,12 +77,13 @@ export async function GET(request: NextRequest) {
 
     const restaurantIds = withinRadius.map((r) => r.id);
 
-    // Batch fetch menu items for all restaurants in range
+    // Batch fetch menu items for all restaurants in range (show all items, let frontend handle out of stock overlay)
     const items = restaurantIds.length
       ? await prisma.menuItem.findMany({
           where: {
             restaurantId: { in: restaurantIds },
             available: true,
+            // Remove stockLeft filter to show all items including out of stock
             ...(vegOnly && { dietaryTags: { has: 'Veg' } }),
           },
           select: {
@@ -179,6 +180,7 @@ export async function GET(request: NextRequest) {
           soldOut:
             it.available === false ||
             (typeof it.stockLeft === 'number' && it.stockLeft <= 0) ||
+            it.stockLeft === null ||
             String(restaurant.status || '').toUpperCase() !== 'ACTIVE',
         };
       };
