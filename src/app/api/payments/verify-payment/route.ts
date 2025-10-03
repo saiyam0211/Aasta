@@ -161,8 +161,8 @@ export async function POST(request: NextRequest) {
                     orderDetails.verificationCode,
                     orderDetails.restaurant.latitude,
                     orderDetails.restaurant.longitude,
-                    orderDetails.deliveryAddress.latitude || 0,
-                    orderDetails.deliveryAddress.longitude || 0,
+                    orderDetails.deliveryAddress?.latitude || 0,
+                    orderDetails.deliveryAddress?.longitude || 0,
                     orderDetails.deliveryAddress 
                       ? `${orderDetails.deliveryAddress.street}, ${orderDetails.deliveryAddress.city}`
                       : 'Pickup at restaurant',
