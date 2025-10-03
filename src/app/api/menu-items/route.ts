@@ -28,16 +28,8 @@ export async function GET(request: NextRequest) {
       ...(vegOnly && { dietaryTags: { has: 'Veg' } }),
     };
 
-    // For restaurant operations (showAll=1), show all items regardless of available/stock status
-    if (showAll) {
-      // Show all items - no additional filters
-    } else {
-      // For customer-facing requests, only show available items with stock > 0
-      whereClause.available = true;
-      whereClause.stockLeft = {
-        gt: 0,
-      };
-    }
+    // Show all items regardless of stock status
+    // Items with stock <= 0 will be marked as soldOut on the frontend
 
     // Get menu items for the restaurant
     const menuItems = await prisma.menuItem.findMany({

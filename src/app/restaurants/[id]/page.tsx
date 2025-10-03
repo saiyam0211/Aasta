@@ -124,6 +124,9 @@ export default function RestaurantDetailPage() {
   // ProductBottomSheet state
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
+  
+  // Real-time: backend update tag to trigger refreshes
+  const [updateEtag, setUpdateEtag] = useState<string>('');
 
   // Offers carousel state
   const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
@@ -169,59 +172,86 @@ export default function RestaurantDetailPage() {
     }
   ];
 
-  useEffect(() => {
-    const fetchRestaurantData = async () => {
-      try {
-        setIsLoading(true);
-        const restaurantResponse = await fetch(
-          `/api/restaurants/${params?.id}`
-        );
-        const restaurantData = await restaurantResponse.json();
-        if (!restaurantResponse.ok || !restaurantData.success)
-          throw new Error(restaurantData.error || 'Failed to fetch restaurant');
+  const fetchRestaurantData = async (isBackgroundRefresh = false) => {
+    try {
+      if (!isBackgroundRefresh) setIsLoading(true);
+      const restaurantResponse = await fetch(
+        `/api/restaurants/${params?.id}`
+      );
+      const restaurantData = await restaurantResponse.json();
+      if (!restaurantResponse.ok || !restaurantData.success)
+        throw new Error(restaurantData.error || 'Failed to fetch restaurant');
 
-        const menuResponse = await fetch(
-          `/api/menu-items?restaurantId=${params?.id}${vegOnly ? '&veg=1' : ''}`
-        );
-        const menuData = await menuResponse.json();
-        if (!menuResponse.ok || !menuData.success)
-          throw new Error(menuData.error || 'Failed to fetch menu');
+      const menuResponse = await fetch(
+        `/api/menu-items?restaurantId=${params?.id}${vegOnly ? '&veg=1' : ''}`
+      );
+      const menuData = await menuResponse.json();
+      if (!menuResponse.ok || !menuData.success)
+        throw new Error(menuData.error || 'Failed to fetch menu');
 
-        const r: Restaurant = restaurantData.data;
-        setRestaurant(r);
+      const r: Restaurant = restaurantData.data;
+      setRestaurant(r);
 
-        const menuItems: MenuItem[] = menuData.data || [];
-        
-        // Filter items based on veg mode
-        const filteredItems = vegOnly 
-          ? menuItems.filter((item) => {
-              const isVeg = Array.isArray(item.dietaryTags)
-                ? item.dietaryTags.includes('Veg')
-                : false;
-              return isVeg;
-            })
-          : menuItems;
-        
-        setFeaturedItems(filteredItems.filter((m) => m.featured));
-        setOtherItems(filteredItems.filter((m) => !m.featured));
+      const menuItems: MenuItem[] = menuData.data || [];
+      
+      // Filter items based on veg mode
+      const filteredItems = vegOnly 
+        ? menuItems.filter((item) => {
+            const isVeg = Array.isArray(item.dietaryTags)
+              ? item.dietaryTags.includes('Veg')
+              : false;
+            return isVeg;
+          })
+        : menuItems;
+      
+      setFeaturedItems(filteredItems.filter((m) => m.featured));
+      setOtherItems(filteredItems.filter((m) => !m.featured));
 
-        // Prefer API-provided flattened locationName
-        const apiName = (r as any).locationName as string | null;
-        const embeddedName = r?.location?.name || r?.location?.city;
-        if (apiName) {
-          setLocationName(apiName);
-        } else if (embeddedName) {
-          setLocationName(embeddedName);
-        }
-      } catch (error) {
-        console.error('Error fetching restaurant data:', error);
-        toast.error('Failed to load restaurant data');
-      } finally {
-        setIsLoading(false);
+      // Prefer API-provided flattened locationName
+      const apiName = (r as any).locationName as string | null;
+      const embeddedName = r?.location?.name || r?.location?.city;
+      if (apiName) {
+        setLocationName(apiName);
+      } else if (embeddedName) {
+        setLocationName(embeddedName);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching restaurant data:', error);
+      if (!isBackgroundRefresh) toast.error('Failed to load restaurant data');
+    } finally {
+      if (!isBackgroundRefresh) setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (params?.id) fetchRestaurantData();
   }, [params?.id, vegOnly]);
+
+  // Lightweight polling for DB changes (restaurants/menu): refetch on etag change
+  useEffect(() => {
+    let stop = false;
+    let last = '';
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/updates/etag?_=${Date.now()}`);
+        const data = await res.json();
+        const etag = String(data?.etag || '');
+        if (etag && etag !== last) {
+          last = etag;
+          setUpdateEtag(etag);
+          if (params?.id) {
+            // Background refresh menu items when stock changes
+            fetchRestaurantData(true);
+          }
+        }
+      } catch {}
+      if (!stop) setTimeout(poll, 2000); // Poll every 2 seconds
+    };
+    poll();
+    return () => {
+      stop = true;
+    };
+  }, [params?.id]);
 
   // Compute distance using Google Maps Distance Matrix (with fallback)
   useEffect(() => {
@@ -648,6 +678,7 @@ export default function RestaurantDetailPage() {
                     description: item.description,
                     dietaryTags: item.dietaryTags || [],
                     distanceText: distanceText || undefined,
+                    soldOut: (item as any).stockLeft <= 0,
                   } as Dish;
                 })}
                 onAdd={(dish) => {
@@ -702,6 +733,7 @@ export default function RestaurantDetailPage() {
                 description: item.description,
                 dietaryTags: item.dietaryTags || [],
                 distanceText: distanceText || undefined,
+                soldOut: (item as any).stockLeft <= 0,
               };
               return (
                 <HomeProductCardHorizontal

@@ -71,7 +71,7 @@
   --font-signature: 'Inter', sans-serif;
 }
 
-/* Global PWA Styles */
+/* Global Styles */
 * {
   user-select: none;
   -webkit-user-select: none;
@@ -99,7 +99,7 @@ body {
   overflow-x: hidden;
 }
 
-/* PWA Splash Screen Override */
+/* Splash Screen Override */
 /* Hide any splash screen that might appear */
 @media (display-mode: standalone) {
   /* Ensure video overlay takes precedence */

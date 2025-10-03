@@ -8,7 +8,6 @@ import {
   generateOrderNumber,
   generateVerificationCode,
 } from '@/lib/order-utils';
-import { enhancedNotificationService } from '@/lib/enhanced-notification-service';
 
 interface CreateOrderRequest {
   restaurantId: string;
@@ -299,29 +298,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send instant order confirmation notification
-    try {
-      const estimatedDeliveryTime = new Date(
-        Date.now() + (restaurant.averagePreparationTime + 30) * 60000
-      ).toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-
-      await enhancedNotificationService.sendOrderConfirmation(
-        session.user.id,
-        orderNumber,
-        restaurant.name,
-        totalAmount,
-        estimatedDeliveryTime
-      );
-    } catch (notificationError) {
-      console.error(
-        'Failed to send order confirmation notification:',
-        notificationError
-      );
-      // Don't fail the order creation if notification fails
-    }
+    // Order confirmation notification removed (PWA functionality disabled)
 
     return NextResponse.json(
       {

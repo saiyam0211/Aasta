@@ -104,9 +104,19 @@ export function HomeProductCardHorizontal({
           <SafeImage
             src={dish.image}
             alt={dish.name}
-            className="absolute inset-0 h-full w-full object-cover"
+            className={cn(
+              "absolute inset-0 h-full w-full object-cover",
+              dish.soldOut && "grayscale"
+            )}
             fallbackSrc="/images/dish-placeholder.svg"
           />
+          {dish.soldOut && (
+            <img
+              src="/images/sold-out.png"
+              alt="Sold Out"
+              className="absolute inset-0 m-auto h-[100%] w-[100%]"
+            />
+          )}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -137,7 +147,15 @@ export function HomeProductCardHorizontal({
                 </span>
               )}
             </div>
-            {quantity > 0 ? (
+            {dish.soldOut ? (
+              <button
+                disabled
+                className="h-10 rounded-md border border-gray-300 bg-gray-100 px-4 text-xl font-semibold text-gray-500 cursor-not-allowed"
+                aria-label={`Sold out ${dish.name}`}
+              >
+                Sold
+              </button>
+            ) : quantity > 0 ? (
               <div
                 className="ml-2 inline-flex items-center h-10 rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm"
                 onClick={(e) => e.stopPropagation()}

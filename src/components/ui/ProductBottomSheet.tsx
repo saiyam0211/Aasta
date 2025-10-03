@@ -113,13 +113,23 @@ export function ProductBottomSheet({
             {/* Image */}
             {dish && (
               <div className="p-4 pt-6">
-                <div className="h-72 w-full overflow-hidden rounded-2xl bg-gray-100">
+                <div className="relative h-72 w-full overflow-hidden rounded-2xl bg-gray-100">
                   <SafeImage
                     src={dish.image}
                     alt={dish.name}
-                    className="h-full w-full object-cover"
+                    className={cn(
+                      "h-full w-full object-cover",
+                      dish.soldOut && "grayscale"
+                    )}
                     fallbackSrc="/images/dish-placeholder.svg"
                   />
+                  {dish.soldOut && (
+                    <img
+                      src="/images/sold-out.png"
+                      alt="Sold Out"
+                      className="absolute inset-0 m-auto h-[100%] w-[100%]"
+                    />
+                  )}
                 </div>
 
                 {/* Title row */}
@@ -177,7 +187,15 @@ export function ProductBottomSheet({
           {/* Sticky footer */}
           {dish && (
             <div className="sticky right-0 bottom-0 left-0 border-t border-gray-200 bg-white/80 p-4 backdrop-blur">
-              {existingQuantity > 0 ? (
+              {dish.soldOut ? (
+                <button
+                  disabled
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gray-300 text-base font-semibold text-gray-500 cursor-not-allowed shadow-sm"
+                  aria-label={`Sold out ${dish.name}`}
+                >
+                  Sold Out
+                </button>
+              ) : existingQuantity > 0 ? (
                 <div className="flex items-center justify-between">
                   <div className="inline-flex items-center gap-2">
                     <div className="-gap-2 glass-liquid inline-flex items-center rounded-md border border-green-600/30 bg-white shadow">

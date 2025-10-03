@@ -4,10 +4,8 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import localFont from 'next/font/local';
 import { useEffect, useMemo, useState } from 'react';
-import { LocationPrompt } from '@/components/LocationPrompt';
 import { useLocationStore } from '@/hooks/useLocation';
 import { toast } from 'sonner';
-import { usePWA } from '@/hooks/usePWA';
 import { HomeHeader } from '@/components/ui/home-header';
 import AddressSheet from '@/components/ui/AddressSheet';
 import { HomeProductCard } from '@/components/ui/home-product-card';
@@ -43,7 +41,6 @@ const brandFont = localFont({
 export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { isInstalled } = usePWA();
   const { latitude, longitude, setLocation } = useLocationStore();
   const { cart, addItem } = useCartStore();
   const { vegOnly } = useVegMode();
@@ -1005,7 +1002,7 @@ export default function HomePage() {
         </div>
       )}
       {/* Full-screen onboarding handles location; fallback UI kept for legacy */}
-      {showLocationPrompt && (
+      {/* {showLocationPrompt && (
         <LocationPrompt
           onLocationShared={(location) => {
             setLocation(location.lat, location.lng);
@@ -1018,7 +1015,7 @@ export default function HomePage() {
           }}
           onDismiss={() => setShowLocationPrompt(false)}
         />
-      )}
+      )} */}
 
       <HomeHeader
         locationLabel={selectedLocationLabel}
