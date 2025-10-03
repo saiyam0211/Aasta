@@ -289,8 +289,7 @@ export default function AddressSheet({
       const currentSelectedId = useLocationStore.getState().selectedAddressId;
       if (currentSelectedId === addressId) {
         useLocationStore.getState().setSelectedAddressId(null);
-        // Also clear any related address data
-        useLocationStore.getState().setAddress(null);
+        // Clear selected address ID - the address data will be cleared when user selects a new address
       }
       
       toast.success('Address removed from your saved addresses');

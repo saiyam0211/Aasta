@@ -862,7 +862,7 @@ ${statusEmoji} Status: *${partner.status}*
 
         if (fullOrder) {
           const restaurantMapsLink = `https://www.google.com/maps/search/?api=1&query=${fullOrder.restaurant.latitude},${fullOrder.restaurant.longitude}`;
-          const customerMapsLink = `https://www.google.com/maps/search/?api=1&query=${fullOrder.deliveryAddress.latitude || 0},${fullOrder.deliveryAddress.longitude || 0}`;
+          const customerMapsLink = `https://www.google.com/maps/search/?api=1&query=${fullOrder.deliveryAddress?.latitude || 0},${fullOrder.deliveryAddress?.longitude || 0}`;
 
           const orderItemsList = fullOrder.orderItems
             .map((item) => `• ${item.quantity}x ${item.menuItem.name}`)
