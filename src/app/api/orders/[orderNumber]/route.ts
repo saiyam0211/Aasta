@@ -132,7 +132,11 @@ export async function GET(
       subtotal: subtotal,
       taxes: taxes,
       deliveryFee: deliveryFee,
-      deliveryAddress: `${(order as any).deliveryAddress.street}, ${(order as any).deliveryAddress.city}, ${(order as any).deliveryAddress.state} ${(order as any).deliveryAddress.zipCode}`,
+      deliveryAddress: (order as any).deliveryAddress 
+        ? `${(order as any).deliveryAddress.street}, ${(order as any).deliveryAddress.city}, ${(order as any).deliveryAddress.state} ${(order as any).deliveryAddress.zipCode}`
+        : (order as any).orderType === 'PICKUP' 
+          ? 'Pickup at restaurant'
+          : 'Address not available',
       estimatedDeliveryTime:
         order.estimatedDeliveryTime ||
         new Date(Date.now() + 30 * 60 * 1000).toISOString(),

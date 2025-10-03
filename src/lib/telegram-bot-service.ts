@@ -887,7 +887,9 @@ ${fullOrder.restaurant.address}
 [📍 Open in Google Maps](${restaurantMapsLink})
 
 🏠 *Delivery Location:*
-${fullOrder.deliveryAddress.street}, ${fullOrder.deliveryAddress.city}
+${fullOrder.deliveryAddress 
+  ? `${fullOrder.deliveryAddress.street}, ${fullOrder.deliveryAddress.city}`
+  : 'Pickup at restaurant'}
 [📍 Open in Google Maps](${customerMapsLink})
 
 📋 *Next Steps:*

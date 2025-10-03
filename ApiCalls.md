@@ -1678,3 +1678,675 @@ Order calculation debug: {
 
 
 
+when i press on place order 
+
+Api logs --- 🌐 API REQUEST: {
+  method: 'POST',
+  url: 'http://localhost:3000/api/orders/create',
+  pathname: '/api/orders/create',
+  timestamp: '2025-10-03T15:53:40.834Z',
+  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Vers'
+}
+ ○ Compiling /api/orders/create ...
+ ✓ Compiled /api/orders/create in 734ms (1458 modules)
+[next-auth][warn][DEBUG_ENABLED] 
+https://next-auth.js.org/warnings#debug_enabled
+Redirect URL: http://localhost:3000 Base URL: http://localhost:3000
+prisma:query SELECT 1
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."image", "public"."users"."phone", "public"."users"."role"::text, "public"."users"."googleId", "public"."users"."createdAt", "public"."users"."updatedAt", "public"."users"."password" FROM "public"."users" WHERE "public"."users"."phone" = $1 LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."customers"."id", "public"."customers"."userId", "public"."customers"."favoriteRestaurants", "public"."customers"."defaultAddressId", "public"."customers"."createdAt", "public"."customers"."updatedAt" FROM "public"."customers" WHERE "public"."customers"."userId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."delivery_partners"."id", "public"."delivery_partners"."userId", "public"."delivery_partners"."assignedRestaurants", "public"."delivery_partners"."currentLatitude", "public"."delivery_partners"."currentLongitude", "public"."delivery_partners"."status"::text, "public"."delivery_partners"."todayEarnings", "public"."delivery_partners"."totalEarnings", "public"."delivery_partners"."rating", "public"."delivery_partners"."completedDeliveries", "public"."delivery_partners"."createdAt", "public"."delivery_partners"."updatedAt", "public"."delivery_partners"."telegramPhone", "public"."delivery_partners"."telegramChatId", "public"."delivery_partners"."ratingCount" FROM "public"."delivery_partners" WHERE "public"."delivery_partners"."userId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."restaurants"."id" FROM "public"."restaurants" WHERE ("public"."restaurants"."ownerId" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."restaurants"."id", "public"."restaurants"."name", "public"."restaurants"."ownerId", "public"."restaurants"."latitude", "public"."restaurants"."longitude", "public"."restaurants"."address", "public"."restaurants"."phone", "public"."restaurants"."email", "public"."restaurants"."imageUrl", "public"."restaurants"."cuisineTypes", "public"."restaurants"."averagePreparationTime", "public"."restaurants"."minimumOrderAmount", "public"."restaurants"."deliveryRadius", "public"."restaurants"."commissionRate", "public"."restaurants"."rating", "public"."restaurants"."totalOrders", "public"."restaurants"."status"::text, "public"."restaurants"."operatingHours", "public"."restaurants"."assignedDeliveryPartners", "public"."restaurants"."createdAt", "public"."restaurants"."updatedAt", "public"."restaurants"."ownerName", "public"."restaurants"."aastaPricePercentage", "public"."restaurants"."restaurantPricePercentage", "public"."restaurants"."locationId", "public"."restaurants"."pickupExperienceCount", "public"."restaurants"."pickupExperienceRating" FROM "public"."restaurants" WHERE ("public"."restaurants"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."menu_items"."id", "public"."menu_items"."restaurantId", "public"."menu_items"."name", "public"."menu_items"."description", "public"."menu_items"."price", "public"."menu_items"."originalPrice", "public"."menu_items"."category", "public"."menu_items"."preparationTime", "public"."menu_items"."imageUrl", "public"."menu_items"."dietaryTags", "public"."menu_items"."spiceLevel", "public"."menu_items"."available", "public"."menu_items"."featured", "public"."menu_items"."createdAt", "public"."menu_items"."updatedAt", "public"."menu_items"."stockLeft", "public"."menu_items"."rating", "public"."menu_items"."ratingCount", "public"."menu_items"."hackOfTheDay" FROM "public"."menu_items" WHERE "public"."menu_items"."restaurantId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."menu_items"."id", "public"."menu_items"."restaurantId", "public"."menu_items"."name", "public"."menu_items"."description", "public"."menu_items"."price", "public"."menu_items"."originalPrice", "public"."menu_items"."category", "public"."menu_items"."preparationTime", "public"."menu_items"."imageUrl", "public"."menu_items"."dietaryTags", "public"."menu_items"."spiceLevel", "public"."menu_items"."available", "public"."menu_items"."featured", "public"."menu_items"."createdAt", "public"."menu_items"."updatedAt", "public"."menu_items"."stockLeft", "public"."menu_items"."rating", "public"."menu_items"."ratingCount", "public"."menu_items"."hackOfTheDay" FROM "public"."menu_items" WHERE ("public"."menu_items"."id" IN ($1) AND "public"."menu_items"."restaurantId" = $2 AND "public"."menu_items"."available" = $3) OFFSET $4
+prisma:query SELECT "public"."customers"."id", "public"."customers"."userId", "public"."customers"."favoriteRestaurants", "public"."customers"."defaultAddressId", "public"."customers"."createdAt", "public"."customers"."updatedAt" FROM "public"."customers" WHERE ("public"."customers"."userId" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."image", "public"."users"."phone", "public"."users"."role"::text, "public"."users"."googleId", "public"."users"."createdAt", "public"."users"."updatedAt", "public"."users"."password" FROM "public"."users" WHERE "public"."users"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."addresses"."id", "public"."addresses"."customerId", "public"."addresses"."type"::text, "public"."addresses"."street", "public"."addresses"."city", "public"."addresses"."state", "public"."addresses"."zipCode", "public"."addresses"."latitude", "public"."addresses"."longitude", "public"."addresses"."landmark", "public"."addresses"."instructions", "public"."addresses"."isDefault", "public"."addresses"."createdAt", "public"."addresses"."updatedAt", "public"."addresses"."contactPhone", "public"."addresses"."houseNumber", "public"."addresses"."locality" FROM "public"."addresses" WHERE ("public"."addresses"."customerId" = $1 AND "public"."addresses"."street" = $2) LIMIT $3 OFFSET $4
+prisma:query INSERT INTO "public"."addresses" ("id","customerId","type","street","city","state","zipCode","latitude","longitude","isDefault","createdAt","updatedAt") VALUES ($1,$2,CAST($3::text AS "public"."AddressType"),$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING "public"."addresses"."id", "public"."addresses"."customerId", "public"."addresses"."type"::text, "public"."addresses"."street", "public"."addresses"."city", "public"."addresses"."state", "public"."addresses"."zipCode", "public"."addresses"."latitude", "public"."addresses"."longitude", "public"."addresses"."landmark", "public"."addresses"."instructions", "public"."addresses"."isDefault", "public"."addresses"."createdAt", "public"."addresses"."updatedAt", "public"."addresses"."contactPhone", "public"."addresses"."houseNumber", "public"."addresses"."locality"
+Calculating delivery metrics for order AST-20251003-212342-6819
+Restaurant: 12.98420094669663, 77.7320823495282
+Customer: 12.98360574609645, 77.73226341977569
+Delivery calculation completed:
+Distance: 0.2 km
+Duration: 2 minutes
+Estimated delivery time: 2025-10-03T16:15:43.977Z
+prisma:query BEGIN
+prisma:query INSERT INTO "public"."orders" ("id","orderNumber","customerId","restaurantId","deliveryAddressId","status","subtotal","deliveryFee","taxes","discountAmount","totalAmount","estimatedPreparationTime","estimatedDeliveryTime","verificationCode","paymentStatus","createdAt","updatedAt","deliveryDistance","estimatedDeliveryDuration","orderType") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."OrderStatus"),$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,CAST($20::text AS "public"."OrderType")) RETURNING "public"."orders"."id"
+prisma:query INSERT INTO "public"."order_items" ("id","orderId","menuItemId","quantity","unitPrice","totalPrice","createdAt","aastaEarningsPerItem","aastaTotalEarnings","originalUnitPrice","restaurantEarningsPerItem","restaurantTotalEarnings","totalOriginalPrice") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING "public"."order_items"."id"
+prisma:query SELECT "public"."orders"."id", "public"."orders"."orderNumber", "public"."orders"."customerId", "public"."orders"."restaurantId", "public"."orders"."deliveryPartnerId", "public"."orders"."deliveryAddressId", "public"."orders"."status"::text, "public"."orders"."subtotal", "public"."orders"."deliveryFee", "public"."orders"."taxes", "public"."orders"."discountAmount", "public"."orders"."totalAmount", "public"."orders"."estimatedPreparationTime", "public"."orders"."estimatedDeliveryTime", "public"."orders"."actualDeliveryTime", "public"."orders"."verificationCode", "public"."orders"."paymentStatus", "public"."orders"."specialInstructions", "public"."orders"."cancelReason", "public"."orders"."createdAt", "public"."orders"."updatedAt", "public"."orders"."deliveryBatchId", "public"."orders"."razorpayOrderId", "public"."orders"."deliveryDistance", "public"."orders"."estimatedDeliveryDuration", "public"."orders"."orderType"::text FROM "public"."orders" WHERE "public"."orders"."id" = $1 LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."order_items"."id", "public"."order_items"."orderId", "public"."order_items"."menuItemId", "public"."order_items"."quantity", "public"."order_items"."unitPrice", "public"."order_items"."totalPrice", "public"."order_items"."customizations", "public"."order_items"."createdAt", "public"."order_items"."aastaEarningsPerItem", "public"."order_items"."aastaTotalEarnings", "public"."order_items"."originalUnitPrice", "public"."order_items"."restaurantEarningsPerItem", "public"."order_items"."restaurantTotalEarnings", "public"."order_items"."totalOriginalPrice" FROM "public"."order_items" WHERE "public"."order_items"."orderId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."menu_items"."id", "public"."menu_items"."restaurantId", "public"."menu_items"."name", "public"."menu_items"."description", "public"."menu_items"."price", "public"."menu_items"."originalPrice", "public"."menu_items"."category", "public"."menu_items"."preparationTime", "public"."menu_items"."imageUrl", "public"."menu_items"."dietaryTags", "public"."menu_items"."spiceLevel", "public"."menu_items"."available", "public"."menu_items"."featured", "public"."menu_items"."createdAt", "public"."menu_items"."updatedAt", "public"."menu_items"."stockLeft", "public"."menu_items"."rating", "public"."menu_items"."ratingCount", "public"."menu_items"."hackOfTheDay" FROM "public"."menu_items" WHERE "public"."menu_items"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."restaurants"."id", "public"."restaurants"."name", "public"."restaurants"."ownerId", "public"."restaurants"."latitude", "public"."restaurants"."longitude", "public"."restaurants"."address", "public"."restaurants"."phone", "public"."restaurants"."email", "public"."restaurants"."imageUrl", "public"."restaurants"."cuisineTypes", "public"."restaurants"."averagePreparationTime", "public"."restaurants"."minimumOrderAmount", "public"."restaurants"."deliveryRadius", "public"."restaurants"."commissionRate", "public"."restaurants"."rating", "public"."restaurants"."totalOrders", "public"."restaurants"."status"::text, "public"."restaurants"."operatingHours", "public"."restaurants"."assignedDeliveryPartners", "public"."restaurants"."createdAt", "public"."restaurants"."updatedAt", "public"."restaurants"."ownerName", "public"."restaurants"."aastaPricePercentage", "public"."restaurants"."restaurantPricePercentage", "public"."restaurants"."locationId", "public"."restaurants"."pickupExperienceCount", "public"."restaurants"."pickupExperienceRating" FROM "public"."restaurants" WHERE "public"."restaurants"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."addresses"."id", "public"."addresses"."customerId", "public"."addresses"."type"::text, "public"."addresses"."street", "public"."addresses"."city", "public"."addresses"."state", "public"."addresses"."zipCode", "public"."addresses"."latitude", "public"."addresses"."longitude", "public"."addresses"."landmark", "public"."addresses"."instructions", "public"."addresses"."isDefault", "public"."addresses"."createdAt", "public"."addresses"."updatedAt", "public"."addresses"."contactPhone", "public"."addresses"."houseNumber", "public"."addresses"."locality" FROM "public"."addresses" WHERE "public"."addresses"."id" IN ($1) OFFSET $2
+prisma:query COMMIT
+prisma:query UPDATE "public"."menu_items" SET "stockLeft" = ("public"."menu_items"."stockLeft" - $1), "available" = $2, "updatedAt" = $3 WHERE ("public"."menu_items"."id" = $4 AND 1=1) RETURNING "public"."menu_items"."id", "public"."menu_items"."restaurantId", "public"."menu_items"."name", "public"."menu_items"."description", "public"."menu_items"."price", "public"."menu_items"."originalPrice", "public"."menu_items"."category", "public"."menu_items"."preparationTime", "public"."menu_items"."imageUrl", "public"."menu_items"."dietaryTags", "public"."menu_items"."spiceLevel", "public"."menu_items"."available", "public"."menu_items"."featured", "public"."menu_items"."createdAt", "public"."menu_items"."updatedAt", "public"."menu_items"."stockLeft", "public"."menu_items"."rating", "public"."menu_items"."ratingCount", "public"."menu_items"."hackOfTheDay"
+ POST /api/orders/create 200 in 4895ms
+🌐 API REQUEST: {
+  method: 'POST',
+  url: 'http://localhost:3000/api/payments/create-order',
+  pathname: '/api/payments/create-order',
+  timestamp: '2025-10-03T15:53:45.761Z',
+  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Vers'
+}
+ ○ Compiling /api/payments/create-order ...
+🌐 API REQUEST: {
+  method: 'PUT',
+  url: 'http://localhost:3000/api/client-register',
+  pathname: '/api/client-register',
+  timestamp: '2025-10-03T15:53:46.652Z',
+  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Vers'
+}
+ ✓ Compiled /api/payments/create-order in 1537ms (1553 modules)
+[next-auth][warn][DEBUG_ENABLED] 
+https://next-auth.js.org/warnings#debug_enabled
+Redirect URL: http://localhost:3000 Base URL: http://localhost:3000
+Redirect URL: http://localhost:3000 Base URL: http://localhost:3000
+prisma:query SELECT 1
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."image", "public"."users"."phone", "public"."users"."role"::text, "public"."users"."googleId", "public"."users"."createdAt", "public"."users"."updatedAt", "public"."users"."password" FROM "public"."users" WHERE "public"."users"."phone" = $1 LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."customers"."id", "public"."customers"."userId", "public"."customers"."favoriteRestaurants", "public"."customers"."defaultAddressId", "public"."customers"."createdAt", "public"."customers"."updatedAt" FROM "public"."customers" WHERE "public"."customers"."userId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."image", "public"."users"."phone", "public"."users"."role"::text, "public"."users"."googleId", "public"."users"."createdAt", "public"."users"."updatedAt", "public"."users"."password" FROM "public"."users" WHERE "public"."users"."phone" = $1 LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."delivery_partners"."id", "public"."delivery_partners"."userId", "public"."delivery_partners"."assignedRestaurants", "public"."delivery_partners"."currentLatitude", "public"."delivery_partners"."currentLongitude", "public"."delivery_partners"."status"::text, "public"."delivery_partners"."todayEarnings", "public"."delivery_partners"."totalEarnings", "public"."delivery_partners"."rating", "public"."delivery_partners"."completedDeliveries", "public"."delivery_partners"."createdAt", "public"."delivery_partners"."updatedAt", "public"."delivery_partners"."telegramPhone", "public"."delivery_partners"."telegramChatId", "public"."delivery_partners"."ratingCount" FROM "public"."delivery_partners" WHERE "public"."delivery_partners"."userId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."customers"."id", "public"."customers"."userId", "public"."customers"."favoriteRestaurants", "public"."customers"."defaultAddressId", "public"."customers"."createdAt", "public"."customers"."updatedAt" FROM "public"."customers" WHERE "public"."customers"."userId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."restaurants"."id" FROM "public"."restaurants" WHERE ("public"."restaurants"."ownerId" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."delivery_partners"."id", "public"."delivery_partners"."userId", "public"."delivery_partners"."assignedRestaurants", "public"."delivery_partners"."currentLatitude", "public"."delivery_partners"."currentLongitude", "public"."delivery_partners"."status"::text, "public"."delivery_partners"."todayEarnings", "public"."delivery_partners"."totalEarnings", "public"."delivery_partners"."rating", "public"."delivery_partners"."completedDeliveries", "public"."delivery_partners"."createdAt", "public"."delivery_partners"."updatedAt", "public"."delivery_partners"."telegramPhone", "public"."delivery_partners"."telegramChatId", "public"."delivery_partners"."ratingCount" FROM "public"."delivery_partners" WHERE "public"."delivery_partners"."userId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."customers"."id", "public"."customers"."userId", "public"."customers"."favoriteRestaurants", "public"."customers"."defaultAddressId", "public"."customers"."createdAt", "public"."customers"."updatedAt" FROM "public"."customers" WHERE ("public"."customers"."userId" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."restaurants"."id" FROM "public"."restaurants" WHERE ("public"."restaurants"."ownerId" = $1 AND 1=1) LIMIT $2 OFFSET $3
+⚠️ Session not found for activity update: session_1759506796384_q5tc66ogr
+ PUT /api/client-register 404 in 1301ms
+prisma:query SELECT "public"."orders"."id", "public"."orders"."orderNumber", "public"."orders"."customerId", "public"."orders"."restaurantId", "public"."orders"."deliveryPartnerId", "public"."orders"."deliveryAddressId", "public"."orders"."status"::text, "public"."orders"."subtotal", "public"."orders"."deliveryFee", "public"."orders"."taxes", "public"."orders"."discountAmount", "public"."orders"."totalAmount", "public"."orders"."estimatedPreparationTime", "public"."orders"."estimatedDeliveryTime", "public"."orders"."actualDeliveryTime", "public"."orders"."verificationCode", "public"."orders"."paymentStatus", "public"."orders"."specialInstructions", "public"."orders"."cancelReason", "public"."orders"."createdAt", "public"."orders"."updatedAt", "public"."orders"."deliveryBatchId", "public"."orders"."razorpayOrderId", "public"."orders"."deliveryDistance", "public"."orders"."estimatedDeliveryDuration", "public"."orders"."orderType"::text FROM "public"."orders" WHERE ("public"."orders"."orderNumber" = $1 AND "public"."orders"."customerId" = $2) LIMIT $3 OFFSET $4
+prisma:query SELECT "public"."customers"."id", "public"."customers"."userId", "public"."customers"."favoriteRestaurants", "public"."customers"."defaultAddressId", "public"."customers"."createdAt", "public"."customers"."updatedAt" FROM "public"."customers" WHERE "public"."customers"."id" IN ($1) OFFSET $2
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."phone" FROM "public"."users" WHERE "public"."users"."id" IN ($1) OFFSET $2
+prisma:query UPDATE "public"."orders" SET "razorpayOrderId" = $1, "paymentStatus" = $2, "updatedAt" = $3 WHERE ("public"."orders"."id" = $4 AND 1=1) RETURNING "public"."orders"."id", "public"."orders"."orderNumber", "public"."orders"."customerId", "public"."orders"."restaurantId", "public"."orders"."deliveryPartnerId", "public"."orders"."deliveryAddressId", "public"."orders"."status"::text, "public"."orders"."subtotal", "public"."orders"."deliveryFee", "public"."orders"."taxes", "public"."orders"."discountAmount", "public"."orders"."totalAmount", "public"."orders"."estimatedPreparationTime", "public"."orders"."estimatedDeliveryTime", "public"."orders"."actualDeliveryTime", "public"."orders"."verificationCode", "public"."orders"."paymentStatus", "public"."orders"."specialInstructions", "public"."orders"."cancelReason", "public"."orders"."createdAt", "public"."orders"."updatedAt", "public"."orders"."deliveryBatchId", "public"."orders"."razorpayOrderId", "public"."orders"."deliveryDistance", "public"."orders"."estimatedDeliveryDuration", "public"."orders"."orderType"::text
+prisma:query INSERT INTO "public"."payments" ("id","orderId","razorpayOrderId","amount","currency","status","paymentMethod","createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "public"."payments"."id", "public"."payments"."orderId", "public"."payments"."razorpayOrderId", "public"."payments"."razorpayPaymentId", "public"."payments"."amount", "public"."payments"."currency", "public"."payments"."status", "public"."payments"."paymentMethod", "public"."payments"."failureReason", "public"."payments"."capturedAt", "public"."payments"."createdAt"
+ POST /api/payments/create-order 200 in 4371ms
+
+
+console logs ---
+
+page.tsx:83 Menu item: Dahi Bhalla Chaat dietaryTags: undefined normalized: []
+page.tsx:83 Menu item: Dahi Bhalla Chaat dietaryTags: undefined normalized: []
+page.tsx:83 Menu item: Dahi Bhalla Chaat dietaryTags: undefined normalized: []
+page.tsx:83 Menu item: Dahi Bhalla Chaat dietaryTags: undefined normalized: []
+hot-reloader-app.js:197 [Fast Refresh] rebuilding
+report-hmr-latency.js:14 [Fast Refresh] done in 452ms
+hot-reloader-app.js:197 [Fast Refresh] rebuilding
+report-hmr-latency.js:14 [Fast Refresh] done in 607ms
+customer-layout.tsx:146  PUT http://localhost:60069/api/client-register 404 (Not Found)
+CustomerLayout.useEffect.activityInterval @ customer-layout.tsx:146
+setInterval
+CustomerLayout.useEffect @ customer-layout.tsx:142
+react_stack_bottom_frame @ react-dom-client.development.js:23638
+runWithFiberInDEV @ react-dom-client.development.js:873
+commitHookEffectListMount @ react-dom-client.development.js:12296
+commitHookPassiveMountEffects @ react-dom-client.development.js:12417
+reconnectPassiveEffects @ react-dom-client.development.js:14514
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+doubleInvokeEffectsOnFiber @ react-dom-client.development.js:16517
+runWithFiberInDEV @ react-dom-client.development.js:873
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16481
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+commitDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16526
+flushPassiveEffects @ react-dom-client.development.js:16299
+flushPendingEffects @ react-dom-client.development.js:16250
+performSyncWorkOnRoot @ react-dom-client.development.js:16779
+flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:16628
+flushSpawnedWork @ react-dom-client.development.js:16225
+commitRoot @ react-dom-client.development.js:15949
+commitRootWhenReady @ react-dom-client.development.js:15179
+performWorkOnRoot @ react-dom-client.development.js:15098
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16767
+performWorkUntilDeadline @ scheduler.development.js:45
+(anonymous) @ content.js:13
+d @ content.js:13
+f @ content.js:13
+<CustomerLayout>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:345
+CartPage @ page.tsx:405
+react_stack_bottom_frame @ react-dom-client.development.js:23553
+renderWithHooksAgain @ react-dom-client.development.js:6864
+renderWithHooks @ react-dom-client.development.js:6776
+updateFunctionComponent @ react-dom-client.development.js:9070
+beginWork @ react-dom-client.development.js:10680
+runWithFiberInDEV @ react-dom-client.development.js:873
+performUnitOfWork @ react-dom-client.development.js:15678
+workLoopConcurrentByScheduler @ react-dom-client.development.js:15672
+renderRootConcurrent @ react-dom-client.development.js:15647
+performWorkOnRoot @ react-dom-client.development.js:14941
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16767
+performWorkUntilDeadline @ scheduler.development.js:45
+(anonymous) @ content.js:13
+d @ content.js:13
+f @ content.js:13
+<CartPage>
+exports.jsx @ react-jsx-runtime.development.js:338
+ClientPageRoot @ client-page.js:20
+react_stack_bottom_frame @ react-dom-client.development.js:23553
+renderWithHooksAgain @ react-dom-client.development.js:6864
+renderWithHooks @ react-dom-client.development.js:6776
+updateFunctionComponent @ react-dom-client.development.js:9070
+beginWork @ react-dom-client.development.js:10629
+runWithFiberInDEV @ react-dom-client.development.js:873
+performUnitOfWork @ react-dom-client.development.js:15678
+workLoopConcurrentByScheduler @ react-dom-client.development.js:15672
+renderRootConcurrent @ react-dom-client.development.js:15647
+performWorkOnRoot @ react-dom-client.development.js:14941
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16767
+performWorkUntilDeadline @ scheduler.development.js:45
+(anonymous) @ content.js:13
+d @ content.js:13
+f @ content.js:13
+"use client"
+initializeElement @ react-server-dom-webpack-client.browser.development.js:1206
+wakeChunk @ react-server-dom-webpack-client.browser.development.js:976
+fulfillReference @ react-server-dom-webpack-client.browser.development.js:1310
+wakeChunk @ react-server-dom-webpack-client.browser.development.js:977
+wakeChunkIfInitialized @ react-server-dom-webpack-client.browser.development.js:1012
+resolveModuleChunk @ react-server-dom-webpack-client.browser.development.js:1097
+eval @ react-server-dom-webpack-client.browser.development.js:1944
+"use server"
+ResponseInstance @ react-server-dom-webpack-client.browser.development.js:1870
+createResponseFromOptions @ react-server-dom-webpack-client.browser.development.js:2858
+exports.createFromReadableStream @ react-server-dom-webpack-client.browser.development.js:3228
+createFromNextReadableStream @ fetch-server-response.js:217
+fetchServerResponse @ fetch-server-response.js:124
+await in fetchServerResponse
+eval @ prefetch-cache-utils.js:197
+task @ promise-queue.js:30
+processNext @ promise-queue.js:81
+enqueue @ promise-queue.js:45
+createLazyPrefetchEntry @ prefetch-cache-utils.js:197
+getOrCreatePrefetchCacheEntry @ prefetch-cache-utils.js:144
+navigateReducer @ navigate-reducer.js:163
+clientReducer @ router-reducer.js:25
+action @ app-router-instance.js:156
+runAction @ app-router-instance.js:66
+dispatchAction @ app-router-instance.js:120
+dispatch @ app-router-instance.js:154
+eval @ use-action-queue.js:55
+startTransition @ react-dom-client.development.js:7939
+dispatch @ use-action-queue.js:54
+dispatchAppRouterAction @ use-action-queue.js:37
+dispatchNavigateAction @ app-router-instance.js:207
+eval @ app-router-instance.js:260
+exports.startTransition @ react.development.js:1131
+push @ app-router-instance.js:258
+handleCartClick @ cart-bottom-nav.tsx:54
+executeDispatch @ react-dom-client.development.js:16922
+runWithFiberInDEV @ react-dom-client.development.js:873
+processDispatchQueue @ react-dom-client.development.js:16972
+eval @ react-dom-client.development.js:17573
+batchedUpdates$1 @ react-dom-client.development.js:3313
+dispatchEventForPluginEventSystem @ react-dom-client.development.js:17126
+dispatchEvent @ react-dom-client.development.js:21309
+dispatchDiscreteEvent @ react-dom-client.development.js:21277
+v2-entry-sentry-2e65aebd.modern.js:1  GET https://browser.sentry-cdn.com/7.64.0/bundle.min.js net::ERR_BLOCKED_BY_CONTENT_BLOCKER
+_ @ v2-entry-sentry-2e65aebd.modern.js:1
+1430 @ v2-entry-sentry-2e65aebd.modern.js:1
+i @ v2-entry.modern.js:1
+Promise.then
+(anonymous) @ v2-entry.modern.js:1
+Promise.then
+p @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+Promise.finally
+u @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+n @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+"serviceworker" must be a dictionary in your web app manifest.
+"serviceworker" must be a dictionary in your web app manifest.
+"serviceworker" must be a dictionary in your web app manifest.
+"serviceworker" must be a dictionary in your web app manifest.
+"serviceworker" must be a dictionary in your web app manifest.
+"serviceworker" must be a dictionary in your web app manifest.
+v2-entry.modern.js:1  POST https://api.razorpay.com/v1/standard_checkout/payments/validate/account?key_id=rzp_test_R5Bt2xIblxWVU2&session_token=3CC89395354FCC198A190B7355E99FD674D824E3F24CB0B85C409F774272F2C0FDF0559BDEB487E1A50F5A704053620F211952278AF9AADDD179096F005EB94271C872DA232A60B053692AD113B04F761528C6749827142C492133945646F6A76F3B368F2D2B9E00 500 (Internal Server Error)
+(anonymous) @ v2-entry.modern.js:1
+q @ v2-entry.modern.js:1
+c @ v2-entry-app-2a241120.modern.js:1
+L @ v2-entry-app-2a241120.modern.js:1
+O @ v2-entry-84a6a0dd.modern.js:1
+(anonymous) @ v2-entry-84a6a0dd.modern.js:1
+subscribe @ v2-entry-759e98e8.modern.js:1
+ye @ v2-entry-84a6a0dd.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+Ie @ v2-entry-84a6a0dd.modern.js:1
+ae @ v2-entry-quick-buy-mobile-home-7b9da705.modern.js:1
+b @ v2-entry-c9b1556b.modern.js:1
+d @ v2-entry-app-2a241120.modern.js:1
+b @ v2-entry-c9b1556b.modern.js:1
+E @ v2-entry-app-2a241120.modern.js:1
+B @ v2-entry-app-2a241120.modern.js:1
+o @ v2-entry-c9b1556b.modern.js:1
+(anonymous) @ v2-entry-c9b1556b.modern.js:1
+Promise.then
+ln @ v2-entry-c9b1556b.modern.js:1
+C @ v2-entry-app-2a241120.modern.js:1
+S @ v2-entry-app-2a241120.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+N @ v2-entry-app-2a241120.modern.js:1
+f @ v2-entry-app-2a241120.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+h @ v2-entry-app-2a241120.modern.js:1
+(anonymous) @ v2-entry-quick-buy-mobile-home-7b9da705.modern.js:1
+Ce @ v2-entry-quick-buy-mobile-home-7b9da705.modern.js:1
+b @ v2-entry-c9b1556b.modern.js:1
+m @ v2-entry-app-2a241120.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+_ @ v2-entry-app-2a241120.modern.js:1
+Le @ v2-entry-quick-buy-mobile-home-7b9da705.modern.js:1
+b @ v2-entry-c9b1556b.modern.js:1
+R @ v2-entry-cd63cc9d.modern.js:1
+b @ v2-entry-c9b1556b.modern.js:1
+r @ v2-entry-cd63cc9d.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+c @ v2-entry-cd63cc9d.modern.js:1
+G @ v2-entry-cd63cc9d.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+B @ v2-entry-cd63cc9d.modern.js:1
+Te @ v2-entry-quick-buy-mobile-home-7b9da705.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+Ne @ v2-entry-quick-buy-mobile-home-7b9da705.modern.js:1
+wt @ v2-entry-home-f9765af3.modern.js:1
+Yt @ v2-entry-home-f9765af3.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+Rt @ v2-entry-home-f9765af3.modern.js:1
+vt @ v2-entry-c9b1556b.modern.js:1
+l @ v2-entry-app-2a241120.modern.js:1
+b @ v2-entry-c9b1556b.modern.js:1
+d @ v2-entry-app-2a241120.modern.js:1
+b @ v2-entry-c9b1556b.modern.js:1
+w @ v2-entry-app-2a241120.modern.js:1
+k @ v2-entry-app-2a241120.modern.js:1
+S @ v2-entry-app-2a241120.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+N @ v2-entry-app-2a241120.modern.js:1
+f @ v2-entry-app-2a241120.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+h @ v2-entry-app-2a241120.modern.js:1
+u @ v2-entry-app-2a241120.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+p @ v2-entry-app-2a241120.modern.js:1
+h @ v2-entry-app-2a241120.modern.js:1
+v @ v2-entry-app-2a241120.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+b @ v2-entry-app-2a241120.modern.js:1
+q @ v2-entry-app-2a241120.modern.js:1
+b @ v2-entry-c9b1556b.modern.js:1
+P @ v2-entry-app-2a241120.modern.js:1
+B @ v2-entry-app-2a241120.modern.js:1
+o @ v2-entry-c9b1556b.modern.js:1
+(anonymous) @ v2-entry-c9b1556b.modern.js:1
+Promise.then
+ln @ v2-entry-c9b1556b.modern.js:1
+C @ v2-entry-app-2a241120.modern.js:1
+S @ v2-entry-app-2a241120.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+N @ v2-entry-app-2a241120.modern.js:1
+ie @ v2-entry-app-2a241120.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+le @ v2-entry-app-2a241120.modern.js:1
+Bn @ v2-entry-app-2a241120.modern.js:1
+b @ v2-entry-c9b1556b.modern.js:1
+Wt @ v2-entry-app-2a241120.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+en @ v2-entry-app-2a241120.modern.js:1
+gn @ v2-entry-app-2a241120.modern.js:1
+Tn @ v2-entry-app-2a241120.modern.js:1
+Mn @ v2-entry-app-2a241120.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+Yn @ v2-entry-app-2a241120.modern.js:1
+(anonymous) @ v2-entry-app-2a241120.modern.js:1
+Promise.then
+h @ v2-entry-app-2a241120.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+Promise.then
+p @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+Promise.finally
+u @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+n @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+v2-entry.modern.js:1  POST https://api.razorpay.com/v1/standard_checkout/payments/validate/account?key_id=rzp_test_R5Bt2xIblxWVU2&session_token=3CC89395354FCC198A190B7355E99FD674D824E3F24CB0B85C409F774272F2C0FDF0559BDEB487E1A50F5A704053620F211952278AF9AADDD179096F005EB94271C872DA232A60B053692AD113B04F761528C6749827142C492133945646F6A76F3B368F2D2B9E00 500 (Internal Server Error)
+(anonymous) @ v2-entry.modern.js:1
+q @ v2-entry.modern.js:1
+c @ v2-entry-app-2a241120.modern.js:1
+L @ v2-entry-app-2a241120.modern.js:1
+O @ v2-entry-84a6a0dd.modern.js:1
+(anonymous) @ v2-entry-84a6a0dd.modern.js:1
+i @ v2-entry-759e98e8.modern.js:1
+w @ v2-entry-app-2a241120.modern.js:1
+await in w
+p @ v2-entry-app-2a241120.modern.js:1
+Fn @ v2-entry-app-2a241120.modern.js:1
+_n @ v2-entry-c9b1556b.modern.js:1
+Yn @ v2-entry-app-2a241120.modern.js:1
+(anonymous) @ v2-entry-app-2a241120.modern.js:1
+Promise.then
+h @ v2-entry-app-2a241120.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+Promise.then
+p @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+Promise.finally
+u @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+n @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+customer-layout.tsx:146  PUT http://localhost:60069/api/client-register 404 (Not Found)
+CustomerLayout.useEffect.activityInterval @ customer-layout.tsx:146
+setInterval
+CustomerLayout.useEffect @ customer-layout.tsx:142
+react_stack_bottom_frame @ react-dom-client.development.js:23638
+runWithFiberInDEV @ react-dom-client.development.js:873
+commitHookEffectListMount @ react-dom-client.development.js:12296
+commitHookPassiveMountEffects @ react-dom-client.development.js:12417
+reconnectPassiveEffects @ react-dom-client.development.js:14514
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14561
+recursivelyTraverseReconnectPassiveEffects @ react-dom-client.development.js:14485
+reconnectPassiveEffects @ react-dom-client.development.js:14507
+doubleInvokeEffectsOnFiber @ react-dom-client.development.js:16517
+runWithFiberInDEV @ react-dom-client.development.js:873
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16481
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+recursivelyTraverseAndDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16487
+commitDoubleInvokeEffectsInDEV @ react-dom-client.development.js:16526
+flushPassiveEffects @ react-dom-client.development.js:16299
+flushPendingEffects @ react-dom-client.development.js:16250
+performSyncWorkOnRoot @ react-dom-client.development.js:16779
+flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:16628
+flushSpawnedWork @ react-dom-client.development.js:16225
+commitRoot @ react-dom-client.development.js:15949
+commitRootWhenReady @ react-dom-client.development.js:15179
+performWorkOnRoot @ react-dom-client.development.js:15098
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16767
+performWorkUntilDeadline @ scheduler.development.js:45
+(anonymous) @ content.js:13
+d @ content.js:13
+f @ content.js:13
+<CustomerLayout>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:345
+CartPage @ page.tsx:405
+react_stack_bottom_frame @ react-dom-client.development.js:23553
+renderWithHooksAgain @ react-dom-client.development.js:6864
+renderWithHooks @ react-dom-client.development.js:6776
+updateFunctionComponent @ react-dom-client.development.js:9070
+beginWork @ react-dom-client.development.js:10680
+runWithFiberInDEV @ react-dom-client.development.js:873
+performUnitOfWork @ react-dom-client.development.js:15678
+workLoopConcurrentByScheduler @ react-dom-client.development.js:15672
+renderRootConcurrent @ react-dom-client.development.js:15647
+performWorkOnRoot @ react-dom-client.development.js:14941
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16767
+performWorkUntilDeadline @ scheduler.development.js:45
+(anonymous) @ content.js:13
+d @ content.js:13
+f @ content.js:13
+<CartPage>
+exports.jsx @ react-jsx-runtime.development.js:338
+ClientPageRoot @ client-page.js:20
+react_stack_bottom_frame @ react-dom-client.development.js:23553
+renderWithHooksAgain @ react-dom-client.development.js:6864
+renderWithHooks @ react-dom-client.development.js:6776
+updateFunctionComponent @ react-dom-client.development.js:9070
+beginWork @ react-dom-client.development.js:10629
+runWithFiberInDEV @ react-dom-client.development.js:873
+performUnitOfWork @ react-dom-client.development.js:15678
+workLoopConcurrentByScheduler @ react-dom-client.development.js:15672
+renderRootConcurrent @ react-dom-client.development.js:15647
+performWorkOnRoot @ react-dom-client.development.js:14941
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16767
+performWorkUntilDeadline @ scheduler.development.js:45
+(anonymous) @ content.js:13
+d @ content.js:13
+f @ content.js:13
+"use client"
+initializeElement @ react-server-dom-webpack-client.browser.development.js:1206
+wakeChunk @ react-server-dom-webpack-client.browser.development.js:976
+fulfillReference @ react-server-dom-webpack-client.browser.development.js:1310
+wakeChunk @ react-server-dom-webpack-client.browser.development.js:977
+wakeChunkIfInitialized @ react-server-dom-webpack-client.browser.development.js:1012
+resolveModuleChunk @ react-server-dom-webpack-client.browser.development.js:1097
+eval @ react-server-dom-webpack-client.browser.development.js:1944
+"use server"
+ResponseInstance @ react-server-dom-webpack-client.browser.development.js:1870
+createResponseFromOptions @ react-server-dom-webpack-client.browser.development.js:2858
+exports.createFromReadableStream @ react-server-dom-webpack-client.browser.development.js:3228
+createFromNextReadableStream @ fetch-server-response.js:217
+fetchServerResponse @ fetch-server-response.js:124
+await in fetchServerResponse
+eval @ prefetch-cache-utils.js:197
+task @ promise-queue.js:30
+processNext @ promise-queue.js:81
+enqueue @ promise-queue.js:45
+createLazyPrefetchEntry @ prefetch-cache-utils.js:197
+getOrCreatePrefetchCacheEntry @ prefetch-cache-utils.js:144
+navigateReducer @ navigate-reducer.js:163
+clientReducer @ router-reducer.js:25
+action @ app-router-instance.js:156
+runAction @ app-router-instance.js:66
+dispatchAction @ app-router-instance.js:120
+dispatch @ app-router-instance.js:154
+eval @ use-action-queue.js:55
+startTransition @ react-dom-client.development.js:7939
+dispatch @ use-action-queue.js:54
+dispatchAppRouterAction @ use-action-queue.js:37
+dispatchNavigateAction @ app-router-instance.js:207
+eval @ app-router-instance.js:260
+exports.startTransition @ react.development.js:1131
+push @ app-router-instance.js:258
+handleCartClick @ cart-bottom-nav.tsx:54
+executeDispatch @ react-dom-client.development.js:16922
+runWithFiberInDEV @ react-dom-client.development.js:873
+processDispatchQueue @ react-dom-client.development.js:16972
+eval @ react-dom-client.development.js:17573
+batchedUpdates$1 @ react-dom-client.development.js:3313
+dispatchEventForPluginEventSystem @ react-dom-client.development.js:17126
+dispatchEvent @ react-dom-client.development.js:21309
+dispatchDiscreteEvent @ react-dom-client.development.js:21277
+hot-reloader-app.js:197 [Fast Refresh] rebuilding
+report-hmr-latency.js:14 [Fast Refresh] done in 1232ms
+page.tsx:83 Menu item: Dahi Bhalla Chaat dietaryTags: undefined normalized: []
+page.tsx:83 Menu item: Dahi Bhalla Chaat dietaryTags: undefined normalized: []
+hot-reloader-app.js:197 [Fast Refresh] rebuilding
+report-hmr-latency.js:14 [Fast Refresh] done in 479ms
+page.tsx:83 Menu item: Dahi Bhalla Chaat dietaryTags: undefined normalized: []
+page.tsx:83 Menu item: Dahi Bhalla Chaat dietaryTags: undefined normalized: []
+hot-reloader-app.js:197 [Fast Refresh] rebuilding
+report-hmr-latency.js:14 [Fast Refresh] done in 372ms
+page.tsx:83 Menu item: Dahi Bhalla Chaat dietaryTags: undefined normalized: []
+page.tsx:83 Menu item: Dahi Bhalla Chaat dietaryTags: undefined normalized: []

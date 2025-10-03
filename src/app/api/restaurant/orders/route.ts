@@ -101,7 +101,9 @@ export async function GET(request: NextRequest) {
       subtotal: order.subtotal,
       createdAt: order.createdAt.toISOString(),
       estimatedDeliveryTime: order.estimatedDeliveryTime?.toISOString(),
-      deliveryAddress: `${order.deliveryAddress.street}, ${order.deliveryAddress.city}`,
+      deliveryAddress: order.deliveryAddress 
+        ? `${order.deliveryAddress.street}, ${order.deliveryAddress.city}`
+        : 'Pickup at restaurant',
       customerName: order.customer.user.name || 'Unknown Customer',
       itemCount: order.orderItems.length,
       items: order.orderItems.map((item) => ({

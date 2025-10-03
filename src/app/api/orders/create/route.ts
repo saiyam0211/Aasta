@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { generateOrderNumber } from '@/lib/order-utils';
 import { googleMapsService } from '@/lib/google-maps';
+import PaymentService from '@/lib/payment-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,11 +40,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch restaurant to validate
-    const restaurant = await prisma.restaurant.findUnique({
+    // Prepare queries in parallel to reduce latency
+    const restaurantPromise = prisma.restaurant.findUnique({
       where: { id: cart.restaurantId },
-      include: { menuItems: true },
+      select: {
+        id: true,
+        name: true,
+        ownerId: true,
+        latitude: true,
+        longitude: true,
+        address: true,
+        averagePreparationTime: true,
+        minimumOrderAmount: true,
+        deliveryRadius: true,
+        commissionRate: true,
+        status: true,
+        aastaPricePercentage: true,
+        restaurantPricePercentage: true,
+      },
     });
+
+    // (moved below after Promise.all)
+
+    // Validate menu items availability and stock
+    const menuItemIds = cart.items.map((item: any) => item.menuItemId);
+    const menuItemsPromise = prisma.menuItem.findMany({
+      where: {
+        id: { in: menuItemIds },
+        restaurantId: cart.restaurantId,
+        available: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        originalPrice: true,
+        stockLeft: true,
+      },
+    });
+
+    const [restaurant, menuItems] = await Promise.all([
+      restaurantPromise,
+      menuItemsPromise,
+    ]);
+
 
     if (!restaurant) {
       return NextResponse.json(
@@ -59,16 +99,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Validate menu items availability and stock
-    const menuItemIds = cart.items.map((item: any) => item.menuItemId);
-    const menuItems = await prisma.menuItem.findMany({
-      where: {
-        id: { in: menuItemIds },
-        restaurantId: cart.restaurantId,
-        available: true,
-      },
-    });
 
     if (menuItems.length !== cart.items.length) {
       return NextResponse.json(
@@ -120,8 +150,14 @@ export async function POST(request: NextRequest) {
     // First find or create the customer record
     let customer = await prisma.customer.findUnique({
       where: { userId },
-      include: {
-        user: true,
+      select: { 
+        id: true,
+        user: {
+          select: {
+            phone: true,
+            email: true,
+          }
+        }
       },
     });
 
@@ -131,22 +167,24 @@ export async function POST(request: NextRequest) {
           userId,
           favoriteRestaurants: [],
         },
-        include: {
-          user: true,
+        select: { 
+          id: true,
+          user: {
+            select: {
+              phone: true,
+              email: true,
+            }
+          }
         },
       });
     }
 
+    console.log('Customer found/created:', { id: customer.id, hasUser: !!customer.user });
+
     // Resolve delivery/pickup address without creating duplicates
     let createdDeliveryAddress: any = null;
     if (isPickup) {
-      createdDeliveryAddress = {
-        id: 'pickup-temp',
-        latitude: restaurant.latitude || 0,
-        longitude: restaurant.longitude || 0,
-        street: restaurant.address || 'Pickup at restaurant',
-        city: 'Bengaluru',
-      };
+      createdDeliveryAddress = null; // No address needed for pickup orders
     } else {
       if (addressId) {
         const existing = await prisma.address.findFirst({
@@ -184,150 +222,127 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Calculate distance and ETA using Google Maps API
+    // Skip Google Maps ETA/distance to avoid blocking order creation
     let deliveryDistance: number | null = null;
     let estimatedDeliveryDuration: number | null = null;
-    let calculatedDeliveryTime: Date | null = null;
-
-    try {
-      if (!isPickup) {
-        // Validate coordinates before making API call
-        const restaurantLat: number = Number(restaurant.latitude || 0);
-        const restaurantLng: number = Number(restaurant.longitude || 0);
-        const customerLat: number = Number(
-          createdDeliveryAddress.latitude || 0
-        );
-        const customerLng: number = Number(
-          createdDeliveryAddress.longitude || 0
-        );
-
-        // Validate coordinates
-        const isValidCoordinate = (lat: number, lng: number): boolean => {
-          return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
-        };
-
-        if (
-          isValidCoordinate(restaurantLat, restaurantLng) &&
-          isValidCoordinate(customerLat, customerLng) &&
-          customerLat !== 0 &&
-          customerLng !== 0
-        ) {
-          console.log(`Calculating delivery metrics for order ${orderNumber}`);
-          console.log(`Restaurant: ${restaurantLat}, ${restaurantLng}`);
-          console.log(`Customer: ${customerLat}, ${customerLng}`);
-
-          const deliveryCalculation =
-            await googleMapsService.calculateDeliveryMetrics(
-              restaurantLat,
-              restaurantLng,
-              customerLat,
-              customerLng,
-              restaurant.averagePreparationTime
-            );
-
-          deliveryDistance = Number(deliveryCalculation.distance || 0);
-          estimatedDeliveryDuration = Number(deliveryCalculation.duration || 0);
-          calculatedDeliveryTime =
-            deliveryCalculation.estimatedDeliveryTime || null;
-
-          console.log(`Delivery calculation completed:`);
-          console.log(`Distance: ${deliveryDistance} km`);
-          console.log(`Duration: ${estimatedDeliveryDuration} minutes`);
-          console.log(
-            `Estimated delivery time: ${calculatedDeliveryTime?.toISOString()}`
-          );
-        } else {
-          console.warn(
-            `Invalid coordinates for distance calculation. Restaurant: ${restaurantLat}, ${restaurantLng}, Customer: ${customerLat}, ${customerLng}`
-          );
-        }
-      }
-    } catch (mapsError) {
-      console.error('Error calculating delivery metrics:', mapsError);
-      // Continue with order creation even if distance calculation fails
-    }
+    const calculatedDeliveryTime: Date | null = null;
 
     // Generate a verification code
     const verificationCode = Math.floor(1000 + Math.random() * 9000).toString();
 
     // Create order
-    const order = await prisma.order.create({
-      data: {
-        orderNumber,
-        customerId: customer.id,
-        restaurantId: cart.restaurantId,
-        totalAmount: total,
-        taxes,
-        deliveryFee,
-        subtotal,
-        status: 'PLACED',
-        paymentStatus: 'pending',
-        deliveryAddressId:
-          createdDeliveryAddress && createdDeliveryAddress.id !== 'pickup-temp'
-            ? createdDeliveryAddress.id
-            : undefined,
-        estimatedPreparationTime: restaurant.averagePreparationTime,
-        estimatedDeliveryTime:
-          calculatedDeliveryTime || new Date(Date.now() + 45 * 60 * 1000), // Use calculated time or fallback to 45 minutes
-        deliveryDistance: deliveryDistance, // Store calculated distance in km
-        estimatedDeliveryDuration: estimatedDeliveryDuration, // Store calculated ETA in minutes
-        orderType: isPickup ? 'PICKUP' : 'DELIVERY',
-        verificationCode: verificationCode,
-        orderItems: {
-          create: cart.items.map((item: any) => {
-            const originalPrice =
-              item.menuItem.originalPrice || item.menuItem.price;
-            return {
-              menuItemId: item.menuItemId,
-              quantity: item.quantity,
-              unitPrice: item.menuItem.price, // Selling price
-              totalPrice: item.menuItem.price * item.quantity, // Total selling price
-              originalUnitPrice: originalPrice, // Original price per unit
-              totalOriginalPrice: originalPrice * item.quantity, // Total original price
-              restaurantEarningsPerItem:
-                originalPrice * (restaurant.restaurantPricePercentage || 0.4),
-              restaurantTotalEarnings:
-                originalPrice *
-                (restaurant.restaurantPricePercentage || 0.4) *
-                item.quantity,
-              aastaEarningsPerItem:
-                originalPrice * (restaurant.aastaPricePercentage || 0.1),
-              aastaTotalEarnings:
-                originalPrice *
-                (restaurant.aastaPricePercentage || 0.1) *
-                item.quantity,
-            };
-          }),
-        },
-      },
-      include: {
-        orderItems: {
-          include: {
-            menuItem: true,
-          },
-        },
-        restaurant: true,
-        deliveryAddress: true,
-      },
-    });
+    const order = await prisma.$transaction(async (tx) => {
+      // For pickup orders, create a temporary pickup address
+      let finalDeliveryAddressId = createdDeliveryAddress?.id;
+      
 
-    // Reduce stock for each ordered item
-    for (const item of cart.items) {
-      await prisma.menuItem.update({
-        where: { id: item.menuItemId },
+      console.log('Creating order with deliveryAddressId:', finalDeliveryAddressId);
+
+
+      const created = await tx.order.create({
         data: {
-          stockLeft: {
-            decrement: item.quantity,
-          },
-          // Keep available as true even if stock reaches 0
-          available: true,
+          orderNumber,
+          customerId: customer.id,
+          restaurantId: cart.restaurantId,
+          totalAmount: total,
+          taxes,
+          deliveryFee,
+          subtotal,
+          status: 'PLACED',
+          paymentStatus: 'pending',
+          deliveryAddressId: finalDeliveryAddressId || null,
+          estimatedPreparationTime: restaurant.averagePreparationTime,
+          estimatedDeliveryTime:
+            calculatedDeliveryTime || new Date(Date.now() + (restaurant.averagePreparationTime || 30) * 60 * 1000),
+          deliveryDistance: deliveryDistance,
+          estimatedDeliveryDuration: estimatedDeliveryDuration,
+          orderType: isPickup ? 'PICKUP' : 'DELIVERY',
+          verificationCode: verificationCode,
+          // Defer order items to bulk create below for speed
+        },
+        select: {
+          id: true,
+          orderNumber: true,
+          totalAmount: true,
+          paymentStatus: true,
+          razorpayOrderId: true,
         },
       });
+
+      // Bulk insert order items for lower latency
+      const orderItemsData = cart.items.map((item: any) => {
+        const originalPrice = item.menuItem.originalPrice || item.menuItem.price;
+        return {
+          orderId: created.id,
+          menuItemId: item.menuItemId,
+          quantity: item.quantity,
+          unitPrice: item.menuItem.price,
+          totalPrice: item.menuItem.price * item.quantity,
+          originalUnitPrice: originalPrice,
+          totalOriginalPrice: originalPrice * item.quantity,
+          restaurantEarningsPerItem:
+            originalPrice * (restaurant.restaurantPricePercentage || 0.4),
+          restaurantTotalEarnings:
+            originalPrice * (restaurant.restaurantPricePercentage || 0.4) * item.quantity,
+          aastaEarningsPerItem:
+            originalPrice * (restaurant.aastaPricePercentage || 0.1),
+          aastaTotalEarnings:
+            originalPrice * (restaurant.aastaPricePercentage || 0.1) * item.quantity,
+        };
+      });
+      await tx.orderItem.createMany({ data: orderItemsData });
+
+      return created;
+    });
+
+    // Create Razorpay payment order immediately to avoid another HTTP roundtrip (idempotent)
+    let razorpayOrderId = order.razorpayOrderId as string | null;
+    let razorpayOrder: any = null;
+
+    if (!razorpayOrderId) {
+      const paymentService = new PaymentService();
+      razorpayOrder = await paymentService.createPaymentOrder(
+        order.totalAmount,
+        order.orderNumber
+      );
+
+      // Persist payment linkage
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          razorpayOrderId: razorpayOrder.id,
+          paymentStatus: 'PENDING',
+        },
+      });
+
+      await prisma.payment.create({
+        data: {
+          orderId: order.id,
+          razorpayOrderId: razorpayOrder.id,
+          amount: order.totalAmount,
+          currency: 'INR',
+          status: 'CREATED',
+          paymentMethod: 'RAZORPAY',
+        },
+      });
+      razorpayOrderId = razorpayOrder.id;
+    } else {
+      // If already linked, hydrate minimal shape for client
+      razorpayOrder = { id: razorpayOrderId, amount: Math.round(order.totalAmount * 100), currency: 'INR' };
     }
 
     // Note: Do not notify delivery partners here. Notifications should be sent only after payment confirmation.
 
-    return NextResponse.json({ success: true, order });
+    return NextResponse.json({
+      success: true,
+      order,
+      razorpayOrder: {
+        id: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        key: process.env.RAZORPAY_KEY_ID,
+      },
+    });
   } catch (error) {
     console.error('Order creation failed:', error);
     return NextResponse.json(

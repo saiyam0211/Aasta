@@ -207,7 +207,7 @@ model Order {
   customerId                String
   restaurantId              String
   deliveryPartnerId         String?
-  deliveryAddressId         String
+  deliveryAddressId         String?
   status                    OrderStatus      @default(PLACED)
   subtotal                  Float
   deliveryFee               Float            @default(0)
@@ -231,7 +231,7 @@ model Order {
   orderAnalytics            OrderAnalytics?
   orderItems                OrderItem[]
   customer                  Customer         @relation(fields: [customerId], references: [id])
-  deliveryAddress           Address          @relation(fields: [deliveryAddressId], references: [id])
+  deliveryAddress           Address?         @relation(fields: [deliveryAddressId], references: [id])
   deliveryBatch             DeliveryBatch?   @relation(fields: [deliveryBatchId], references: [id])
   deliveryPartner           DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id])
   restaurant                Restaurant       @relation(fields: [restaurantId], references: [id])

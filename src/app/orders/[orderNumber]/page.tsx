@@ -274,10 +274,19 @@ export default function OrderTrackingPage() {
   useEffect(() => {
     const p = searchParams?.get('payment');
     if (p === 'success') {
-      setShowCelebration(true);
-      setShowLottie(true); // Show Lottie animation immediately
+      // Check if we've already shown the celebration for this order
+      const orderNumber = params?.orderNumber as string;
+      const celebrationShownKey = `celebration_shown_${orderNumber}`;
+      const hasShownCelebration = sessionStorage.getItem(celebrationShownKey);
+      
+      if (!hasShownCelebration) {
+        setShowCelebration(true);
+        setShowLottie(true); // Show Lottie animation immediately
+        // Mark as shown to prevent showing again
+        sessionStorage.setItem(celebrationShownKey, 'true');
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, params?.orderNumber]);
 
   const fetchOrder = async () => {
     try {
@@ -745,6 +754,10 @@ export default function OrderTrackingPage() {
                   onClick={() => {
                     setShowCelebration(false);
                     setShowLottie(false);
+                    // Clean up session storage after user closes the popup
+                    const orderNumber = params?.orderNumber as string;
+                    const celebrationShownKey = `celebration_shown_${orderNumber}`;
+                    sessionStorage.removeItem(celebrationShownKey);
                   }}
                 >
                   Continue

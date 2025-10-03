@@ -94,10 +94,14 @@ export async function GET(request: NextRequest) {
             user: order.deliveryPartner.user,
           }
         : null,
-      deliveryAddress: {
+      deliveryAddress: order.deliveryAddress ? {
         address: order.deliveryAddress.street,
         city: order.deliveryAddress.city,
         zipCode: order.deliveryAddress.zipCode,
+      } : {
+        address: 'Pickup at restaurant',
+        city: '',
+        zipCode: '',
       },
       items: order.orderItems.map((item) => ({
         id: item.id,

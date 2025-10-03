@@ -28,10 +28,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find the payment first
+    // Find the payment and order in one optimized query
     const existingPayment = await prisma.payment.findFirst({
       where: { razorpayOrderId: razorpay_order_id },
-      include: { order: true },
+      select: {
+        id: true,
+        orderId: true,
+        order: {
+          select: {
+            id: true,
+            orderType: true,
+            orderItems: {
+              select: {
+                menuItemId: true,
+                quantity: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!existingPayment) {
@@ -41,80 +56,129 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update payment status
-    const payment = await prisma.payment.update({
-      where: { id: existingPayment.id },
-      data: {
-        razorpayPaymentId: razorpay_payment_id,
-        status: 'COMPLETED',
-        capturedAt: new Date(),
-      },
-    });
+    // Update payment status and order in one transaction (optimized)
+    const result = await prisma.$transaction(async (tx) => {
+      // Update payment status
+      const payment = await tx.payment.update({
+        where: { id: existingPayment.id },
+        data: {
+          razorpayPaymentId: razorpay_payment_id,
+          status: 'COMPLETED',
+          capturedAt: new Date(),
+        },
+        select: { id: true, status: true },
+      });
 
-    // Mark order as paid
-    const updatedOrder = await prisma.order.update({
-      where: { id: existingPayment.orderId },
-      data: {
-        paymentStatus: 'COMPLETED',
-      },
-      include: {
-        restaurant: true,
-        customer: { include: { user: true } },
-        deliveryAddress: true,
-      },
-    });
+      // Update order status
+      await tx.order.update({
+        where: { id: existingPayment.orderId },
+        data: { paymentStatus: 'COMPLETED' },
+      });
 
-    // If DELIVERY order, notify available delivery partners now
-    if (updatedOrder.orderType === 'DELIVERY') {
-      try {
-        const botToken = process.env.TELEGRAM_BOT_TOKEN;
-        if (
-          botToken &&
-          updatedOrder.restaurant.assignedDeliveryPartners.length > 0
-        ) {
-          const { TelegramBotService } = await import(
-            '@/lib/telegram-bot-service'
-          );
-          const telegramBot = new TelegramBotService(botToken);
-
-          const partners = await prisma.deliveryPartner.findMany({
-            where: {
-              id: { in: updatedOrder.restaurant.assignedDeliveryPartners },
-              status: 'AVAILABLE',
-              telegramPhone: { not: null },
+      // Decrement stock for each ordered item (bulk operation)
+      await Promise.all(
+        existingPayment.order.orderItems.map((item) =>
+          tx.menuItem.update({
+            where: { id: item.menuItemId },
+            data: {
+              stockLeft: { decrement: item.quantity },
+              available: true,
             },
-            include: { user: true },
-          });
+          })
+        )
+      );
 
-          for (const partner of partners) {
-            if (partner.telegramPhone) {
-              await telegramBot.sendOrderNotificationWithDetails(
-                partner.telegramPhone,
-                updatedOrder.id,
-                updatedOrder.orderNumber,
-                updatedOrder.restaurant.name,
-                updatedOrder.restaurant.address,
-                updatedOrder.customer.user?.name || 'Customer',
-                updatedOrder.totalAmount,
-                updatedOrder.verificationCode,
-                updatedOrder.restaurant.latitude,
-                updatedOrder.restaurant.longitude,
-                updatedOrder.deliveryAddress.latitude || 0,
-                updatedOrder.deliveryAddress.longitude || 0,
-                `${updatedOrder.deliveryAddress.street}, ${updatedOrder.deliveryAddress.city}`,
-                await prisma.orderItem.count({
-                  where: { orderId: updatedOrder.id },
-                })
-              );
+      return { payment, orderType: existingPayment.order.orderType };
+    });
+
+    // Return success immediately - Telegram notifications will be handled asynchronously
+    const response = NextResponse.json({ success: true, payment: result.payment });
+
+    // Handle Telegram notifications asynchronously (non-blocking)
+    if (result.orderType === 'DELIVERY') {
+      // Don't await this - let it run in background
+      setImmediate(async () => {
+        try {
+          const botToken = process.env.TELEGRAM_BOT_TOKEN;
+          if (botToken) {
+            const { TelegramBotService } = await import('@/lib/telegram-bot-service');
+            const telegramBot = new TelegramBotService(botToken);
+            
+            // Get order details for notification (lightweight query)
+            const orderDetails = await prisma.order.findUnique({
+              where: { id: existingPayment.orderId },
+              select: {
+                id: true,
+                orderNumber: true,
+                totalAmount: true,
+                verificationCode: true,
+                restaurant: {
+                  select: {
+                    name: true,
+                    address: true,
+                    latitude: true,
+                    longitude: true,
+                    assignedDeliveryPartners: true,
+                  },
+                },
+                customer: {
+                  select: {
+                    user: { select: { name: true } },
+                  },
+                },
+                deliveryAddress: {
+                  select: {
+                    latitude: true,
+                    longitude: true,
+                    street: true,
+                    city: true,
+                  },
+                },
+                _count: { select: { orderItems: true } },
+              },
+            });
+
+            if (orderDetails?.restaurant?.assignedDeliveryPartners?.length && orderDetails.restaurant.assignedDeliveryPartners.length > 0) {
+              const partners = await prisma.deliveryPartner.findMany({
+                where: {
+                  id: { in: orderDetails.restaurant.assignedDeliveryPartners },
+                  status: 'AVAILABLE',
+                  telegramPhone: { not: null },
+                },
+                select: { telegramPhone: true },
+              });
+
+              for (const partner of partners) {
+                if (partner.telegramPhone && orderDetails) {
+                  await telegramBot.sendOrderNotificationWithDetails(
+                    partner.telegramPhone,
+                    orderDetails.id,
+                    orderDetails.orderNumber,
+                    orderDetails.restaurant.name,
+                    orderDetails.restaurant.address,
+                    orderDetails.customer.user?.name || 'Customer',
+                    orderDetails.totalAmount,
+                    orderDetails.verificationCode,
+                    orderDetails.restaurant.latitude,
+                    orderDetails.restaurant.longitude,
+                    orderDetails.deliveryAddress.latitude || 0,
+                    orderDetails.deliveryAddress.longitude || 0,
+                    orderDetails.deliveryAddress 
+                      ? `${orderDetails.deliveryAddress.street}, ${orderDetails.deliveryAddress.city}`
+                      : 'Pickup at restaurant',
+                    orderDetails._count.orderItems
+                  );
+                }
+              }
             }
           }
+        } catch (e) {
+          console.error('Failed to notify partners after payment:', e);
         }
-      } catch (e) {
-        console.error('Failed to notify partners after payment:', e);
-      }
+      });
     }
 
-    return NextResponse.json({ success: true, payment });
+    return response;
   } catch (error) {
     console.error('Payment verification failed:', error);
     return NextResponse.json(

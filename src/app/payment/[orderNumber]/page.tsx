@@ -38,6 +38,29 @@ export default function PaymentPage() {
     loadRazorpayScript();
   }, [orderNumber]);
 
+  // Auto-open Razorpay when order is loaded and SDK is present
+  useEffect(() => {
+    if (!order) return;
+    const maybeOpen = () => {
+      if (window.Razorpay) {
+        initiatePayment();
+      } else {
+        // Poll briefly for SDK load to avoid user clicking again
+        const start = Date.now();
+        const interval = setInterval(() => {
+          if (window.Razorpay || Date.now() - start > 1500) {
+            clearInterval(interval);
+            if (window.Razorpay) {
+              initiatePayment();
+            }
+          }
+        }, 100);
+      }
+    };
+    maybeOpen();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order]);
+
   const fetchOrder = async () => {
     try {
       const response = await fetch(`/api/orders/${orderNumber}`);
@@ -93,7 +116,7 @@ export default function PaymentPage() {
         key: data.razorpayOrder.key,
         amount: data.razorpayOrder.amount,
         currency: data.razorpayOrder.currency,
-        name: 'Night Delivery',
+        name: 'Aasta',
         description: `Payment for Order #${order.orderNumber}`,
         order_id: data.razorpayOrder.id,
         handler: async (response: any) => {

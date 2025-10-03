@@ -37,6 +37,10 @@ import BillBreakdownSheet from '@/components/ui/BillBreakdownSheet';
 import CouponSheet from '@/components/ui/CouponSheet';
 import { locationService } from '@/lib/location-service';
 import AddressSheet from '@/components/ui/AddressSheet';
+import dynamic from 'next/dynamic';
+
+// Dynamically import Lottie to avoid SSR issues
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
 const brandFont = localFont({
   src: [
@@ -70,6 +74,28 @@ export default function CartPage() {
   const [etaText, setEtaText] = useState<string | null>(null);
   const [addressSheetOpen, setAddressSheetOpen] = useState(false);
   const [placing, setPlacing] = useState(false);
+  const [showPaymentLoading, setShowPaymentLoading] = useState(false);
+  const [showAfterPaymentLoading, setShowAfterPaymentLoading] = useState(false);
+
+  // Check if selected address is hidden/deleted
+  useEffect(() => {
+    if (selectedAddressId) {
+      try {
+        const hiddenAddresses = localStorage.getItem('hiddenAddresses');
+        if (hiddenAddresses) {
+          const hidden = JSON.parse(hiddenAddresses);
+          if (hidden.includes(selectedAddressId)) {
+            // Clear the selection if the address is hidden
+            setSelectedAddressId(null);
+            // Note: setAddress expects non-null, so we'll just clear the selection
+            toast.error('Selected address is no longer available');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking hidden addresses:', error);
+      }
+    }
+  }, [selectedAddressId, setSelectedAddressId, setAddress]);
 
   // Determine veg/non-veg strictly from backend values; do not auto-assign
   type VegStatus = 'veg' | 'nonveg' | 'unknown';
@@ -103,38 +129,38 @@ export default function CartPage() {
   };
 
   useEffect(() => {
+    // Preload the Razorpay SDK as early as possible
     loadRazorpayScript();
+    // Warm up the payments API DNS/TLS with a tiny request after idle
+    const id = window.setTimeout(() => {
+      // Fire-and-forget GET to our own payments endpoint to warm server
+      fetch('/api/payments/ping', { cache: 'no-store' }).catch(() => {});
+      fetch('/api/orders/ping', { cache: 'no-store' }).catch(() => {});
+    }, 500);
+    return () => window.clearTimeout(id);
   }, []);
 
   const placeOrderAndPay = async () => {
     try {
+      const startTs = performance.now();
+      console.log(`[PAY] 🚀 Place Order clicked at ${new Date().toISOString()}`);
       if (!cart || cart.items.length === 0) {
         toast.error('Your cart is empty');
         return;
       }
       const isPickup = mode === 'pickup';
       if (!isPickup) {
-        // Check if we have current location
-        const hasCurrentLocation =
-          currentLocation?.latitude && currentLocation?.longitude;
-
-        // Check if we have a valid address
-        const hasValidAddress =
-          currentAddress?.address && currentAddress.address.trim().length > 0;
-
-        // If we have a selected address ID, assume it's valid (coordinates will be validated on server)
+        // For delivery orders, we ALWAYS need detailed address information
+        // Even if user has live location or searched location, they must provide:
+        // - House/Flat number
+        // - Locality
+        // - Street/Area
+        // - Phone number
+        
         const hasSelectedAddress = selectedAddressId;
-
-        if (!hasCurrentLocation && !hasSelectedAddress) {
-          toast.error(
-            'Please set your live location or select a saved address'
-          );
-          setAddressSheetOpen(true); // Open address sheet modal
-          return;
-        }
-
-        if (!hasValidAddress && !hasSelectedAddress) {
-          toast.error('Please select an address');
+        
+        if (!hasSelectedAddress) {
+          toast.error('Please provide your complete delivery address details');
           setAddressSheetOpen(true); // Open address sheet modal
           return;
         }
@@ -148,6 +174,8 @@ export default function CartPage() {
       }
 
       setPlacing(true);
+      setShowPaymentLoading(true);
+      console.log(`[PAY] ⏳ Payment processing started at ${new Date().toISOString()} (+${Math.round(performance.now() - startTs)}ms since click)`);
 
       // 1) Create order
       const createRes = await fetch('/api/orders/create', {
@@ -184,33 +212,44 @@ export default function CartPage() {
         throw new Error(createData?.error || 'Failed to create order');
       }
       const orderNumber: string = createData.order.orderNumber;
+      const payData = createData; // server now returns razorpayOrder with order
+      console.log(
+        `[PAY] ✅ Order + Razorpay created at ${new Date().toISOString()} (+${Math.round(
+          performance.now() - startTs
+        )}ms since click)`
+      );
 
-      // 2) Create Razorpay order
-      const payRes = await fetch('/api/payments/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderNumber }),
-      });
-      const payData = await payRes.json();
-      if (!payRes.ok || !payData?.success) {
-        throw new Error(payData?.error || 'Failed to initiate payment');
-      }
-
-      // 3) Open Razorpay checkout
+      // 3) Open Razorpay checkout inline
+      // Suppress background activity pings briefly
+      try { sessionStorage.setItem('suppress-activity', 'true'); } catch {}
       // @ts-ignore
       const RazorpayCtor = window.Razorpay;
       if (!RazorpayCtor) {
+        console.log(
+          `[PAY] Razorpay SDK missing at ${new Date().toISOString()} (+${Math.round(
+            performance.now() - startTs
+          )}ms since click)`
+        );
         throw new Error('Payment SDK not loaded');
       }
       const options = {
         key: payData.razorpayOrder.key,
         amount: payData.razorpayOrder.amount,
         currency: payData.razorpayOrder.currency,
-        name: 'Night Delivery',
+        name: 'Aasta',
+        image: require('/public/logo.png'), 
         description: `Payment for Order #${orderNumber}`,
         order_id: payData.razorpayOrder.id,
         handler: async (response: any) => {
           try {
+            console.log(`[PAY] 💳 Payment completed in Razorpay at ${new Date().toISOString()} (+${Math.round(performance.now() - startTs)}ms since click)`);
+            console.log(`[PAY] 🎬 Razorpay modal closed - showing after payment loading`);
+            setPlacing(false); // Hide processing button immediately
+            setShowAfterPaymentLoading(true); // Show loading animation immediately
+            console.log(`[PAY] 🎭 After payment loading animation should be visible now`);
+            toast.success('Payment successful');
+            
+            console.log(`[PAY] 🔍 Verifying payment at ${new Date().toISOString()}`);
             const verifyRes = await fetch('/api/payments/verify-payment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -222,28 +261,56 @@ export default function CartPage() {
             });
             const verifyData = await verifyRes.json();
             if (verifyRes.ok && verifyData?.success) {
-              toast.success('Payment successful');
+              console.log(
+                `[PAY] ✅ Payment verification successful at ${new Date().toISOString()} (total +${Math.round(
+                  performance.now() - startTs
+                )}ms)`
+              );
+              console.log(`[PAY] 🏠 Staying at cart page while processing...`);
+              console.log(`[PAY] 🚀 Redirecting to orders page at ${new Date().toISOString()}`);
               router.push(`/orders/${orderNumber}?payment=success`);
             } else {
+              console.log(`[PAY] ❌ Payment verification failed at ${new Date().toISOString()} (+${Math.round(performance.now() - startTs)}ms)`);
+              setShowAfterPaymentLoading(false);
               toast.error('Payment verification failed');
               router.push(`/orders/${orderNumber}?payment=failed`);
             }
           } finally {
-            setPlacing(false);
+            try { sessionStorage.removeItem('suppress-activity'); } catch {}
           }
         },
         modal: {
           ondismiss: () => {
             setPlacing(false);
+            setShowPaymentLoading(false);
+            setShowAfterPaymentLoading(false);
             toast.error('Payment cancelled');
+            console.log(
+              `[PAY] ❌ Razorpay popup closed/cancelled at ${new Date().toISOString()} (total +${Math.round(
+                performance.now() - startTs
+              )}ms)`
+            );
+            console.log(`[PAY] 🏠 Staying at cart page after cancellation`);
+            try { sessionStorage.removeItem('suppress-activity'); } catch {}
           },
         },
         theme: { color: '#fd6923' },
       };
       const rz = new RazorpayCtor(options);
+      console.log(
+        `[PAY] 🎯 Opening Razorpay modal at ${new Date().toISOString()} (+${Math.round(
+          performance.now() - startTs
+        )}ms since click)`
+      );
+      setShowPaymentLoading(false); // Hide loading when Razorpay opens
+      console.log(`[PAY] 🎬 Razorpay popup opened at ${new Date().toISOString()} (+${Math.round(performance.now() - startTs)}ms since click)`);
       rz.open();
+      
     } catch (e: any) {
       setPlacing(false);
+      setShowPaymentLoading(false);
+      console.log(`[PAY] ❌ Error occurred at ${new Date().toISOString()}: ${e?.message}`);
+      console.log(`[PAY] 🏠 Staying at cart page after error`);
       toast.error(e?.message || 'Failed to place order');
     }
   };
@@ -662,8 +729,17 @@ export default function CartPage() {
                         Deliver to Home
                       </p>
                       <p className="max-w-[250px] truncate text-xs text-gray-500">
-                        {currentAddress?.address || 'Set your delivery address'}
+                        {selectedAddressId 
+                          ? 'Complete address details provided' 
+                          : currentAddress?.address 
+                            ? 'Location set - Add complete address details' 
+                            : 'Set your delivery address'}
                       </p>
+                      {!selectedAddressId && (currentAddress?.address || currentLocation) && (
+                        <p className="text-xs text-orange-600 font-medium mt-1">
+                          ⚠️ Complete address required for delivery
+                        </p>
+                      )}
                     </div>
                   </div>
                   <ChevronRight className="h-5 w-5 text-gray-400" />
@@ -762,11 +838,20 @@ export default function CartPage() {
                 )}
               </div>
               <Button
-                className="h-12 rounded-xl bg-orange-500 px-8 font-medium text-white hover:bg-orange-600 disabled:opacity-60"
+                className={`h-12 rounded-xl px-8 font-medium text-white disabled:opacity-60 ${
+                  mode === 'delivery' && !selectedAddressId 
+                    ? 'bg-orange-400 hover:bg-orange-500' 
+                    : 'bg-orange-500 hover:bg-orange-600'
+                }`}
                 disabled={placing}
                 onClick={placeOrderAndPay}
               >
-                {placing ? 'Processing…' : 'Place Order'}
+                {placing 
+                  ? 'Processing…' 
+                  : mode === 'delivery' && !selectedAddressId 
+                    ? 'Continue' 
+                    : 'Place Order'
+                }
               </Button>
             </div>
           </div>
@@ -810,6 +895,52 @@ export default function CartPage() {
             }}
           />
           </div>
+        )}
+        
+        {/* Payment Loading Overlay */}
+        {showPaymentLoading && (
+          <>
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+              style={{ overscrollBehavior: 'none' }}
+            >
+              <div className="mb-4 h-96 w-96">
+                <Lottie
+                  animationData={require('/public/lotties/payment_loading.json')}
+                  loop={true}
+                  autoplay={true}
+                />
+              </div>
+            </div>
+            <style jsx global>{`
+              body {
+                overflow: hidden !important;
+              }
+            `}</style>
+          </>
+        )}
+
+        {/* After Payment Loading Overlay */}
+        {showAfterPaymentLoading && (
+          <>
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+              style={{ overscrollBehavior: 'none' }}
+            >
+              <div className="mb-4 h-96 w-96">
+                <Lottie
+                  animationData={require('/public/lotties/after_payment.json')}
+                  loop={true}
+                  autoplay={true}
+                />
+              </div>
+            </div>
+            <style jsx global>{`
+              body {
+                overflow: hidden !important;
+              }
+            `}</style>
+          </>
         )}
       </div>
     </CustomerLayout>

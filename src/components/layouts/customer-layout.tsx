@@ -64,8 +64,13 @@ export default function CustomerLayout({
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
 
-  // Register client with notification broadcaster
+  // Register client with notification broadcaster (paused on payment routes)
   useEffect(() => {
+    // Avoid background activity pings on payment pages to reduce noise and potential interference
+    const isOnPaymentRoute = pathname?.startsWith('/payment') || pathname?.startsWith('/orders/') || false;
+    if (isOnPaymentRoute) {
+      return;
+    }
     if (session?.user?.id) {
       const registerClient = async () => {
         try {
@@ -141,7 +146,8 @@ export default function CustomerLayout({
       // Update activity every 30 seconds to keep session alive
       const activityInterval = setInterval(async () => {
         const sessionId = sessionStorage.getItem('client-session-id');
-        if (sessionId) {
+        const suppress = sessionStorage.getItem('suppress-activity') === 'true';
+        if (sessionId && !suppress) {
           try {
             await fetch('/api/client-register', {
               method: 'PUT',
@@ -172,7 +178,7 @@ export default function CustomerLayout({
         }
       };
     }
-  }, [session?.user?.id, isInstalled]);
+  }, [session?.user?.id, isInstalled, pathname]);
 
   if (!session) {
     return (

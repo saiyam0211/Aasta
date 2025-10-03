@@ -94,10 +94,14 @@ export async function GET(request: NextRequest) {
           name: order.customer.user.name || 'Unknown Customer',
           phone: order.customer.user.phone || '',
         },
-        deliveryAddress: {
+        deliveryAddress: order.deliveryAddress ? {
           address: order.deliveryAddress.street,
           city: order.deliveryAddress.city,
           zipCode: order.deliveryAddress.zipCode,
+        } : {
+          address: 'Pickup at restaurant',
+          city: '',
+          zipCode: '',
         },
       },
     }));

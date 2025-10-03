@@ -14,6 +14,7 @@ import {
   Loader2,
   Search,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocationStore } from '@/lib/store';
@@ -56,6 +57,7 @@ export default function AddressSheet({
   const [loading, setLoading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [addresses, setAddresses] = React.useState<AddressRecord[]>([]);
+  const [hiddenAddresses, setHiddenAddresses] = React.useState<Set<string>>(new Set());
   const [mode, setMode] = React.useState<'list' | 'form'>('list');
   const [form, setForm] = React.useState({
     type: 'HOME' as AddressRecord['type'],
@@ -152,9 +154,31 @@ export default function AddressSheet({
     }
   }, []);
 
+  const loadHiddenAddresses = React.useCallback(() => {
+    try {
+      const hidden = localStorage.getItem('hiddenAddresses');
+      if (hidden) {
+        setHiddenAddresses(new Set(JSON.parse(hidden)));
+      }
+    } catch (error) {
+      console.error('Error loading hidden addresses:', error);
+    }
+  }, []);
+
+  const saveHiddenAddresses = React.useCallback((hidden: Set<string>) => {
+    try {
+      localStorage.setItem('hiddenAddresses', JSON.stringify([...hidden]));
+    } catch (error) {
+      console.error('Error saving hidden addresses:', error);
+    }
+  }, []);
+
   React.useEffect(() => {
-    if (open) fetchAddresses();
-  }, [open, fetchAddresses]);
+    if (open) {
+      fetchAddresses();
+      loadHiddenAddresses();
+    }
+  }, [open, fetchAddresses, loadHiddenAddresses]);
 
   // Prefill phone for cart/profile contexts
   React.useEffect(() => {
@@ -245,6 +269,35 @@ export default function AddressSheet({
       if (context === 'home') {
         onOpenChange(false);
       }
+    }
+  };
+
+  const deleteAddress = async (addressId: string) => {
+    // Show confirmation dialog
+    if (!confirm('Are you sure you want to remove this address from your saved addresses?')) {
+      return;
+    }
+
+    try {
+      // Add to hidden addresses set
+      const newHidden = new Set(hiddenAddresses);
+      newHidden.add(addressId);
+      setHiddenAddresses(newHidden);
+      saveHiddenAddresses(newHidden);
+      
+      // Clear selection if this was the selected address
+      const currentSelectedId = useLocationStore.getState().selectedAddressId;
+      if (currentSelectedId === addressId) {
+        useLocationStore.getState().setSelectedAddressId(null);
+        // Also clear any related address data
+        useLocationStore.getState().setAddress(null);
+      }
+      
+      toast.success('Address removed from your saved addresses');
+      
+    } catch (error) {
+      console.error('Error removing address:', error);
+      toast.error('Failed to remove address');
     }
   };
 
@@ -417,48 +470,64 @@ export default function AddressSheet({
                   <div className="text-sm text-gray-500">Loading...</div>
                 )}
                 <div className="space-y-3">
-                  {addresses.map((a) => (
-                    <button
+                  {addresses.filter(a => !hiddenAddresses.has(a.id)).map((a) => (
+                    <div
                       key={a.id}
                       className={cn(
-                        'w-full rounded-2xl border bg-white p-4 text-left',
+                        'w-full rounded-2xl border bg-white p-4',
                         a.isDefault ? 'border-green-400' : 'border-gray-200'
                       )}
-                      onClick={() => {
-                        useLocationStore.getState().setSelectedAddressId(a.id);
-                        // If saved address has coordinates, apply them to global location
-                        if (typeof a.latitude === 'number' && typeof a.longitude === 'number') {
-                          useLocationStore.getState().setLocation({ latitude: a.latitude!, longitude: a.longitude! });
-                        }
-                        onSelect(a);
-                      }}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                          {a.type === 'WORK' ? (
-                            <Building2 className="h-5 w-5 text-green-700" />
-                          ) : (
-                            <Home className="h-5 w-5 text-green-700" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="mb-1 text-sm font-semibold text-gray-900">
-                            {a.type === 'WORK' ? 'Home' : a.type === 'HOME' ? 'Home' : 'Other'}
-                            {a.isDefault && <span className="ml-2 text-xs text-green-600">You are here</span>}
-                          </div>
-                          <div className="text-[13px] leading-5 text-gray-700">
-                            {[a.houseNumber, a.locality, a.street, a.city]
-                              .filter(Boolean)
-                              .join(', ')}
-                          </div>
-                          {a.contactPhone && (
-                            <div className="mt-2 inline-flex items-center gap-1 text-xs text-gray-500">
-                              <Phone className="h-3 w-3" /> {a.contactPhone}
+                        <button
+                          className="flex-1 text-left"
+                          onClick={() => {
+                            useLocationStore.getState().setSelectedAddressId(a.id);
+                            // If saved address has coordinates, apply them to global location
+                            if (typeof a.latitude === 'number' && typeof a.longitude === 'number') {
+                              useLocationStore.getState().setLocation({ latitude: a.latitude!, longitude: a.longitude! });
+                            }
+                            onSelect(a);
+                          }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                              {a.type === 'WORK' ? (
+                                <Building2 className="h-5 w-5 text-green-700" />
+                              ) : (
+                                <Home className="h-5 w-5 text-green-700" />
+                              )}
                             </div>
-                          )}
-                        </div>
+                            <div className="flex-1">
+                              <div className="mb-1 text-sm font-semibold text-gray-900">
+                                {a.type === 'WORK' ? 'Home' : a.type === 'HOME' ? 'Home' : 'Other'}
+                                {a.isDefault && <span className="ml-2 text-xs text-green-600">You are here</span>}
+                              </div>
+                              <div className="text-[13px] leading-5 text-gray-700">
+                                {[a.houseNumber, a.locality, a.street, a.city]
+                                  .filter(Boolean)
+                                  .join(', ')}
+                              </div>
+                              {a.contactPhone && (
+                                <div className="mt-2 inline-flex items-center gap-1 text-xs text-gray-500">
+                                  <Phone className="h-3 w-3" /> {a.contactPhone}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteAddress(a.id);
+                          }}
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                          title="Remove address from saved list"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               </>

@@ -25,32 +25,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // First find the customer record
-    const customer = await prisma.customer.findUnique({
-      where: { userId: session.user.id },
-    });
-
-    if (!customer) {
-      return NextResponse.json(
-        { success: false, error: 'Customer not found' },
-        { status: 404 }
-      );
-    }
-
-    // Find the order
+    // Find the order joined with user's contact in a single query
     const order = await prisma.order.findFirst({
       where: {
         orderNumber,
-        customerId: customer.id,
+        customer: { userId: session.user.id },
       },
-      include: {
+      select: {
+        id: true,
+        orderNumber: true,
+        totalAmount: true,
+        paymentStatus: true,
         customer: {
-          include: {
+          select: {
             user: {
-              select: {
-                email: true,
-                phone: true,
-              },
+              select: { email: true, phone: true },
             },
           },
         },
