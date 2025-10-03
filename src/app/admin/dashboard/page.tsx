@@ -160,7 +160,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               Dashboard
             </a>
             <a
-              href="#"
+              href="/admin/customers"
               className="flex items-center rounded-lg px-4 py-3 text-sm font-medium text-[#fcfefe]/80 transition-colors hover:bg-[#fcfefe]/5 hover:text-[#d1f86a]"
             >
               <Users className="mr-3 h-5 w-5" />

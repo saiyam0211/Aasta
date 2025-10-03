@@ -1359,9 +1359,9 @@ export default function HomePage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {recentDishes.slice(0, 4).map((dish) => (
+                {recentDishes.slice(0, 4).map((dish, idx) => (
                   <HomeProductCard
-                    key={`recent-${dish.id}`}
+                    key={`recent-${dish.id}-${idx}`}
                     dish={dish}
                     onAdd={handleAdd}
                     onClick={openProduct}

@@ -15,9 +15,6 @@ interface RouteConfig {
 const routes: RouteConfig[] = [
   // High priority - frequently accessed routes
   { path: '/', priority: 'high', frequency: 5 },
-  { path: '/customer', priority: 'high', frequency: 5 },
-  { path: '/customer/dashboard', priority: 'high', frequency: 5 },
-  { path: '/restaurant/dashboard', priority: 'high', frequency: 5 },
   { path: '/search', priority: 'high', frequency: 3 },
   { path: '/restaurants', priority: 'high', frequency: 3 },
 

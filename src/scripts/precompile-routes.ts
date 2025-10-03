@@ -14,11 +14,6 @@ interface RouteConfig {
 const routes: RouteConfig[] = [
   // Main pages
   { path: '/' },
-  { path: '/customer' },
-  { path: '/customer/dashboard' },
-  { path: '/customer/orders' },
-  { path: '/customer/discover' },
-  { path: '/customer/location' },
 
   // Restaurant routes
   { path: '/restaurant/dashboard' },
