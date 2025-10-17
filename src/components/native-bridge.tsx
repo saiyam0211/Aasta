@@ -17,6 +17,15 @@ export default function NativeBridge() {
         await StatusBar.setOverlaysWebView({ overlay: false });
         await StatusBar.setStyle({ style: 1 }); // 1 = Dark
         await StatusBar.setBackgroundColor({ color: '#002a01' });
+
+        // Ensure iOS safe-area is respected by forcing viewport-fit cover and using env insets
+        try {
+          const meta = document.querySelector('meta[name="viewport"]');
+          const content = meta?.getAttribute('content') || '';
+          if (!/viewport-fit=cover/.test(content)) {
+            meta?.setAttribute('content', `${content}, viewport-fit=cover`);
+          }
+        } catch {}
       } catch (e) {
         console.warn('Native bridge setup skipped', e);
       }
