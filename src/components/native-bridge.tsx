@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
 
 export default function NativeBridge() {
   useEffect(() => {
@@ -13,10 +13,6 @@ export default function NativeBridge() {
         document.documentElement.classList.add('native-webview');
 
         // Use core proxy to avoid bundling native-only modules on web
-        const StatusBar: any = registerPlugin('StatusBar');
-        // Ensure content does not draw under the status bar; color is handled by StatusBarOverlay
-        await StatusBar.setOverlaysWebView({ overlay: false });
-
         // Ensure iOS safe-area is respected by forcing viewport-fit cover and using env insets
         try {
           const meta = document.querySelector('meta[name="viewport"]');
