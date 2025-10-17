@@ -2,6 +2,7 @@
 
 import BackHandler from '@/components/back-handler';
 import InitialSplash from '@/components/initial-splash';
+import StatusBarOverlay from '@/components/statusbar-overlay';
 
 export default function ClientRoot({
   children,
@@ -10,6 +11,7 @@ export default function ClientRoot({
 }) {
   return (
     <>
+      <StatusBarOverlay />
       <BackHandler />
       <InitialSplash />
       {children}
