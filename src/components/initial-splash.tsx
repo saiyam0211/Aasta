@@ -25,11 +25,13 @@ export default function InitialSplash() {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
+      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
       style={{ background: '#002a01' }}
     >
-      <div className="w-[260px] h-[260px]">
-        <Lottie animationData={require('../../public/lotties/aasta.json')} loop autoplay />
+      <div className="flex items-center justify-center w-full h-full">
+        <div className="w-[260px] h-auto">
+          <Lottie animationData={require('../../public/lotties/aasta.json')} loop autoplay />
+        </div>
       </div>
     </div>
   );
