@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -110,6 +110,7 @@ export default function RestaurantDetailPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { addItem, updateQuantity, cart } = useCartStore();
   const { latitude, longitude } = useLocationStore();
   const { vegOnly } = useVegMode();
@@ -127,6 +128,8 @@ export default function RestaurantDetailPage() {
   
   // Real-time: backend update tag to trigger refreshes
   const [updateEtag, setUpdateEtag] = useState<string>('');
+  // Highlight from search suggestion
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   // Offers carousel state
   const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
@@ -207,6 +210,18 @@ export default function RestaurantDetailPage() {
       setFeaturedItems(filteredItems.filter((m) => m.featured));
       setOtherItems(filteredItems.filter((m) => !m.featured));
 
+      // If we arrived with a highlight query, open the product bottom sheet
+      if (!isBackgroundRefresh && (highlightId || searchParams?.get('highlight'))) {
+        const targetId = highlightId || (searchParams?.get('highlight') as string);
+        const all = filteredItems;
+        const found = all.find((m) => m.id === targetId);
+        if (found) {
+          // Open after a microtask to ensure state has rendered
+          setTimeout(() => openProduct(found), 0);
+          setHighlightId(null);
+        }
+      }
+
       // Prefer API-provided flattened locationName
       const apiName = (r as any).locationName as string | null;
       const embeddedName = r?.location?.name || r?.location?.city;
@@ -226,6 +241,13 @@ export default function RestaurantDetailPage() {
   useEffect(() => {
     if (params?.id) fetchRestaurantData();
   }, [params?.id, vegOnly]);
+
+  // Capture highlight param on first render
+  useEffect(() => {
+    const h = searchParams?.get('highlight');
+    if (h) setHighlightId(h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Lightweight polling for DB changes (restaurants/menu): refetch on etag change
   useEffect(() => {
@@ -437,7 +459,38 @@ export default function RestaurantDetailPage() {
   if (isLoading) {
     return (
       <CustomerLayout hideHeader hideFooter>
-        <AastaLoader backgroundColor="#002a01" size={400} segmentSeconds={2} />
+        <div className="px-4 py-6">
+          {/* Skeleton for header card */}
+          <div className="mb-4 rounded-[40px] bg-white">
+            <div className="p-5">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="mb-2 h-6 w-48 animate-pulse rounded bg-gray-200" />
+                  <div className="flex gap-2">
+                    <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                    <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                    <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                  </div>
+                </div>
+                <div className="h-6 w-12 animate-pulse rounded bg-gray-200" />
+              </div>
+            </div>
+          </div>
+
+          {/* Skeleton for items */}
+          <div className="grid grid-cols-1 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex gap-3 rounded-2xl border border-gray-100 bg-white p-3">
+                <div className="h-36 w-36 animate-pulse rounded-xl bg-gray-200" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 w-2/3 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </CustomerLayout>
     );
   }
@@ -505,7 +558,7 @@ export default function RestaurantDetailPage() {
                   <div className="flex items-start gap-3">
                     <div className="flex-1">
                       <h1
-                        className={`text-[25px] font-extrabold tracking-tight`}
+                        className={`text-[22px] sm:text-[25px] font-extrabold tracking-tight`}
                         style={{ color: '#002a01' }}
                       >
                         {restaurant.name}
@@ -592,7 +645,7 @@ export default function RestaurantDetailPage() {
                       
                       {/* Main offer - dynamically changing with touch support */}
                       <div 
-                        className={`flex items-center gap-2 rounded-xl px-3 py-2 w-80 h-20 transition-all duration-500 ${
+                        className={`flex items-center gap-2 rounded-xl px-3 py-2 w-full sm:w-80 h-20 sm:h-20 transition-all duration-500 ${
                           offers[currentOfferIndex]?.color === 'orange' ? 'bg-[#002a01]' :
                           offers[currentOfferIndex]?.color === 'green' ? 'bg-[#002a01]' :
                           offers[currentOfferIndex]?.color === 'blue' ? 'bg-[#002a01]' :

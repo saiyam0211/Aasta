@@ -1021,6 +1021,25 @@ export default function HomePage() {
         locationLabel={selectedLocationLabel}
         onLocationClick={() => setAddressSheetOpen(true)}
         onSearch={(q) => debouncedSearch(q)}
+        onDishSelect={(m) => {
+          // Map suggestion item to Dish and open modal inline without navigating
+          const dish: Dish = {
+            id: m.id,
+            name: m.name,
+            image: m.imageUrl || '/images/dish-placeholder.svg',
+            price: m.price,
+            originalPrice: undefined,
+            rating: 0,
+            preparationTime: 20,
+            restaurant: m.restaurant.name,
+            category: m.category || 'General',
+            isVegetarian: false,
+            spiceLevel: 'mild' as any,
+            description: '',
+            dietaryTags: [],
+          } as any;
+          openProduct(dish);
+        }}
         onFilterClick={() => router.push('/search')}
         onCartClick={() => router.push('/cart')}
         onProfileClick={() => router.push('/profile')}

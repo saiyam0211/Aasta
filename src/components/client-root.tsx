@@ -1,6 +1,8 @@
 'use client';
 
 import NativeBridge from '@/components/native-bridge';
+import BackHandler from '@/components/back-handler';
+import InitialSplash from '@/components/initial-splash';
 
 export default function ClientRoot({
   children,
@@ -10,6 +12,8 @@ export default function ClientRoot({
   return (
     <>
       <NativeBridge />
+      <BackHandler />
+      <InitialSplash />
       {children}
     </>
   );

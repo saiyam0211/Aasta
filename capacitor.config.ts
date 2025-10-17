@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'aasta',
   webDir: 'public',
   server: {
-    url: 'https://www.aasta.food',
+    url: 'https://aastadelivery.vercel.app',
     androidScheme: 'https',
     allowNavigation: ['*'],
     cleartext: false,

@@ -24,6 +24,14 @@ interface HomeHeaderProps {
   locationLabel: string;
   onLocationClick?: () => void;
   onSearch?: (query: string) => void;
+  onDishSelect?: (dish: {
+    id: string;
+    name: string;
+    imageUrl?: string | null;
+    price: number;
+    category?: string | null;
+    restaurant: { id: string; name: string };
+  }) => void;
   onFilterClick?: () => void;
   onCartClick?: () => void;
   onProfileClick?: () => void;
@@ -39,6 +47,7 @@ export function HomeHeader({
   locationLabel,
   onLocationClick,
   onSearch,
+  onDishSelect,
   onFilterClick,
   onCartClick,
   onProfileClick,
@@ -226,7 +235,12 @@ export function HomeHeader({
         if (s?.type === 'restaurant') {
           window.location.href = `/restaurants/${s.item.id}`;
         } else if (s) {
-          window.location.href = `/restaurants/${s.item.restaurant.id}?highlight=${encodeURIComponent(s.item.id)}`;
+          if (onDishSelect) {
+            onDishSelect(s.item as any);
+            setSuggestionsOpen(false);
+          } else {
+            window.location.href = `/restaurants/${s.item.restaurant.id}?highlight=${encodeURIComponent(s.item.id)}`;
+          }
         }
       } else {
         handleSubmit(e as any);
@@ -349,7 +363,7 @@ export function HomeHeader({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder={' '}
-            className="h-16 w-full rounded-3xl border border-[#fff] bg-[#fff]/20 px-20 text-white backdrop-blur-sm outline-none placeholder:text-transparent"
+            className="h-16 w-full rounded-3xl border border-[#fff] bg-[#fff]/20 px-20 text-[#002a01] backdrop-blur-sm outline-none placeholder:text-transparent"
             onFocus={() => {
               setSuggestionsOpen(true);
             }}
@@ -456,14 +470,23 @@ export function HomeHeader({
                       const index = suggestions.restaurants.length + i;
                       const isActive = activeIndex === index;
                       return (
-                        <Link
+                        <button
                           key={m.id}
-                          href={`/restaurants/${m.restaurant.id}?highlight=${encodeURIComponent(m.id)}`}
+                          type="button"
                           className={cn(
-                            'flex items-center gap-3 rounded-lg p-2 hover:bg-gray-50',
+                            'w-full text-left flex items-center gap-3 rounded-lg p-2 hover:bg-gray-50',
                             isActive && 'bg-gray-100'
                           )}
                           onMouseEnter={() => setActiveIndex(index)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (onDishSelect) {
+                              onDishSelect(m);
+                              setSuggestionsOpen(false);
+                            } else {
+                              window.location.href = `/restaurants/${m.restaurant.id}?highlight=${encodeURIComponent(m.id)}`;
+                            }
+                          }}
                         >
                           {m.imageUrl ? (
                             <img
@@ -484,7 +507,7 @@ export function HomeHeader({
                               {m.price}
                             </div>
                           </div>
-                        </Link>
+                        </button>
                       );
                     })}
                   </div>

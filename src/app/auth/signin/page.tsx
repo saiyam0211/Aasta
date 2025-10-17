@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Lottie from 'lottie-react';
 import step1 from '../../../../public/lotties/step1.json';
@@ -22,23 +22,90 @@ export default function SignInPage() {
   const [error, setError] = useState('');
   const verifierRef = useRef<RecaptchaVerifier | null>(null);
 
+  // Pre-initialize invisible reCAPTCHA when entering step 5 to hide setup cost
+  useEffect(() => {
+    if (step === 5 && !verifierRef.current) {
+      try {
+        const t = performance.now();
+        verifierRef.current = createInvisibleRecaptcha('recaptcha-container', 'invisible');
+        console.log(`[AUTH] reCAPTCHA initialized at ${new Date().toISOString()} (+${Math.round(performance.now() - t)}ms)`);
+      } catch (e) {
+        console.warn('[AUTH] reCAPTCHA init failed (will retry on send):', e);
+        verifierRef.current = null;
+      }
+    }
+  }, [step]);
+
+  // Warm NextAuth endpoints when OTP screen loads to reduce verify latency
+  useEffect(() => {
+    if (step === 6) {
+      const t0 = performance.now();
+      // Fire-and-forget; no UI impact
+      fetch('/api/auth/csrf').catch(() => {});
+      fetch('/api/auth/session').catch(() => {});
+      console.log(`[AUTH] Prefetched NextAuth endpoints (+${Math.round(performance.now() - t0)}ms)`);
+    }
+  }, [step]);
+
+  // Pre-init earlier on step 4 as well and warm Firebase pathing
+  useEffect(() => {
+    if (step === 4 && !verifierRef.current) {
+      try {
+        const t = performance.now();
+        verifierRef.current = createInvisibleRecaptcha('recaptcha-container', 'invisible');
+        console.log(`[AUTH] reCAPTCHA pre-initialized at step 4 (+${Math.round(performance.now() - t)}ms)`);
+      } catch (e) {
+        console.warn('[AUTH] Step 4 reCAPTCHA pre-init failed (non-blocking).');
+      }
+    }
+    // Light warmup: touch Date.now to keep logs aligned and ensure module paths are hot
+    if (step === 4) {
+      // no-op warmup, place for future lightweight pings if needed
+      // console.debug('[AUTH] Warmup step 4 executed');
+    }
+  }, [step]);
+
   async function startPhoneFlow() {
     setError('');
     try {
       setIsLoading(true);
+      const clickT0 = performance.now();
+      console.log(`[AUTH] 🚀 Send OTP clicked at ${new Date().toISOString()}`);
       const formatted = phone.trim().startsWith('+')
         ? phone.trim()
         : `+91${phone.trim()}`;
 
       // Create invisible reCAPTCHA verifier only when needed
       if (!verifierRef.current) {
-        verifierRef.current = createInvisibleRecaptcha(
-          'recaptcha-container',
-          'invisible'
-        );
+        const t = performance.now();
+        verifierRef.current = createInvisibleRecaptcha('recaptcha-container', 'invisible');
+        console.log(`[AUTH] reCAPTCHA created lazily (+${Math.round(performance.now() - t)}ms since step)`);
       }
 
-      const result = await sendOtp(formatted, verifierRef.current);
+      const otpT0 = performance.now();
+      let result: ConfirmationResult | null = null;
+      let attempt = 0;
+      let lastError: any = null;
+      while (attempt < 2 && !result) {
+        try {
+          attempt += 1;
+          if (attempt > 1) {
+            console.log(`[AUTH] Retrying OTP send (attempt ${attempt}) after backoff...`);
+            await new Promise((r) => setTimeout(r, 250));
+            // recreate verifier defensively on retry
+            try {
+              (verifierRef.current as any)?.clear?.();
+            } catch {}
+            verifierRef.current = createInvisibleRecaptcha('recaptcha-container', 'invisible');
+          }
+          result = await sendOtp(formatted, verifierRef.current as RecaptchaVerifier);
+        } catch (err: any) {
+          lastError = err;
+          // Retry on common transient errors
+          if (attempt >= 2) throw err;
+        }
+      }
+      console.log(`[AUTH] ✅ OTP sent at ${new Date().toISOString()} (+${Math.round(performance.now() - otpT0)}ms for send, +${Math.round(performance.now() - clickT0)}ms since click)`);
       setConfirmation(result);
       // Move to OTP step
       setStep(6);
@@ -57,6 +124,7 @@ export default function SignInPage() {
       }
     } finally {
       setIsLoading(false);
+      console.log(`[AUTH] ⏱️ Send OTP flow finished at ${new Date().toISOString()}`);
     }
   }
 
@@ -65,23 +133,39 @@ export default function SignInPage() {
     setError('');
     try {
       setIsLoading(true);
+      const verifyT0 = performance.now();
+      console.log(`[AUTH] 🔑 Verify clicked at ${new Date().toISOString()}`);
       // Confirm with Firebase
       await confirmation.confirm(otp);
+      console.log(`[AUTH] ✅ Firebase confirm OK (+${Math.round(performance.now() - verifyT0)}ms)`);
       // Create NextAuth session via credentials provider
       const formatted = phone.trim().startsWith('+')
         ? phone.trim()
         : `+91${phone.trim()}`;
-      await signIn('phone-otp', {
+      const signInT0 = performance.now();
+      const res = await signIn('phone-otp', {
         phone: formatted,
         name: name.trim(),
-        redirect: true,
+        redirect: false, // avoid extra round-trip; we will navigate manually
         callbackUrl: '/',
       });
+      const elapsed = Math.round(performance.now() - signInT0);
+      console.log(`[AUTH] 🎫 NextAuth signIn completed (+${elapsed}ms, total +${Math.round(performance.now() - verifyT0)}ms)`);
+      // Fast manual redirect if URL provided
+      if (res && typeof res === 'object' && 'url' in res && (res as any).url) {
+        const navT0 = performance.now();
+        window.location.assign((res as any).url as string);
+        console.log(`[AUTH] ↪️ Navigating to ${(res as any).url} (+${Math.round(performance.now() - navT0)}ms)`);
+        return;
+      }
+      // Fallback
+      window.location.assign('/');
     } catch (e: any) {
       console.error(e);
       setError('Invalid code, try again');
     } finally {
       setIsLoading(false);
+      console.log(`[AUTH] ⏱️ Verify flow finished at ${new Date().toISOString()}`);
     }
   }
 
