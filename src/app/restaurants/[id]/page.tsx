@@ -121,6 +121,7 @@ export default function RestaurantDetailPage() {
   const [otherItems, setOtherItems] = useState<MenuItem[]>([]);
   const [locationName, setLocationName] = useState<string>('');
   const [distanceText, setDistanceText] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // ProductBottomSheet state
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -177,7 +178,10 @@ export default function RestaurantDetailPage() {
 
   const fetchRestaurantData = async (isBackgroundRefresh = false) => {
     try {
-      if (!isBackgroundRefresh) setIsLoading(true);
+      if (!isBackgroundRefresh) {
+        setIsLoading(true);
+        setIsInitialLoad(true);
+      }
       const restaurantResponse = await fetch(
         `/api/restaurants/${params?.id}`
       );
@@ -234,7 +238,10 @@ export default function RestaurantDetailPage() {
       console.error('Error fetching restaurant data:', error);
       if (!isBackgroundRefresh) toast.error('Failed to load restaurant data');
     } finally {
-      if (!isBackgroundRefresh) setIsLoading(false);
+      if (!isBackgroundRefresh) {
+        setIsLoading(false);
+        setIsInitialLoad(false);
+      }
     }
   };
 
@@ -456,7 +463,8 @@ export default function RestaurantDetailPage() {
     }
   };
 
-  if (isLoading) {
+  // Show skeleton immediately on initial load or when loading
+  if (isInitialLoad || isLoading) {
     return (
       <CustomerLayout hideHeader hideFooter>
         <div className="px-4 py-6">
