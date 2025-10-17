@@ -23,6 +23,7 @@ import { useCacheStore } from '@/lib/cache-store';
 import { FoodHacksPromo } from '@/components/ui/food-hacks-promo';
 import { useVegMode } from '@/contexts/VegModeContext';
 import { HackOfTheDay } from '@/components/ui/deal-of-the-day';
+import { readCache, writeCache } from '@/lib/smart-cache';
 // Custom inline animation (no JSON)
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -337,7 +338,14 @@ export default function HomePage() {
   const loadHacksOfTheDay = async () => {
     if (!latitude || !longitude) return;
     try {
-      setHacksLoading(true);
+      const cacheKey = `hacks_of_day_v1_${vegOnly ? 'veg' : 'all'}_${latitude.toFixed(3)}_${longitude.toFixed(3)}`;
+      const cached = readCache<any[]>(cacheKey);
+      if (cached?.data && cached.data.length > 0) {
+        setHacksOfTheDay(cached.data);
+        setHacksLoading(false);
+      } else {
+        setHacksLoading(true);
+      }
       const res = await fetch(
         `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=${RADIUS}${vegOnly ? '&veg=1' : ''}`
       );
@@ -387,7 +395,9 @@ export default function HomePage() {
       });
       
       // Limit to maximum 2 items (1 veg + 1 non-veg)
-      setHacksOfTheDay(sortedHacks.slice(0, 2));
+      const finalList = sortedHacks.slice(0, 2);
+      setHacksOfTheDay(finalList);
+      writeCache(cacheKey, { data: finalList, updatedAt: Date.now() });
     } catch (error) {
       console.error('Error fetching hack of the day items:', error);
       setHacksOfTheDay([]);
@@ -399,7 +409,14 @@ export default function HomePage() {
   // Recently ordered - fetch last 4 completed order items and map to Dish
   const loadRecentlyOrdered = async () => {
     try {
-      setRecentLoading(true);
+      const cacheKey = 'recently_ordered_dishes_v1';
+      const cached = readCache<Dish[]>(cacheKey);
+      if (cached?.data && cached.data.length > 0) {
+        setRecentDishes(cached.data.slice(0, 4));
+        setRecentLoading(false);
+      } else {
+        setRecentLoading(true);
+      }
       const res = await fetch(`/api/orders?limit=4&paymentStatus=COMPLETED&_=${Date.now()}`);
       if (!res.ok) {
         setRecentDishes([]);
@@ -476,7 +493,9 @@ export default function HomePage() {
           )
         : items;
       // Do not depend on nearby restaurants; show last 4 completed items
-      setRecentDishes(finalItems.slice(0, 4));
+      const finalFour = finalItems.slice(0, 4);
+      setRecentDishes(finalFour);
+      writeCache(cacheKey, { data: finalFour, updatedAt: Date.now() });
     } catch (e) {
       console.error('Failed to load recently ordered', e);
       setRecentDishes([]);

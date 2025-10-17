@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import localFont from 'next/font/local';
 import { toast } from 'sonner';
+import { readCache, writeCache, staleWhileRevalidate } from '@/lib/smart-cache';
 
 const brandFont = localFont({
   src: [
@@ -114,45 +115,30 @@ export default function ProfilePage() {
 
   const fetchRecentOrders = async () => {
     try {
-      setLoading(true);
-      const response = await fetch(
-        '/api/orders?limit=10&paymentStatus=COMPLETED'
-      );
-      const data = await response.json();
-
-      console.log('Orders API response:', data);
-
-      if (data.success) {
-        const orders = data.data?.orders || [];
-        console.log('Orders found:', orders.length);
-        orders.forEach((order: any, index: number) => {
-          console.log(`Order ${index + 1}:`, {
-            orderNumber: order.orderNumber,
-            total: order.total,
-            totalAmount: order.totalAmount,
-            subtotal: order.subtotal,
-            taxes: order.taxes,
-            deliveryFee: order.deliveryFee,
-            savings: order.savings,
-            orderItems: order.orderItems?.length || 0,
-            orderItemsDetails: order.orderItems?.map((item: any) => ({
-              name: item.menuItem?.name,
-              unitPrice: item.unitPrice,
-              originalUnitPrice: item.originalUnitPrice,
-              totalPrice: item.totalPrice,
-              totalOriginalPrice: item.totalOriginalPrice,
-              quantity: item.quantity,
-            })),
-          });
-        });
-        setOrders(orders);
+      const CACHE_KEY = 'profile_recent_orders_v1';
+      // Instant: show cached orders if present
+      const cached = readCache<any>(CACHE_KEY);
+      if (cached?.data) {
+        setOrders(cached.data);
+        setLoading(false);
       } else {
-        console.error('API returned error:', data);
-        toast.error('Failed to load orders');
+        setLoading(true);
+      }
+
+      // SWR: fetch fresh in background, then update cache + UI
+      const res = await fetch('/api/orders?limit=10&paymentStatus=COMPLETED', { cache: 'no-store' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const nextOrders = data.data?.orders || [];
+        writeCache(CACHE_KEY, { data: nextOrders, updatedAt: Date.now() });
+        setOrders(nextOrders);
+      } else {
+        if (!cached?.data) toast.error('Failed to load orders');
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
-      toast.error('Failed to load orders');
+      // Only show error if we had nothing cached
+      if (!orders.length) toast.error('Failed to load orders');
     } finally {
       setLoading(false);
     }
