@@ -11,8 +11,7 @@ export default function NativeBridge() {
 
         // Mark html for native-specific CSS overrides
         document.documentElement.classList.add('native-webview');
-        // Ensure content respects safe area when status bar overlays
-        document.body.classList.add('pt-safe');
+        // Let pages handle safe-area padding themselves; avoid global top padding
 
         // Use core proxy to avoid bundling native-only modules on web
         const StatusBar: any = registerPlugin('StatusBar');
