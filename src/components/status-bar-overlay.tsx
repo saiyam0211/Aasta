@@ -43,6 +43,8 @@ export default function StatusBarOverlay() {
     if (Capacitor.isNativePlatform()) {
       try {
         const StatusBar: any = registerPlugin('StatusBar');
+        // Ensure content does not draw under the status bar; do once but safe to repeat
+        StatusBar.setOverlaysWebView({ overlay: false });
         // 0 = Light text, 1 = Dark text (Capacitor)
         StatusBar.setStyle({ style: lightText ? 0 : 1 });
         StatusBar.setBackgroundColor({ color });

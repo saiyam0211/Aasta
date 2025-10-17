@@ -535,9 +535,9 @@ body {
   top: 0;
   z-index: 50;
   height: env(safe-area-inset-top);
-  min-height: 0; /* on Android this is often 0; overlay still occupies flow */
+  min-height: 0;
   width: 100%;
-  background: var(--statusbar-color, #ffffff);
+  background: var(--statusbar-color, transparent);
 }
 
 /* Mobile-optimized text sizes */
