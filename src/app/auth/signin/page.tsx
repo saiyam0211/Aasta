@@ -212,7 +212,7 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-dvh h-dvh w-full bg-white">
-      <div className="mx-auto flex min-h-screen max-w-md flex-col px-5 pt-[45%] pb-8">
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-[45%] pb-8">
         <div
           key={step}
           className="animate-slide-up transition-all duration-300 ease-out"
