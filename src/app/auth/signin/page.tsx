@@ -9,6 +9,7 @@ import step3 from '../../../../public/lotties/step3.json';
 import { createInvisibleRecaptcha, sendOtp } from '@/lib/firebase-client';
 import type { RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
 import { signIn } from 'next-auth/react';
+import { setBackOverride } from '@/lib/back-channel';
 
 export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +22,7 @@ export default function SignInPage() {
   );
   const [error, setError] = useState('');
   const verifierRef = useRef<RecaptchaVerifier | null>(null);
+  const lastPushedStepRef = useRef<number>(1);
 
   // Pre-initialize invisible reCAPTCHA when entering step 5 to hide setup cost
   useEffect(() => {
@@ -34,6 +36,48 @@ export default function SignInPage() {
         verifierRef.current = null;
       }
     }
+  }, [step]);
+
+  // Manage browser history so that device/browser back navigates steps
+  useEffect(() => {
+    // Push a new history state each time the step increases
+    try {
+      if (typeof window !== 'undefined') {
+        if (step > lastPushedStepRef.current) {
+          window.history.pushState({ step }, '', window.location.href);
+          lastPushedStepRef.current = step;
+        }
+      }
+    } catch {}
+  }, [step]);
+
+  useEffect(() => {
+    function onPopState() {
+      // Move back one step if possible; otherwise fall through to default
+      if (step > 1) {
+        setStep(step - 1);
+      }
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('popstate', onPopState);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('popstate', onPopState);
+      }
+    };
+  }, [step]);
+
+  // Register a back override so native back (Capacitor) also steps back
+  useEffect(() => {
+    setBackOverride(() => {
+      if (step > 1) {
+        setStep((s) => Math.max(1, s - 1));
+        return true; // handled
+      }
+      return false; // not handled
+    });
+    return () => setBackOverride(null);
   }, [step]);
 
   // Warm NextAuth endpoints when OTP screen loads to reduce verify latency

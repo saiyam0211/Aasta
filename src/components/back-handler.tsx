@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { tryHandleBack } from '@/lib/back-channel';
 
 const STACK_KEY = 'aasta_nav_stack_v1';
 
@@ -45,6 +46,9 @@ export default function BackHandler() {
     // Use proxy to avoid importing @capacitor/app directly on web
     const App: any = registerPlugin('App');
     const remove = App.addListener('backButton', async () => {
+      // Give page-level override a chance first
+      const handled = await tryHandleBack();
+      if (handled) return;
       const stack = readStack();
       if (stack.length > 1) {
         // Pop current and navigate to previous
