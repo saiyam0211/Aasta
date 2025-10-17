@@ -11,11 +11,11 @@ export default function InitialSplash() {
       const seen = sessionStorage.getItem('aasta_splash_v1');
       if (!seen) {
         setShow(true);
-        // Ensure splash is visible at least 600ms for perceived smoothness
+        // Ensure splash is visible for 3000ms for perceived smoothness
         const t = setTimeout(() => {
           setShow(false);
           sessionStorage.setItem('aasta_splash_v1', '1');
-        }, 800);
+        }, 3000);
         return () => clearTimeout(t);
       }
     } catch {}
