@@ -161,7 +161,7 @@ export default function RootLayout({
         <meta property="og:image" content="/icons/Aasta_Logos_512x512.png" />
 
       </head>
-      <body className="pt-safe pb-safe font-sans antialiased">
+      <body className="pb-safe font-sans antialiased">
         <Providers>
           <ClientRoot>{children}</ClientRoot>
         </Providers>
