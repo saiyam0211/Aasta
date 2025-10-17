@@ -429,14 +429,7 @@ body {
   }
 }
 
-/* Force fallback in native WebView even if supports check reports true */
-.native-webview .glass-liquid {
-  background: rgba(255, 255, 255, 0.92) !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-  border: 1px solid rgba(0, 0, 0, 0.06) !important;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12) !important;
-}
+/* Removed native-webview glass-liquid fallback to avoid forced white backgrounds */
 
 .glass-liquid:focus {
   background: rgba(255, 255, 255, 0.28);

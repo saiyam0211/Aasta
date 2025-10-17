@@ -11,12 +11,15 @@ export default function NativeBridge() {
 
         // Mark html for native-specific CSS overrides
         document.documentElement.classList.add('native-webview');
+        // Ensure content respects safe area when status bar overlays
+        document.body.classList.add('pt-safe');
 
         // Use core proxy to avoid bundling native-only modules on web
         const StatusBar: any = registerPlugin('StatusBar');
-        await StatusBar.setOverlaysWebView({ overlay: false });
-        await StatusBar.setStyle({ style: 1 }); // 1 = Dark
-        await StatusBar.setBackgroundColor({ color: '#002a01' });
+        // Overlay webview so we don't get a solid native bar; use light icons over dark UI
+        await StatusBar.setOverlaysWebView({ overlay: true });
+        await StatusBar.setStyle({ style: 2 }); // 2 = Light (light icons for dark backgrounds)
+        // No background color when overlaying; content background will be visible
       } catch (e) {
         console.warn('Native bridge setup skipped', e);
       }
