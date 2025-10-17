@@ -529,6 +529,17 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
+/* Sticky status bar overlay that prevents content overlap */
+.statusbar-overlay {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: env(safe-area-inset-top);
+  min-height: 0; /* on Android this is often 0; overlay still occupies flow */
+  width: 100%;
+  background: var(--statusbar-color, #ffffff);
+}
+
 /* Mobile-optimized text sizes */
 @media (max-width: 640px) {
   .mobile-heading {
