@@ -508,7 +508,14 @@ export default function HomePage() {
   const loadNearbyNonFeaturedDishes = async (preserveOrder: boolean = false) => {
     if (!latitude || !longitude) return;
     try {
-      setNearbyDishesLoading(true);
+      const cacheKey = `nearby_dishes_v1_${vegOnly ? 'veg' : 'all'}_${latitude.toFixed(3)}_${longitude.toFixed(3)}`;
+      const cached = readCache<Dish[][]>(cacheKey);
+      if (cached?.data && cached.data.length > 0 && !preserveOrder) {
+        setNearbyDishesSections(cached.data);
+        setNearbyDishesLoading(false);
+      } else {
+        setNearbyDishesLoading(true);
+      }
       // Get nearby restaurants (composite response includes item buckets)
       const restaurantsRes = await fetch(
         `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=${RADIUS}&limit=12${vegOnly ? '&veg=1' : ''}`
@@ -684,7 +691,9 @@ export default function HomePage() {
         ];
         setNearbyDishesSections(merged);
       } else {
-        setNearbyDishesSections([s1, s2, s3]);
+        const finalSections = [s1, s2, s3];
+        setNearbyDishesSections(finalSections);
+        writeCache(cacheKey, { data: finalSections, updatedAt: Date.now() });
       }
     } catch (e) {
       console.error('Failed loading nearby dishes', e);
