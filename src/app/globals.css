@@ -508,6 +508,11 @@ body {
   padding-top: env(safe-area-inset-top);
 }
 
+/* Utility: stick below status bar safe area */
+.top-safe {
+  top: env(safe-area-inset-top);
+}
+
 /* Sticky status bar overlay sized to safe-area inset */
 .statusbar-overlay {
   position: sticky;

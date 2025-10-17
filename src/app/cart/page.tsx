@@ -498,7 +498,7 @@ export default function CartPage() {
         ) : (
           <div className="mx-auto max-w-md bg-gradient-to-b from-[#f3f3f3] via-[#fafafa] to-white pb-20">
           {/* Back button */}
-          <div className="sticky top-0 z-10 bg-[#f3f3f3] px-4 pt-4">
+          <div className="sticky top-safe z-10 bg-[#f3f3f3] px-4 pt-4">
             <div className="mb-4 flex justify-between">
               <Button
                 onClick={handleGoBack}
