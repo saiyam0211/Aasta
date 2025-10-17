@@ -14,9 +14,8 @@ export default function NativeBridge() {
 
         // Use core proxy to avoid bundling native-only modules on web
         const StatusBar: any = registerPlugin('StatusBar');
+        // Ensure content does not draw under the status bar; color is handled by StatusBarOverlay
         await StatusBar.setOverlaysWebView({ overlay: false });
-        await StatusBar.setStyle({ style: 1 }); // 1 = Dark
-        await StatusBar.setBackgroundColor({ color: '#002a01' });
 
         // Ensure iOS safe-area is respected by forcing viewport-fit cover and using env insets
         try {
