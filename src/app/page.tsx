@@ -919,14 +919,14 @@ export default function HomePage() {
     return nearbyDishesSections.map((sec) => sec.filter(isVegDish));
   }, [vegOnly, nearbyDishesSections]);
 
+  // Show location modal only if no location is set AND user just signed up
+  // Check if this is the first time after signup
+  const [showLocationModalAfterSignup, setShowLocationModalAfterSignup] = useState(false);
+
   // Early return rendering (after all hooks) to avoid hook-order changes
   if (status === 'loading' || !session) {
     return <div className="min-h-screen" />;
   }
-
-  // Show location modal only if no location is set AND user just signed up
-  // Check if this is the first time after signup
-  const [showLocationModalAfterSignup, setShowLocationModalAfterSignup] = useState(false);
   
   useEffect(() => {
     if (status === 'authenticated' && !locationId) {
