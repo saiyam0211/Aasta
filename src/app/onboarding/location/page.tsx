@@ -170,8 +170,7 @@ function LocationOnboardingContent({ isModal = false, onClose }: LocationOnboard
   );
 }
 
-// Default export for Next.js page
-export default function LocationOnboardingPage(props: LocationOnboardingProps) {
-  const { isModal = false, onClose } = props || {};
-  return <LocationOnboardingContent isModal={isModal} onClose={onClose} />;
+// Default export for Next.js page (no props)
+export default function LocationOnboardingPage() {
+  return <LocationOnboardingContent isModal={false} />;
 }
