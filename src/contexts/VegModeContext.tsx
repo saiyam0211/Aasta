@@ -6,12 +6,14 @@ interface VegModeContextType {
   vegOnly: boolean;
   setVegOnly: (value: boolean) => void;
   toggleVegMode: () => void;
+  onVegModeToggle?: (callback: () => void) => void;
 }
 
 const VegModeContext = createContext<VegModeContextType | undefined>(undefined);
 
 export function VegModeProvider({ children }: { children: React.ReactNode }) {
   const [vegOnly, setVegOnlyState] = useState(false);
+  const [onVegModeToggle, setOnVegModeToggle] = useState<((callback: () => void) => void) | undefined>(undefined);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -37,10 +39,12 @@ export function VegModeProvider({ children }: { children: React.ReactNode }) {
 
   const toggleVegMode = () => {
     setVegOnly(!vegOnly);
+    // Trigger the toggle callback if set
+    onVegModeToggle?.(() => {});
   };
 
   return (
-    <VegModeContext.Provider value={{ vegOnly, setVegOnly, toggleVegMode }}>
+    <VegModeContext.Provider value={{ vegOnly, setVegOnly, toggleVegMode, onVegModeToggle: setOnVegModeToggle }}>
       {children}
     </VegModeContext.Provider>
   );

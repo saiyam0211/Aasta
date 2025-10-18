@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useRouter } from 'next/navigation';
 import {
   Star,
   Clock,
@@ -51,6 +52,7 @@ export function MobileRestaurantCard({
   onFavoriteToggle,
   onOrderNow,
 }: MobileRestaurantCardProps) {
+  const router = useRouter();
   const [isPressed, setIsPressed] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [favoriteState, setFavoriteState] = useState(isFavorite);
@@ -84,7 +86,12 @@ export function MobileRestaurantCard({
       onTouchStart={() => setIsPressed(true)}
       onTouchEnd={() => setIsPressed(false)}
     >
-      <Link href={`/restaurants/${id}`}>
+      <div 
+        onClick={() => {
+          // Smooth client-side navigation - no page refresh
+          router.push(`/restaurants/${id}`);
+        }}
+      >
         {/* Image Container */}
         <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
           {/* Image */}
@@ -199,7 +206,7 @@ export function MobileRestaurantCard({
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardContent>
-      </Link>
+      </div>
     </Card>
   );
 }

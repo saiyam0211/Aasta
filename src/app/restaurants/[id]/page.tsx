@@ -122,6 +122,7 @@ export default function RestaurantDetailPage() {
   const [locationName, setLocationName] = useState<string>('');
   const [distanceText, setDistanceText] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(true);
 
   // ProductBottomSheet state
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -241,6 +242,7 @@ export default function RestaurantDetailPage() {
       if (!isBackgroundRefresh) {
         setIsLoading(false);
         setIsInitialLoad(false);
+        setShowSkeleton(false);
       }
     }
   };
@@ -464,10 +466,10 @@ export default function RestaurantDetailPage() {
   };
 
   // Show skeleton immediately on initial load or when loading
-  if (isInitialLoad || isLoading) {
+  if (showSkeleton || isInitialLoad || isLoading) {
     return (
       <CustomerLayout hideHeader hideFooter>
-        <div className="px-4 py-6">
+        <div className="fixed inset-0 z-50 overflow-hidden bg-white px-4 py-6">
           {/* Skeleton for header card */}
           <div className="mb-4 rounded-[40px] bg-white">
             <div className="p-5">
@@ -486,7 +488,7 @@ export default function RestaurantDetailPage() {
           </div>
 
           {/* Skeleton for items */}
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-4 overflow-y-auto">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex gap-3 rounded-2xl border border-gray-100 bg-white p-3">
                 <div className="h-36 w-36 animate-pulse rounded-xl bg-gray-200" />

@@ -6,8 +6,10 @@ import { persist } from 'zustand/middleware';
 interface LocationState {
   latitude: number | null;
   longitude: number | null;
+  locationName: string | null;
+  locationId: string | null;
   error: string | null;
-  setLocation: (lat: number, lng: number) => void;
+  setLocation: (lat: number, lng: number, name?: string, locationId?: string) => void;
   setError: (error: string) => void;
   clearLocation: () => void;
 }
@@ -17,13 +19,23 @@ export const useLocationStore = create<LocationState>()(
     (set) => ({
       latitude: null,
       longitude: null,
+      locationName: null,
+      locationId: null,
       error: null,
-      setLocation: (lat, lng) => {
+      setLocation: (lat, lng, name, locationId) => {
         console.log('📍 User location updated:', {
           latitude: lat,
           longitude: lng,
+          locationName: name,
+          locationId: locationId,
         });
-        set({ latitude: lat, longitude: lng, error: null });
+        set({ 
+          latitude: lat, 
+          longitude: lng, 
+          locationName: name || null, 
+          locationId: locationId || null,
+          error: null 
+        });
       },
       setError: (error) => {
         console.error('❌ Location error:', error);
@@ -31,7 +43,7 @@ export const useLocationStore = create<LocationState>()(
       },
       clearLocation: () => {
         console.log('🧹 Location cleared');
-        set({ latitude: null, longitude: null, error: null });
+        set({ latitude: null, longitude: null, locationName: null, locationId: null, error: null });
       },
     }),
     {

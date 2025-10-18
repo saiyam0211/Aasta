@@ -108,12 +108,8 @@ export function HomeHeader({
 
   const shortLocation = useMemo(() => {
     if (!locationLabel) return '';
-    // For saved addresses, show the full formatted address (houseNumber, locality, street)
-    // For live location, show the full address but truncate if too long
-    const maxLen = 28;
-    return locationLabel.length > maxLen
-      ? locationLabel.slice(0, maxLen) + '...'
-      : locationLabel;
+    // Show the full location name without truncation
+    return locationLabel;
   }, [locationLabel]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -307,7 +303,7 @@ export function HomeHeader({
           <div className="max-w-[300px] text-left">
             {/* <div className="text-xs text-gray-100">Location</div> */}
             <div className="text-md truncate font-medium text-[#002a01]">
-              {shortLocation}...
+              {shortLocation}
             </div>
           </div>
         </button>
@@ -356,7 +352,7 @@ export function HomeHeader({
         className={cn('flex items-center gap-2', isSearchMode && 'mt-10')}
       >
         <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-6 z-50 h-6 w-6 -translate-y-1/2 text-[#002a01]" />
+          <Search className="absolute top-1/2 left-6 z-30 h-6 w-6 -translate-y-1/2 text-[#002a01]" />
           <input
             ref={inputRef}
             value={query}

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Star, Clock } from 'lucide-react';
+import { Star, Minus, Plus } from 'lucide-react';
 import type { Dish } from '@/types/dish';
 import { SafeImage } from '@/components/ui/safe-image';
 import { useCartStore } from '@/lib/store';
@@ -45,7 +45,7 @@ function VegMark({ isVegetarian }: { isVegetarian: boolean }) {
 
 function InfoChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-red-200 px-2 py-1 text-[11px] text-gray-700">
+    <span className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] text-gray-700">
       {children}
     </span>
   );
@@ -66,16 +66,35 @@ export function HomeProductCard({
   restaurantContext,
   showDistance,
 }: HomeProductCardProps) {
+  const [clicked, setClicked] = useState(false);
+  const [showDiscountText, setShowDiscountText] = useState(true); // true = percentage, false = amount saved
+
   const hasDiscount = !!dish.originalPrice && dish.originalPrice > dish.price;
   const discountPct = hasDiscount
     ? Math.round(
         ((dish.originalPrice! - dish.price) / dish.originalPrice!) * 100
       )
     : 0;
+  const savedAmount = hasDiscount ? dish.originalPrice! - dish.price : 0;
 
-  const isVeg = Array.isArray(dish.dietaryTags)
-    ? dish.dietaryTags.includes('Veg')
-    : dish.isVegetarian;
+  // Auto-toggle discount text every 5 seconds
+  useEffect(() => {
+    if (!hasDiscount) return;
+    
+    const interval = setInterval(() => {
+      setShowDiscountText(prev => !prev);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [hasDiscount]);
+
+  // Prefer Non-Veg tag if both present; otherwise treat Veg/Vegetarian/Vegan as veg
+  const tagsLower = Array.isArray(dish.dietaryTags)
+    ? dish.dietaryTags.map((t) => String(t).toLowerCase())
+    : [];
+  const hasNonVegTag = tagsLower.some((t) => /(non[-\s]?veg)/i.test(t));
+  const hasVegTag = tagsLower.some((t) => /(\bveg\b|vegetarian|vegan)/i.test(t));
+  const isVeg = !hasNonVegTag && (hasVegTag || !!dish.isVegetarian);
 
   const getItemQuantityInCart = useCartStore((s) => s.getItemQuantityInCart);
   const addItem = useCartStore((s) => s.addItem);
@@ -110,7 +129,7 @@ export function HomeProductCard({
       subtotal: dish.price,
     } as any;
     addItem(cartItem, restaurant);
-    // do not call onAdd here to avoid double-add
+    onAdd(dish);
   };
 
   const handleIncrease = (e: React.MouseEvent) => {
@@ -128,39 +147,64 @@ export function HomeProductCard({
     updateQuantity(dish.id, quantity - 1);
   };
 
+  // Click handler for card (preserves original onClick)
+  const handleCardClick = () => {
+    setClicked(true);
+    onClick?.(dish);
+    setTimeout(() => setClicked(false), 150);
+  };
+
   return (
     <div
       className={cn(
-        'h-full cursor-pointer rounded-2xl border border-gray-100 bg-white p-3 shadow-sm',
+        'cursor-pointer rounded-2xl border border-gray-100 bg-white p-3 shadow-xs transition-transform duration-150',
+        // 'scale-100 hover:scale-120', // keep hover effect
+        // clicked && 'scale-105', // add click effect
         className
       )}
-      onClick={() => onClick?.(dish)}
+      onClick={handleCardClick}
       role="button"
       aria-label={`View ${dish.name}`}
     >
       {/* Image with centered ADD overlay */}
+      
       <div className="relative mb-6 h-36 w-full overflow-hidden rounded-xl bg-gray-100">
+        
         <SafeImage
           src={dish.image}
           alt={dish.name}
-          className={cn("absolute inset-0 h-full w-full object-cover", dish.soldOut && "grayscale")}
+          className={cn(
+            "absolute inset-0 h-full w-full object-cover",
+            dish.soldOut && "grayscale"
+          )}
           fallbackSrc="/images/dish-placeholder.svg"
         />
         {dish.soldOut && (
-          <img src="/images/sold-out.png" alt="Sold Out" className="absolute inset-0 m-auto h-full w-full opacity-100" />
+          <img
+            src="/images/sold-out.png"
+            alt="Sold Out"
+            className="absolute inset-0 m-auto h-[100%] w-[100%]"
+          />
         )}
       </div>
 
-      {/* Chips row */}
+      {/* Chips row: show distance only; hide when not available */}
       <div className="mb-2 flex items-center gap-2">
         <VegMark isVegetarian={isVeg} />
-        {showDistance && dish.distanceText && (
-          <span className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" />
-            </svg>
-            {dish.distanceText}
-          </span>
+        {dish.distanceText && (
+          <InfoChip>
+            <>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="h-3 w-3"
+              >
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" />
+              </svg>
+              {dish.distanceText}
+            </>
+          </InfoChip>
         )}
       </div>
 
@@ -178,35 +222,46 @@ export function HomeProductCard({
 
       {/* Discount */}
       {hasDiscount && (
-        <div className="mb-1 text-[12px] font-semibold text-blue-600">
-          {discountPct}% OFF
+        <div className="mb-1 h-4 text-[12px] font-semibold text-blue-600 relative overflow-hidden">
+          <div
+            className={cn(
+              "absolute inset-0 flex items-center transition-all duration-500 ease-in-out",
+              showDiscountText 
+                ? "transform translate-y-0 opacity-100" 
+                : "transform -translate-y-full opacity-0"
+            )}
+          >
+            {discountPct}% OFF
+          </div>
+          <div
+            className={cn(
+              "absolute inset-0 flex items-center transition-all duration-500 ease-in-out",
+              !showDiscountText 
+                ? "transform translate-y-0 opacity-100" 
+                : "transform translate-y-full opacity-0"
+            )}
+          >
+            You'll save ₹{savedAmount}
+          </div>
         </div>
       )}
 
       {/* Price row */}
       <div className="relative flex items-center justify-between">
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-bold text-gray-900">₹{dish.price}</span>
+        <div className="mt-2 flex flex-col items-baseline">
           {dish.originalPrice && (
             <span className="text-xs text-gray-400 line-through">
               ₹{dish.originalPrice}
             </span>
           )}
-        </div>x
-        <div className="absolute -bottom-5 left-35 -translate-x-1/2 border-10 border-white">
-          {dish.soldOut ? (
-            <button
-              disabled
-              className="h-8 rounded-md border border-gray-300 bg-gray-100 px-4 text-sm font-semibold text-gray-500 cursor-not-allowed"
-              aria-label={`Sold out ${dish.name}`}
-            >
-              Sold
-            </button>
-          ) : quantity > 0 ? (
-            <div className="-gap-2 inline-flex h-10 items-center rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm">
+          <span className="text-lg font-bold text-gray-900">₹{dish.price}</span>
+        </div>
+        <div className="relative mt-4 border-1 border-white">
+          {quantity > 0 ? (
+            <div className="-gap-2 inline-flex h-9 items-center rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm">
               <button
                 onClick={handleDecrease}
-                className="h-6 w-6 rounded-md text-lg text-[#002a01]"
+                className="h-8 w-8 rounded-md text-lg text-[#002a01]"
                 aria-label={`Decrease ${dish.name}`}
               >
                 −
@@ -216,7 +271,7 @@ export function HomeProductCard({
               </span>
               <button
                 onClick={handleIncrease}
-                className="h-6 w-6 rounded-md text-lg text-[#002a01]"
+                className="h-8 w-8 rounded-md text-lg text-[#002a01]"
                 aria-label={`Increase ${dish.name}`}
               >
                 +
@@ -224,11 +279,15 @@ export function HomeProductCard({
             </div>
           ) : (
             <button
-              onClick={handleAddToCart}
-              className="h-8 rounded-md border border-green-600/30 bg-white px-4 text-xl font-semibold text-[#002a01] shadow"
+              onClick={dish.soldOut ? undefined : handleAddToCart}
+              disabled={dish.soldOut}
+              className={cn(
+                "h-9 rounded-md border border-green-600/30 bg-white px-4 text-xl font-semibold text-[#002a01] shadow-sm",
+                dish.soldOut && "cursor-not-allowed opacity-50"
+              )}
               aria-label={`Add ${dish.name}`}
             >
-              Add
+              {dish.soldOut ? 'Sold' : 'Add'}
             </button>
           )}
         </div>

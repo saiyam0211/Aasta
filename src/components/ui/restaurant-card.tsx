@@ -9,6 +9,7 @@ import { useLocationStore } from '@/hooks/useLocation';
 import { googleMapsService } from '@/lib/google-maps';
 import Lottie from 'lottie-react';
 import closedAnim from '../../../public/lotties/closed.json';
+import { useRouter } from 'next/navigation';
 
 export interface RestaurantSummary {
   id: string;
@@ -54,6 +55,7 @@ export function RestaurantCard({
   isFavorite = false,
   className,
 }: RestaurantCardProps) {
+  const router = useRouter();
   const [index, setIndex] = useState(0);
   const [distanceText, setDistanceText] = useState<string | null>(null);
   const { latitude, longitude } = useLocationStore();
@@ -153,11 +155,15 @@ export function RestaurantCard({
     <div
       className={cn(
         'w-full overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-md',
-        restaurant.isOpen === false ? 'cursor-not-allowed' : undefined,
+        restaurant.isOpen === false ? 'cursor-not-allowed' : 'cursor-pointer',
         className
       )}
       onClick={() => {
         if (restaurant.isOpen === false) return;
+        // Smooth client-side navigation - no page refresh
+        if (href) {
+          router.push(href);
+        }
         onClick?.(restaurant.id);
       }}
     >

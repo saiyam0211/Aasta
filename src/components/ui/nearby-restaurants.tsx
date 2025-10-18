@@ -3,6 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useRouter } from 'next/navigation';
 import {
   Star,
   Clock,
@@ -48,6 +49,7 @@ export function NearbyRestaurants({
   onRestaurantClick,
   className,
 }: NearbyRestaurantsProps) {
+  const router = useRouter();
   const handleFavoriteClick = (e: React.MouseEvent, restaurant: Restaurant) => {
     e.preventDefault();
     e.stopPropagation();
@@ -92,7 +94,13 @@ export function NearbyRestaurants({
             className="group cursor-pointer overflow-hidden rounded-2xl border-0 bg-white shadow-md transition-all duration-300 hover:shadow-xl"
             onClick={() => onRestaurantClick?.(restaurant.id)}
           >
-            <Link href={`/restaurants/${restaurant.id}`} className="block">
+            <div 
+              className="block cursor-pointer"
+              onClick={() => {
+                // Smooth client-side navigation - no page refresh
+                router.push(`/restaurants/${restaurant.id}`);
+              }}
+            >
               <CardContent className="p-0">
                 <div className="flex">
                   {/* Restaurant Image */}
@@ -218,7 +226,7 @@ export function NearbyRestaurants({
                   </div>
                 </div>
               </CardContent>
-            </Link>
+            </div>
           </Card>
         ))}
       </div>

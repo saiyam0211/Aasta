@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocationStore } from '@/hooks/useLocation';
 import { toast } from 'sonner';
 import { HomeHeader } from '@/components/ui/home-header';
-import AddressSheet from '@/components/ui/AddressSheet';
+// Removed AddressSheet import - we only use location modal
 import { HomeProductCard } from '@/components/ui/home-product-card';
 import { HomeProductCardList } from '@/components/ui/home-product-card-vertical';
 import { CheckCircle } from 'lucide-react';
@@ -26,6 +26,7 @@ import { HackOfTheDay } from '@/components/ui/deal-of-the-day';
 import { readCache, writeCache } from '@/lib/smart-cache';
 import LocationChangeLoader from '@/components/ui/location-change-loader';
 import VegModeLoader from '@/components/ui/veg-mode-loader';
+import LocationOnboarding from '@/app/onboarding/location/page';
 // Custom inline animation (no JSON)
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -44,9 +45,9 @@ const brandFont = localFont({
 export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { latitude, longitude, setLocation } = useLocationStore();
+  const { latitude, longitude, locationName, locationId, setLocation } = useLocationStore();
   const { cart, addItem } = useCartStore();
-  const { vegOnly } = useVegMode();
+  const { vegOnly, onVegModeToggle } = useVegMode();
   const {
     setRestaurants: setCachedRestaurants,
     setDishes: setCachedDishes,
@@ -56,10 +57,9 @@ export default function HomePage() {
     invalidateCache,
   } = useCacheStore();
 
-  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
-  const [addressSheetOpen, setAddressSheetOpen] = useState(false);
-  const [selectedLocationLabel, setSelectedLocationLabel] =
-    useState('Using live location');
+  // Removed showLocationPrompt - we only use location modal
+  // Removed addressSheetOpen - we only use location modal
+  // Removed selectedLocationLabel - we only use locationName from store
   // Removed popular content; using inline search results instead
   const [searchQuery, setSearchQuery] = useState('');
   const [dishResults, setDishResults] = useState<Dish[]>([]);
@@ -96,52 +96,17 @@ export default function HomePage() {
   const [showLocationChangeLoader, setShowLocationChangeLoader] = useState(false);
   const [showVegModeLoader, setShowVegModeLoader] = useState(false);
   const [isEnteringVegMode, setIsEnteringVegMode] = useState(true);
+  const [prevVegOnly, setPrevVegOnly] = useState(vegOnly);
+  const [showLocationModal, setShowLocationModal] = useState(false);
 
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
 
   const RADIUS = Number(process.env.NEXT_PUBLIC_RADIUS_KM || '5');
 
-  // Hydrate previously selected coordinates (from AddressSheet search) before any fetches
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('aasta_selected_coords_v1');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const lat = Number(parsed?.lat);
-        const lng = Number(parsed?.lng);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) {
-          setLocation(lat, lng);
-          const savedLabel = localStorage.getItem('aasta_selected_label_v1');
-          if (savedLabel) setSelectedLocationLabel(savedLabel);
-        }
-      }
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Removed coordinate hydration - we only use selected dropdown location
 
-  // Show location prompt only once after first sign-in; otherwise prefer AddressSheet input
-  useEffect(() => {
-    if (status !== 'authenticated') return;
-    const hasCoords = typeof latitude === 'number' && typeof longitude === 'number';
-    const shownKey = 'aasta_location_prompt_shown_v1';
-    const alreadyShown = (() => {
-      try {
-        return localStorage.getItem(shownKey) === '1';
-      } catch {
-        return true; // default to hidden if storage blocked
-      }
-    })();
-
-    if (!hasCoords) {
-      if (!alreadyShown) {
-        setShowLocationPrompt(true);
-      } else {
-        // Skip the legacy prompt, focus user on address entry instead
-        setAddressSheetOpen(true);
-      }
-    }
-  }, [status]);
+  // Removed location prompt logic - we only use location modal
 
   const slugify = (input: string) =>
     input
@@ -169,87 +134,17 @@ export default function HomePage() {
   //   resistance: 2.5,
   // });
 
-  // Resolve human-readable address when coordinates are present and no saved address chosen
-  useEffect(() => {
-    const resolveAddress = async () => {
-      if (!latitude || !longitude) return;
-      
-      // Check if user has saved addresses first
-      try {
-        const res = await fetch('/api/user/address');
-        if (res.ok) {
-          const data = await res.json();
-          const addresses = Array.isArray(data?.addresses) ? data.addresses : [];
-          const hasSavedAddresses = addresses.length > 0;
-          
-          // Only use reverse geocoding if no saved addresses
-          if (!hasSavedAddresses) {
-            const geoRes = await fetch(
-              `/api/geocode/reverse?lat=${latitude}&lng=${longitude}`
-            );
-            if (geoRes.ok) {
-              const geoData = await geoRes.json();
-              if (geoData?.success && geoData?.data?.address) {
-                // Truncate to first 50 words
-                const words = geoData.data.address.split(/\s+/);
-                const truncated =
-                  words.length > 50 ? words.slice(0, 50).join(' ') + '…' : geoData.data.address;
-                setSelectedLocationLabel(truncated);
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Address resolution failed', e);
-      }
-    };
-    resolveAddress();
-  }, [latitude, longitude]);
+  // Removed live location resolution - we only use selected dropdown location
 
-  // On load, try to fetch user's saved addresses and use default if present
-  useEffect(() => {
-    const loadDefaultAddress = async () => {
-      try {
-        // If user has a manually selected coordinate saved, don't override it with default address
-        try {
-          const saved = localStorage.getItem('aasta_selected_coords_v1');
-          if (saved) return;
-        } catch {}
-
-        const res = await fetch('/api/user/address');
-        if (!res.ok) return;
-        const data = await res.json();
-        const addresses = Array.isArray(data?.addresses) ? data.addresses : [];
-        const def = addresses.find((a: any) => a.isDefault) || addresses[0];
-        if (def) {
-          const summary = [
-            def.houseNumber,
-            def.locality,
-            def.street,
-          ]
-            .filter(Boolean)
-            .join(', ');
-          setSelectedLocationLabel(summary || 'Saved address');
-          // If saved address has coordinates, set them so listings use it
-          if (typeof def.latitude === 'number' && typeof def.longitude === 'number') {
-            setLocation(def.latitude, def.longitude);
-          }
-        } else {
-          setSelectedLocationLabel('Using live location');
-        }
-      } catch (error) {
-        console.error('Error loading default address:', error);
-      }
-    };
-    loadDefaultAddress();
-  }, []);
+  // Removed default address loading - we only use selected dropdown location
 
   // Invalidate cache when location changes significantly
   useEffect(() => {
-    if (latitude && longitude) {
-      invalidateCache({ latitude, longitude });
+    if (locationId) {
+      // Clear cache when location changes
+      invalidateCache({ latitude: 0, longitude: 0 }); // Dummy coordinates for cache invalidation
     }
-  }, [latitude, longitude, invalidateCache]);
+  }, [locationId, invalidateCache]);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -258,29 +153,34 @@ export default function HomePage() {
       return;
     }
 
-    // If user has not shared location yet, go to full-screen onboarding
-    if (!latitude || !longitude) {
-      router.replace('/onboarding/location');
+    // If user has not selected a location yet, show location modal instead of redirecting
+    if (!locationId) {
+      // Don't redirect, just show the modal
       return;
     }
 
     // Check cache first for instant loading
-    const location = { latitude, longitude };
-    const cachedRestaurants = getCachedRestaurants(location);
-    const cachedDishes = getCachedDishes(location);
+    if (latitude && longitude) {
+      const location = { latitude, longitude };
+      const cachedRestaurants = getCachedRestaurants(location);
+      const cachedDishes = getCachedDishes(location);
 
-    if (cachedRestaurants && cachedDishes) {
-      // Use cached data immediately for instant loading
-      setPopularRestaurants(cachedRestaurants);
-      setPopularDishes(cachedDishes);
-      setPopularLoading(false);
+      if (cachedRestaurants && cachedDishes) {
+        // Use cached data immediately for instant loading
+        setPopularRestaurants(cachedRestaurants);
+        setPopularDishes(cachedDishes);
+        setPopularLoading(false);
 
-      // Refresh in background if cache is stale
-      if (!isCacheValid(location)) {
-        loadPopularContent(true); // true = background refresh
+        // Refresh in background if cache is stale
+        if (!isCacheValid(location)) {
+          loadPopularContent(true); // true = background refresh
+        }
+      } else {
+        // No cache available, load fresh data
+        loadPopularContent();
       }
     } else {
-      // No cache available, load fresh data
+      // No coordinates available, load fresh data
       loadPopularContent();
     }
     
@@ -290,7 +190,7 @@ export default function HomePage() {
     loadNearbyNonFeaturedDishes();
     // Load recently ordered
     loadRecentlyOrdered();
-  }, [session, status, latitude, longitude]);
+  }, [session, status, locationId]);
 
   // Lightweight polling for DB changes (restaurants/menu): refetch on etag change
   useEffect(() => {
@@ -304,7 +204,7 @@ export default function HomePage() {
         if (etag && etag !== last) {
           last = etag;
           setUpdateEtag(etag);
-          if (latitude && longitude) {
+          if (locationId) {
             loadPopularContent(true);
             loadHacksOfTheDay();
             // background refresh with order preservation to avoid UI jumps
@@ -319,13 +219,14 @@ export default function HomePage() {
     return () => {
       stop = true;
     };
-  }, [latitude, longitude]);
+  }, [locationId]);
 
   // Handle veg mode changes - show loader and refresh data
   useEffect(() => {
     if (status !== 'authenticated') return;
     
-    if (latitude && longitude) {
+    // Only show animation if veg mode actually changed (not on initial page load)
+    if (locationId && prevVegOnly !== vegOnly) {
       // Show veg mode loader
       setShowVegModeLoader(true);
       setIsEnteringVegMode(vegOnly);
@@ -334,7 +235,9 @@ export default function HomePage() {
       const refreshVegData = async () => {
         try {
           // Clear cache for current location
-          invalidateCache({ latitude, longitude });
+          if (latitude && longitude) {
+            invalidateCache({ latitude, longitude });
+          }
           
           // Reload all data
           await Promise.all([
@@ -356,12 +259,15 @@ export default function HomePage() {
       
       refreshVegData();
     }
-  }, [vegOnly, latitude, longitude, invalidateCache]);
+    
+    // Update previous state
+    setPrevVegOnly(vegOnly);
+  }, [vegOnly, locationId, invalidateCache, prevVegOnly]);
 
   const loadHacksOfTheDay = async () => {
-    if (!latitude || !longitude) return;
+    if (!locationId) return;
     try {
-      const cacheKey = `hacks_of_day_v1_${vegOnly ? 'veg' : 'all'}_${latitude.toFixed(3)}_${longitude.toFixed(3)}`;
+      const cacheKey = `hacks_of_day_v1_${vegOnly ? 'veg' : 'all'}_${locationId}`;
       const cached = readCache<any[]>(cacheKey);
       if (cached?.data && cached.data.length > 0) {
         setHacksOfTheDay(cached.data);
@@ -370,7 +276,7 @@ export default function HomePage() {
         setHacksLoading(true);
       }
       const res = await fetch(
-        `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=${RADIUS}${vegOnly ? '&veg=1' : ''}`
+        `/api/restaurants/by-location?locationId=${locationId}${vegOnly ? '&veg=1' : ''}`
       );
       if (!res.ok) {
         setHacksOfTheDay([]);
@@ -527,11 +433,11 @@ export default function HomePage() {
     }
   };
 
-  // Load non-featured menu items from restaurants within 5km and split into 3 unique sections
+  // Load non-featured menu items from restaurants in selected location and split into 3 unique sections
   const loadNearbyNonFeaturedDishes = async (preserveOrder: boolean = false) => {
-    if (!latitude || !longitude) return;
+    if (!locationId) return;
     try {
-      const cacheKey = `nearby_dishes_v1_${vegOnly ? 'veg' : 'all'}_${latitude.toFixed(3)}_${longitude.toFixed(3)}`;
+      const cacheKey = `nearby_dishes_v1_${vegOnly ? 'veg' : 'all'}_${locationId}`;
       const cached = readCache<Dish[][]>(cacheKey);
       if (cached?.data && cached.data.length > 0 && !preserveOrder) {
         setNearbyDishesSections(cached.data);
@@ -539,9 +445,9 @@ export default function HomePage() {
       } else {
         setNearbyDishesLoading(true);
       }
-      // Get nearby restaurants (composite response includes item buckets)
+      // Get restaurants by location (composite response includes item buckets)
       const restaurantsRes = await fetch(
-        `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=${RADIUS}&limit=12${vegOnly ? '&veg=1' : ''}`
+        `/api/restaurants/by-location?locationId=${locationId}&limit=12${vegOnly ? '&veg=1' : ''}`
       );
       if (!restaurantsRes.ok) {
         setNearbyDishesSections([[], [], []]);
@@ -732,48 +638,41 @@ export default function HomePage() {
         setPopularLoading(true);
       }
 
-      // First get restaurants within 5km radius
+      // Get restaurants by location ID instead of coordinates
       let restaurantsData: RestaurantSummary[] = [];
       let dishesData: any[] = [];
 
-      if (latitude && longitude) {
+      if (locationId) {
         const restaurantsRes = await fetch(
-          `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=${RADIUS}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`
+          `/api/restaurants/by-location?locationId=${locationId}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`
         );
 
         if (restaurantsRes.ok) {
           const r = await restaurantsRes.json();
-          console.log('[Home] Nearby API raw count:', Array.isArray(r.data) ? r.data.length : 0);
-          console.log('[Home] Nearby API sample:', (r.data || []).slice(0, 5).map((x: any) => ({ id: x.id, name: x.name, status: x.status, isOpen: x.isOpen, distance: x.distance })));
+          console.log('[Home] Location-based API raw count:', Array.isArray(r.data) ? r.data.length : 0);
+          console.log('[Home] Location-based API sample:', (r.data || []).slice(0, 5).map((x: any) => ({ id: x.id, name: x.name, isOpen: x.isOpen })));
           const raw: any[] = Array.isArray(r.data) ? r.data : [];
           restaurantsData = raw.map((x: any) => ({
             id: x.id,
             name: x.name,
-            imageUrl: x.image, // API returns `image`
-            bannerImage: x.bannerImageUrl, // if present
+            imageUrl: x.image,
+            bannerImage: x.bannerImage,
             cuisineTypes: x.cuisineTypes,
             rating: x.rating,
-            estimatedDeliveryTime: x.deliveryTime, // API returns string like "25-35 min"
+            estimatedDeliveryTime: x.deliveryTime,
             distanceKm: x.distance,
             minimumOrderAmount: x.minimumOrderAmount,
-            // Derive isOpen from status when available
-            isOpen:
-              typeof x.isOpen === 'boolean'
-                ? x.isOpen
-                : String(x.status || '')
-                    .toUpperCase()
-                    .trim() === 'ACTIVE',
+            isOpen: x.isOpen,
             featuredItems: Array.isArray(x.featuredItems)
               ? x.featuredItems
               : [],
           }));
-          console.log('[Home] Nearby mapped count:', restaurantsData.length);
+          console.log('[Home] Location-based mapped count:', restaurantsData.length);
 
-          // Filter restaurants when veg mode is on
-          // Show all restaurants within radius regardless of veg-only mode
+          // Show all restaurants in the selected location
           const filteredRestaurants = restaurantsData;
-          console.log('[Home] Nearby final (no veg filter) count:', filteredRestaurants.length);
-          console.log('[Home] Nearby CLOSED count:', filteredRestaurants.filter(r => r.isOpen === false).length);
+          console.log('[Home] Location-based final count:', filteredRestaurants.length);
+          console.log('[Home] Location-based CLOSED count:', filteredRestaurants.filter(r => r.isOpen === false).length);
 
           // Always update UI state; skip only the loading spinner for background refresh
           setPopularRestaurants(filteredRestaurants);
@@ -781,14 +680,10 @@ export default function HomePage() {
         }
       }
 
-      // Featured dishes come directly from composite payload (attach distance)
+      // Featured dishes come directly from the location-based API response
       if (restaurantsData.length > 0) {
-        const raw = await (await fetch(
-          `/api/nearby-restaurants?latitude=${latitude}&longitude=${longitude}&radius=${RADIUS}${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`
-        )).json();
-        const arr: any[] = Array.isArray(raw?.data) ? raw.data : [];
-        const allowedRestaurantIds = new Set(arr.map((r: any) => r.id));
-        dishesData = arr.flatMap((r: any) => {
+        const allowedRestaurantIds = new Set(restaurantsData.map((r: any) => r.id));
+        dishesData = restaurantsData.flatMap((r: any) => {
           const items = Array.isArray(r.featuredItems) ? r.featuredItems : [];
           return items.map((it: any) => ({
             id: it.id,
@@ -797,30 +692,25 @@ export default function HomePage() {
             price: it.price,
             originalPrice: it.originalPrice,
             restaurant: r.name,
-            restaurantId: it.restaurantId,
+            restaurantId: r.id,
             dietaryTags: it.dietaryTags || [],
             stockLeft: typeof it.stockLeft === 'number' ? it.stockLeft : null,
             soldOut: it.soldOut === true,
-            distanceText:
-              typeof r.distance === 'number'
-                ? `${Number(r.distance).toFixed(1)} km`
-                : undefined,
+            distanceText: undefined, // No distance for location-based filtering
           }));
         });
-        // Defensive filter: only items from allowed restaurants
-        dishesData = dishesData.filter((d: any) => allowedRestaurantIds.has(d.restaurantId));
         // Popular Foods should show FEATURED items only
         dishesData = dishesData.filter((d: any) => allowedRestaurantIds.has(d.restaurantId));
         // Always update dishes in state
         setPopularDishes(dishesData);
       } else {
-        // No restaurants in 5km radius, so no dishes either
+        // No restaurants in selected location, so no dishes either
         dishesData = [];
         setPopularDishes([]);
       }
 
       // Cache the results for future use
-      if (latitude && longitude) {
+      if (locationId && latitude && longitude) {
         const location = { latitude, longitude };
         setCachedDishes(dishesData, location);
         setCachedRestaurants(restaurantsData, location);
@@ -846,7 +736,7 @@ export default function HomePage() {
         performInlineSearch(query);
       }, 300); // 300ms debounce
     };
-  }, [latitude, longitude]);
+  }, [locationId]);
 
   const performInlineSearch = async (query: string) => {
     const trimmed = query.trim();
@@ -856,16 +746,16 @@ export default function HomePage() {
       setRestaurantResults([]);
       return;
     }
-    if (!latitude || !longitude) {
+    if (!locationId) {
       toast.error(
-        'Location is required for search. Please enable location access.'
+        'Location is required for search. Please select a location.'
       );
       return;
     }
     try {
       setSearchLoading(true);
       const res = await fetch(
-        `/api/restaurants/search?query=${encodeURIComponent(trimmed)}&latitude=${latitude}&longitude=${longitude}&radius=${RADIUS}${vegOnly ? '&veg=1' : ''}`
+        `/api/restaurants/search?query=${encodeURIComponent(trimmed)}&locationId=${locationId}${vegOnly ? '&veg=1' : ''}`
       );
       const data = await res.json();
       if (!res.ok || !data?.success) throw new Error('Search failed');
@@ -1034,6 +924,27 @@ export default function HomePage() {
     return <div className="min-h-screen" />;
   }
 
+  // Show location modal if no location is set
+  if (!locationId) {
+    return (
+      <div className="min-h-screen bg-[#d3fb6b]">
+        <LocationOnboarding 
+          isModal={true} 
+          onClose={() => {}} // No-op for automatic modal
+        />
+      </div>
+    );
+  }
+
+  // Debug location values
+  console.log('🏠 Home page render:', { 
+    latitude, 
+    longitude, 
+    status, 
+    session: !!session,
+    shouldShowModal: (!latitude || !longitude)
+  });
+
   return (
     <div className="min-h-screen bg-[#d3fb6b]">
       {/* Location Change Loader */}
@@ -1044,6 +955,14 @@ export default function HomePage() {
         isVisible={showVegModeLoader} 
         isEntering={isEnteringVegMode} 
       />
+      
+      {/* Location Modal - Manual trigger */}
+      {showLocationModal && (
+        <LocationOnboarding 
+          isModal={true} 
+          onClose={() => setShowLocationModal(false)} 
+        />
+      )}
       {/* Full-screen onboarding handles location; fallback UI kept for legacy */}
       {/* {showLocationPrompt && (
         <LocationPrompt
@@ -1061,8 +980,8 @@ export default function HomePage() {
       )} */}
 
       <HomeHeader
-        locationLabel={selectedLocationLabel}
-        onLocationClick={() => setAddressSheetOpen(true)}
+        locationLabel={locationName || 'Select location'}
+        onLocationClick={() => setShowLocationModal(true)}
         onSearch={(q) => debouncedSearch(q)}
         onDishSelect={(m) => {
           // Map suggestion item to Dish and open modal inline without navigating
@@ -1091,83 +1010,7 @@ export default function HomePage() {
         resetSignal={headerResetSignal}
       />
 
-      <AddressSheet
-        open={addressSheetOpen}
-        onOpenChange={setAddressSheetOpen}
-        onSelect={(addr) => {
-          // If selection came from search suggestions, show `name, address` if available
-          if (addr.id === 'search') {
-            // Ensure the selected coordinates are set globally
-            if (typeof addr.latitude === 'number' && typeof addr.longitude === 'number') {
-              setLocation(addr.latitude!, addr.longitude!);
-              try {
-                localStorage.setItem('aasta_selected_coords_v1', JSON.stringify({ lat: addr.latitude, lng: addr.longitude }));
-              } catch {}
-            }
-            const name = (addr as any).locality ? String((addr as any).locality) : '';
-            const full = [name, addr.street].filter(Boolean).join(', ');
-            const words = full.split(/\s+/);
-            const truncated = words.length > 50 ? words.slice(0, 50).join(' ') + '…' : full;
-            setSelectedLocationLabel(truncated);
-            try {
-              localStorage.setItem('aasta_selected_label_v1', truncated);
-            } catch {}
-          } else if (addr.id !== 'live' && (addr.houseNumber || addr.locality || addr.street)) {
-            // For saved addresses, show house no, locality, street area
-            const summary = [addr.houseNumber, addr.locality, addr.street]
-              .filter(Boolean)
-              .join(', ');
-            setSelectedLocationLabel(summary || 'Saved address');
-            // Clear any previously stored manual coordinates so defaults can take over next time
-            try {
-              localStorage.removeItem('aasta_selected_coords_v1');
-              localStorage.removeItem('aasta_selected_label_v1');
-            } catch {}
-          } else {
-            // For live location, use the reverse-geocoded address with truncation
-            const label = addr.street || 'Using live location';
-            const words = String(label).split(/\s+/);
-            const truncated = words.length > 50 ? words.slice(0, 50).join(' ') + '…' : String(label);
-            setSelectedLocationLabel(truncated);
-            // Clear stored manual selection when switching to live
-            try {
-              localStorage.removeItem('aasta_selected_coords_v1');
-              localStorage.removeItem('aasta_selected_label_v1');
-            } catch {}
-          }
-          setAddressSheetOpen(false);
-          // Show location change loader instead of page refresh
-          setShowLocationChangeLoader(true);
-          setIsRelocating(true);
-          
-          // Refresh data in background without page reload
-          const refreshData = async () => {
-            try {
-              // Clear cache for new location
-              invalidateCache({ latitude: addr.latitude!, longitude: addr.longitude! });
-              
-              // Reload all data
-              await Promise.all([
-                loadPopularContent(),
-                loadHacksOfTheDay(),
-                loadNearbyNonFeaturedDishes(),
-                loadRecentlyOrdered()
-              ]);
-              
-              // Hide loader after data is loaded
-              setTimeout(() => {
-                setShowLocationChangeLoader(false);
-                setIsRelocating(false);
-              }, 1500); // Show loader for 1.5 seconds
-            } catch (error) {
-              console.error('Error refreshing data:', error);
-              setShowLocationChangeLoader(false);
-              setIsRelocating(false);
-            }
-          };
-          refreshData();
-        }}
-      />
+      {/* Removed AddressSheet - we only use location modal */}
 
       {/* Curved Marquee for Offers
       <div className="relative -mt-4">
