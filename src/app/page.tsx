@@ -27,9 +27,6 @@ import { readCache, writeCache } from '@/lib/smart-cache';
 import LocationChangeLoader from '@/components/ui/location-change-loader';
 import VegModeLoader from '@/components/ui/veg-mode-loader';
 import { LocationOnboarding } from '@/components/ui/location-onboarding';
-import { dataPreloader } from '@/lib/data-preloader';
-import NavigationOverlay from '@/components/navigation-overlay';
-import { navigationService } from '@/lib/navigation-service';
 // Custom inline animation (no JSON)
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -117,6 +114,155 @@ export default function HomePage() {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
+  // Function to get and process preloaded data from splash screen
+  const getPreloadedData = () => {
+    try {
+      const stored = sessionStorage.getItem('aasta_preloaded_data');
+      if (!stored) return null;
+      
+      const preloadedData = JSON.parse(stored);
+      
+      // Check if data is for current location
+      if (preloadedData.locationId !== locationId) {
+        return null;
+      }
+      
+      // Check if data is fresh (less than 5 minutes old)
+      const isFresh = Date.now() - preloadedData.timestamp < 5 * 60 * 1000;
+      if (!isFresh) return null;
+      
+      // Process the preloaded data into the expected format
+      const processedData: any = {
+        success: true,
+        restaurants: [],
+        dishes: [],
+        hacks: [],
+        nearbyDishes: [],
+        recentOrders: []
+      };
+      
+      // Process each result
+      preloadedData.results.forEach((result: any) => {
+        if (result.success && result.data) {
+          switch (result.type) {
+            case 'popular':
+              if (Array.isArray(result.data)) {
+                processedData.restaurants = result.data.map((r: any) => ({
+                  id: r.id,
+                  name: r.name,
+                  imageUrl: r.image,
+                  bannerImage: r.bannerImage,
+                  cuisineTypes: r.cuisineTypes,
+                  rating: r.rating,
+                  estimatedDeliveryTime: r.deliveryTime,
+                  distanceKm: r.distance,
+                  minimumOrderAmount: r.minimumOrderAmount,
+                  isOpen: r.isOpen,
+                  featuredItems: r.featuredItems || []
+                }));
+                
+                // Extract featured dishes
+                processedData.dishes = result.data.flatMap((r: any) => 
+                  (r.featuredItems || []).map((item: any) => ({
+                    id: item.id,
+                    name: item.name,
+                    image: item.image || '/images/dish-placeholder.svg',
+                    price: item.price,
+                    originalPrice: item.originalPrice,
+                    restaurant: r.name,
+                    restaurantId: r.id,
+                    dietaryTags: item.dietaryTags || [],
+                    stockLeft: item.stockLeft,
+                    soldOut: item.soldOut === true
+                  }))
+                );
+              }
+              break;
+              
+            case 'hacks':
+              if (Array.isArray(result.data)) {
+                const hacks: any[] = [];
+                result.data.forEach((r: any) => {
+                  (r.hackItems || []).forEach((item: any) => {
+                    const isVeg = Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg');
+                    if (vegOnly && !isVeg) return;
+                    
+                    hacks.push({
+                      id: item.id,
+                      name: item.name,
+                      image: item.image || '/images/dish-placeholder.svg',
+                      price: item.price,
+                      originalPrice: item.originalPrice,
+                      restaurant: r.name,
+                      restaurantId: r.id,
+                      dietaryTags: item.dietaryTags || [],
+                      stockLeft: item.stockLeft,
+                      soldOut: item.soldOut === true
+                    });
+                  });
+                });
+                processedData.hacks = hacks;
+              }
+              break;
+              
+            case 'nearby':
+              if (Array.isArray(result.data)) {
+                const allDishes: any[] = [];
+                result.data.forEach((r: any) => {
+                  (r.nonFeaturedItems || []).forEach((item: any) => {
+                    const isVeg = Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg');
+                    if (vegOnly && !isVeg) return;
+                    
+                    allDishes.push({
+                      id: item.id,
+                      name: item.name,
+                      image: item.image || '/images/dish-placeholder.svg',
+                      price: item.price,
+                      originalPrice: item.originalPrice,
+                      restaurant: r.name,
+                      restaurantId: r.id,
+                      dietaryTags: item.dietaryTags || [],
+                      stockLeft: item.stockLeft,
+                      soldOut: item.soldOut === true
+                    });
+                  });
+                });
+                
+                // Split into 3 sections
+                const shuffled = allDishes.sort(() => Math.random() - 0.5);
+                const sectionSize = Math.ceil(shuffled.length / 3);
+                processedData.nearbyDishes = [
+                  shuffled.slice(0, sectionSize),
+                  shuffled.slice(sectionSize, sectionSize * 2),
+                  shuffled.slice(sectionSize * 2)
+                ];
+              }
+              break;
+              
+            case 'recent':
+              if (result.data?.orders) {
+                processedData.recentOrders = result.data.orders.slice(0, 4).map((order: any) => ({
+                  id: order.id,
+                  name: order.items?.[0]?.name || 'Order',
+                  image: order.items?.[0]?.image || '/images/dish-placeholder.svg',
+                  price: order.totalAmount,
+                  restaurant: order.restaurant?.name || 'Restaurant',
+                  restaurantId: order.restaurantId,
+                  orderNumber: order.orderNumber
+                }));
+              }
+              break;
+          }
+        }
+      });
+      
+      return processedData;
+    } catch (error) {
+      console.error('Error processing preloaded data:', error);
+      return null;
+    }
+  };
+
   // Function to refresh data (can be called from header)
   const refreshData = async () => {
     // setIsPullRefreshing(true);
@@ -172,27 +318,32 @@ export default function HomePage() {
     console.log('🏠 Loading data for locationId:', locationId);
     console.log('🏠 Location state:', { latitude, longitude, locationName, locationId });
     
-    // Check for preloaded data first
-    const preloadedData = dataPreloader.getCachedData(locationId, vegOnly);
+    // Check for preloaded data first (from splash screen)
+    const preloadedData = getPreloadedData();
     if (preloadedData && preloadedData.success) {
-      console.log('🚀 Using preloaded data:', {
-        restaurants: preloadedData.restaurants.length,
-        dishes: preloadedData.dishes.length,
-        hacks: preloadedData.hacks.length,
-        nearbyDishes: preloadedData.nearbyDishes.flat().length,
-        recentOrders: preloadedData.recentOrders.length
+      console.log('🚀 Using preloaded data from splash screen:', {
+        restaurants: preloadedData.restaurants?.length || 0,
+        dishes: preloadedData.dishes?.length || 0,
+        hacks: preloadedData.hacks?.length || 0,
+        nearbyDishes: preloadedData.nearbyDishes?.flat().length || 0,
+        recentOrders: preloadedData.recentOrders?.length || 0
       });
       
-      // Use preloaded data immediately
-      setPopularRestaurants(preloadedData.restaurants);
-      setPopularDishes(preloadedData.dishes);
-      setHacksOfTheDay(preloadedData.hacks);
-      setNearbyDishesSections(preloadedData.nearbyDishes);
-      setRecentDishes(preloadedData.recentOrders);
+      // Use preloaded data immediately for instant loading
+      if (preloadedData.restaurants) setPopularRestaurants(preloadedData.restaurants);
+      if (preloadedData.dishes) setPopularDishes(preloadedData.dishes);
+      if (preloadedData.hacks) setHacksOfTheDay(preloadedData.hacks);
+      if (preloadedData.nearbyDishes) setNearbyDishesSections(preloadedData.nearbyDishes);
+      if (preloadedData.recentOrders) setRecentDishes(preloadedData.recentOrders);
+      
+      // Set loading states to false for instant UI
       setPopularLoading(false);
       setHacksLoading(false);
       setNearbyDishesLoading(false);
       setRecentLoading(false);
+      
+      // Clear preloaded data to free up memory
+      sessionStorage.removeItem('aasta_preloaded_data');
       
       // Refresh in background to ensure data is up-to-date
       setTimeout(() => {
@@ -987,9 +1138,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#d3fb6b]">
-      {/* Navigation Overlay */}
-      <NavigationOverlay />
-      
       {/* Location Change Loader */}
       {showLocationChangeLoader && <LocationChangeLoader />}
       
@@ -1048,14 +1196,8 @@ export default function HomePage() {
           openProduct(dish);
         }}
         onFilterClick={() => router.push('/search')}
-        onCartClick={() => {
-          navigationService.startNavigation('/cart');
-          setTimeout(() => router.push('/cart'), 50);
-        }}
-        onProfileClick={() => {
-          navigationService.startNavigation('/profile');
-          setTimeout(() => router.push('/profile'), 50);
-        }}
+        onCartClick={() => router.push('/cart')}
+        onProfileClick={() => router.push('/profile')}
         onRefresh={refreshData}
         className="z-10"
         resetSignal={headerResetSignal}

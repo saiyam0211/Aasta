@@ -16,7 +16,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Fredoka } from 'next/font/google';
 import { useVegMode } from '@/contexts/VegModeContext';
-import { useNavigationService } from '@/lib/navigation-service';
 
 // Import Fredoka font
 const fredoka = Fredoka({ subsets: ['latin'], weight: ['400', '700'] });
