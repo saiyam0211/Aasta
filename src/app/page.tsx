@@ -152,7 +152,7 @@ export default function HomePage() {
       loadNearbyNonFeaturedDishes();
       loadRecentlyOrdered();
     }
-  }, [locationId, vegOnly, getCachedData, setPopularRestaurants, setPopularDishes, setHacksOfTheDay, setNearbyDishesSections, setRecentDishes, setPopularLoading, setHacksLoading, setNearbyDishesLoading, setRecentLoading, loadPopularContent, loadHacksOfTheDay, loadNearbyNonFeaturedDishes, loadRecentlyOrdered]);
+  }, [locationId, vegOnly, getCachedData, setPopularRestaurants, setPopularDishes, setHacksOfTheDay, setNearbyDishesSections, setRecentDishes, setPopularLoading, setHacksLoading, setNearbyDishesLoading, setRecentLoading]);
 
   // Individual data loading functions for cache
   const loadPopularContentData = async () => {
