@@ -173,7 +173,7 @@ export default function HomePage() {
                     restaurantId: r.id,
                     dietaryTags: item.dietaryTags || [],
                     stockLeft: item.stockLeft,
-                    soldOut: item.soldOut === true
+                    soldOut: item.soldOut === true || item.stockLeft === null
                   }))
                 );
               }
@@ -355,9 +355,9 @@ export default function HomePage() {
     } else {
       // No preloaded data, load normally
       loadPopularContent();
-      loadHacksOfTheDay();
-      loadNearbyNonFeaturedDishes();
-      loadRecentlyOrdered();
+    loadHacksOfTheDay();
+    loadNearbyNonFeaturedDishes();
+    loadRecentlyOrdered();
     }
   }, [session, status, locationId]);
 
@@ -408,8 +408,8 @@ export default function HomePage() {
       // Show veg mode loader
       setShowVegModeLoader(true);
       setIsEnteringVegMode(vegOnly);
-      
-      // Clear cache and reload when veg mode changes
+    
+    // Clear cache and reload when veg mode changes
       const refreshVegData = async () => {
         try {
           // Clear cache for current location (using dummy coordinates since we use locationId-based caching)
@@ -449,7 +449,7 @@ export default function HomePage() {
         setHacksOfTheDay(cached.data);
         setHacksLoading(false);
       } else {
-        setHacksLoading(true);
+      setHacksLoading(true);
       }
       const res = await fetch(
         `/api/restaurants/by-location?locationId=${locationId}${vegOnly ? '&veg=1' : ''}`
@@ -520,7 +520,7 @@ export default function HomePage() {
         setRecentDishes(cached.data.slice(0, 4));
         setRecentLoading(false);
       } else {
-        setRecentLoading(true);
+      setRecentLoading(true);
       }
       const res = await fetch(`/api/orders?limit=4&paymentStatus=COMPLETED&_=${Date.now()}`);
       if (!res.ok) {
@@ -583,7 +583,7 @@ export default function HomePage() {
             soldOut:
               it?.menuItem?.available === false ||
               (typeof it?.menuItem?.stockLeft === 'number' && it?.menuItem?.stockLeft <= 0) ||
-              it?.menuItem?.stockLeft === null,
+              (it?.menuItem?.stockLeft === null),
             distanceText: distText,
             // Keep createdAt implicitly via sort stage
           } as Dish & { _ts?: number });
@@ -619,7 +619,7 @@ export default function HomePage() {
         setNearbyDishesSections(cached.data);
         setNearbyDishesLoading(false);
       } else {
-        setNearbyDishesLoading(true);
+      setNearbyDishesLoading(true);
       }
       // Get restaurants by location (composite response includes item buckets)
       const restaurantsRes = await fetch(
@@ -1117,13 +1117,13 @@ export default function HomePage() {
   }
 
   if (showLocationModalAfterSignup) {
-    return (
-      <div className="min-h-screen bg-[#d3fb6b]">
+  return (
+    <div className="min-h-screen bg-[#d3fb6b]">
         <LocationOnboarding 
           isModal={true} 
           onClose={() => setShowLocationModalAfterSignup(false)}
         />
-      </div>
+          </div>
     );
   }
 

@@ -741,7 +741,7 @@ export default function RestaurantDetailPage() {
                     description: item.description,
                     dietaryTags: item.dietaryTags || [],
                     distanceText: distanceText || undefined,
-                    soldOut: (item as any).stockLeft <= 0,
+                    soldOut: (item as any).stockLeft <= 0 || (item as any).stockLeft === null,
                   } as Dish;
                 })}
                 onAdd={(dish) => {

@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
           soldOut:
             it.available === false ||
             (typeof it.stockLeft === 'number' && it.stockLeft <= 0) ||
-            it.stockLeft === null ||
+            (it.stockLeft === null) ||
             String(restaurant.status || '').toUpperCase() !== 'ACTIVE',
         };
       };

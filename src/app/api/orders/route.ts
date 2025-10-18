@@ -669,7 +669,7 @@ export async function GET(request: NextRequest) {
               (item as any)?.menuItem?.available === false ||
               (typeof (item as any)?.menuItem?.stockLeft === 'number' &&
                 (item as any).menuItem.stockLeft <= 0) ||
-              (item as any)?.menuItem?.stockLeft === null ||
+              ((item as any).menuItem.stockLeft === null) ||
               String((order as any)?.restaurant?.status || '').toUpperCase() !== 'ACTIVE';
             return {
               ...item,
