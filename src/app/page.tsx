@@ -26,7 +26,7 @@ import { HackOfTheDay } from '@/components/ui/deal-of-the-day';
 import { readCache, writeCache } from '@/lib/smart-cache';
 import LocationChangeLoader from '@/components/ui/location-change-loader';
 import VegModeLoader from '@/components/ui/veg-mode-loader';
-import { LocationOnboardingModal } from '@/components/ui/location-onboarding-modal';
+import LocationOnboarding from '@/app/onboarding/location/page';
 // Custom inline animation (no JSON)
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -928,7 +928,7 @@ export default function HomePage() {
   if (!locationId) {
     return (
       <div className="min-h-screen bg-[#d3fb6b]">
-        <LocationOnboardingModal 
+        <LocationOnboarding 
           isModal={true} 
           onClose={() => {}} // No-op for automatic modal
         />
@@ -958,7 +958,7 @@ export default function HomePage() {
       
       {/* Location Modal - Manual trigger */}
       {showLocationModal && (
-        <LocationOnboardingModal 
+        <LocationOnboarding 
           isModal={true} 
           onClose={() => setShowLocationModal(false)} 
         />
