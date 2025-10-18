@@ -923,11 +923,6 @@ export default function HomePage() {
   // Check if this is the first time after signup
   const [showLocationModalAfterSignup, setShowLocationModalAfterSignup] = useState(false);
 
-  // Early return rendering (after all hooks) to avoid hook-order changes
-  if (status === 'loading' || !session) {
-    return <div className="min-h-screen" />;
-  }
-  
   useEffect(() => {
     if (status === 'authenticated' && !locationId) {
       // Check if user just signed up (you can add more sophisticated logic here)
@@ -938,6 +933,11 @@ export default function HomePage() {
       }
     }
   }, [status, locationId]);
+
+  // Early return rendering (after all hooks) to avoid hook-order changes
+  if (status === 'loading' || !session) {
+    return <div className="min-h-screen" />;
+  }
 
   if (showLocationModalAfterSignup) {
     return (
