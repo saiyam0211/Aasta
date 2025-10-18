@@ -113,7 +113,7 @@ export default function InitialSplash() {
       </div>
       
       {/* Optional: Show preload progress */}
-      {preloadProgress > 0 && preloadProgress < 100 && (
+      {/* {preloadProgress > 0 && preloadProgress < 100 && (
         <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2">
           <div className="bg-black/20 backdrop-blur-sm rounded-full px-4 py-2">
             <div className="text-white text-sm font-medium">
@@ -121,7 +121,7 @@ export default function InitialSplash() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }
