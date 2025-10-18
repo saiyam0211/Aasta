@@ -555,12 +555,7 @@ export function HomeHeader({
               onChange={(e) => {
                 const next = e.target.checked;
                 setVegOnly(next);
-                try {
-                  // Force a hard refresh so APIs refetch immediately
-                  if (typeof window !== 'undefined') {
-                    window.location.reload();
-                  }
-                } catch {}
+                // Remove the page reload - let the useEffect in page.tsx handle the animation and data refresh
               }}
               aria-label="Veg mode"
             />

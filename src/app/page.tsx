@@ -24,6 +24,8 @@ import { FoodHacksPromo } from '@/components/ui/food-hacks-promo';
 import { useVegMode } from '@/contexts/VegModeContext';
 import { HackOfTheDay } from '@/components/ui/deal-of-the-day';
 import { readCache, writeCache } from '@/lib/smart-cache';
+import LocationChangeLoader from '@/components/ui/location-change-loader';
+import VegModeLoader from '@/components/ui/veg-mode-loader';
 // Custom inline animation (no JSON)
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -91,6 +93,9 @@ export default function HomePage() {
   const [vegToggleAnimating, setVegToggleAnimating] = useState(false);
   // const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const [isRelocating, setIsRelocating] = useState(false);
+  const [showLocationChangeLoader, setShowLocationChangeLoader] = useState(false);
+  const [showVegModeLoader, setShowVegModeLoader] = useState(false);
+  const [isEnteringVegMode, setIsEnteringVegMode] = useState(true);
 
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
@@ -316,22 +321,40 @@ export default function HomePage() {
     };
   }, [latitude, longitude]);
 
-  // Handle veg mode changes - force refresh
+  // Handle veg mode changes - show loader and refresh data
   useEffect(() => {
     if (status !== 'authenticated') return;
     
-    // Clear cache and reload when veg mode changes
     if (latitude && longitude) {
-      // trigger quick UI transition immediately
-      setVegToggleAnimating(true);
-      const t = setTimeout(() => setVegToggleAnimating(false), 220);
-      // background refresh (non-blocking, will reconcile after)
-      invalidateCache({ latitude, longitude });
-      loadPopularContent(true);
-      loadHacksOfTheDay();
-      loadNearbyNonFeaturedDishes();
-      loadRecentlyOrdered();
-      return () => clearTimeout(t);
+      // Show veg mode loader
+      setShowVegModeLoader(true);
+      setIsEnteringVegMode(vegOnly);
+      
+      // Clear cache and reload when veg mode changes
+      const refreshVegData = async () => {
+        try {
+          // Clear cache for current location
+          invalidateCache({ latitude, longitude });
+          
+          // Reload all data
+          await Promise.all([
+            loadPopularContent(true),
+            loadHacksOfTheDay(),
+            loadNearbyNonFeaturedDishes(),
+            loadRecentlyOrdered()
+          ]);
+          
+          // Hide loader after data is loaded
+          setTimeout(() => {
+            setShowVegModeLoader(false);
+          }, 1200); // Show loader for 1.2 seconds
+        } catch (error) {
+          console.error('Error refreshing veg mode data:', error);
+          setShowVegModeLoader(false);
+        }
+      };
+      
+      refreshVegData();
     }
   }, [vegOnly, latitude, longitude, invalidateCache]);
 
@@ -1013,22 +1036,14 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#d3fb6b]">
-      {isRelocating && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white">
-          {/* Spinner */}
-          <div className="h-24 w-24 rounded-full border-4 border-[#002a01] border-t-transparent animate-spin" />
-          {/* Dots loader */}
-          <div className="mt-6 flex items-center gap-2">
-            <div className="h-2 w-2 animate-bounce rounded-full bg-[#002a01]" />
-            <div className="h-2 w-2 animate-bounce rounded-full bg-[#002a01] [animation-delay:120ms]" />
-            <div className="h-2 w-2 animate-bounce rounded-full bg-[#002a01] [animation-delay:240ms]" />
-          </div>
-          <div className="mt-4 text-center">
-            <p className="text-lg font-semibold text-[#002a01]">Changing address…</p>
-            <p className="mt-1 text-sm text-gray-600">Fetching hacks for you</p>
-          </div>
-        </div>
-      )}
+      {/* Location Change Loader */}
+      {showLocationChangeLoader && <LocationChangeLoader />}
+      
+      {/* Veg Mode Loader */}
+      <VegModeLoader 
+        isVisible={showVegModeLoader} 
+        isEntering={isEnteringVegMode} 
+      />
       {/* Full-screen onboarding handles location; fallback UI kept for legacy */}
       {/* {showLocationPrompt && (
         <LocationPrompt
@@ -1121,15 +1136,36 @@ export default function HomePage() {
             } catch {}
           }
           setAddressSheetOpen(false);
-          // Hard refresh with loader to reload all data for new coordinates
+          // Show location change loader instead of page refresh
+          setShowLocationChangeLoader(true);
           setIsRelocating(true);
-          try {
-            setTimeout(() => {
-              if (typeof window !== 'undefined') {
-                window.location.replace(window.location.pathname);
-              }
-            }, 120);
-          } catch {}
+          
+          // Refresh data in background without page reload
+          const refreshData = async () => {
+            try {
+              // Clear cache for new location
+              invalidateCache({ latitude: addr.latitude!, longitude: addr.longitude! });
+              
+              // Reload all data
+              await Promise.all([
+                loadPopularContent(),
+                loadHacksOfTheDay(),
+                loadNearbyNonFeaturedDishes(),
+                loadRecentlyOrdered()
+              ]);
+              
+              // Hide loader after data is loaded
+              setTimeout(() => {
+                setShowLocationChangeLoader(false);
+                setIsRelocating(false);
+              }, 1500); // Show loader for 1.5 seconds
+            } catch (error) {
+              console.error('Error refreshing data:', error);
+              setShowLocationChangeLoader(false);
+              setIsRelocating(false);
+            }
+          };
+          refreshData();
         }}
       />
 
