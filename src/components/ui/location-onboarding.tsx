@@ -69,7 +69,7 @@ export function LocationOnboarding({ isModal = false, onClose }: LocationOnboard
     // TODO: Store actual coordinates in the Location model
     const defaultLat = 12.9716;
     const defaultLng = 77.5946;
-    setLocation(defaultLat, defaultLng, `${location.name}, ${location.city}`);
+    setLocation(defaultLat, defaultLng, `${location.name}, ${location.city}`, location.id);
     
     if (isModal && onClose) {
       onClose();

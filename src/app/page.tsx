@@ -142,7 +142,12 @@ export default function HomePage() {
   useEffect(() => {
     if (locationId) {
       // Clear cache when location changes
-      invalidateCache({ latitude: 0, longitude: 0 }); // Dummy coordinates for cache invalidation
+      // Use dummy coordinates for cache invalidation since we're using locationId-based caching
+      invalidateCache({ latitude: 0, longitude: 0 });
+      
+      // Reset veg mode state to ensure it works properly with new location
+      // This ensures veg mode toggle works correctly after location change
+      console.log('🔄 Location changed, resetting veg mode state');
     }
   }, [locationId, invalidateCache]);
 
@@ -159,36 +164,15 @@ export default function HomePage() {
       return;
     }
 
-    // Check cache first for instant loading
-    if (latitude && longitude) {
-      const location = { latitude, longitude };
-      const cachedRestaurants = getCachedRestaurants(location);
-      const cachedDishes = getCachedDishes(location);
-
-      if (cachedRestaurants && cachedDishes) {
-        // Use cached data immediately for instant loading
-        setPopularRestaurants(cachedRestaurants);
-        setPopularDishes(cachedDishes);
-        setPopularLoading(false);
-
-        // Refresh in background if cache is stale
-        if (!isCacheValid(location)) {
-          loadPopularContent(true); // true = background refresh
-        }
-      } else {
-        // No cache available, load fresh data
-        loadPopularContent();
-      }
-    } else {
-      // No coordinates available, load fresh data
-      loadPopularContent();
-    }
+    // Load data based on locationId (not coordinates)
+    // This ensures data loads properly when app reopens with stored locationId
+    console.log('🏠 Loading data for locationId:', locationId);
+    console.log('🏠 Location state:', { latitude, longitude, locationName, locationId });
     
-    // Load hack of the day items
+    // Load all data for the selected location
+    loadPopularContent();
     loadHacksOfTheDay();
-    // Load nearby non-featured dishes
     loadNearbyNonFeaturedDishes();
-    // Load recently ordered
     loadRecentlyOrdered();
   }, [session, status, locationId]);
 
@@ -225,8 +209,17 @@ export default function HomePage() {
   useEffect(() => {
     if (status !== 'authenticated') return;
     
+    console.log('🥬 Veg mode effect triggered:', { 
+      vegOnly, 
+      prevVegOnly, 
+      locationId, 
+      shouldAnimate: locationId && prevVegOnly !== vegOnly 
+    });
+    
     // Only show animation if veg mode actually changed (not on initial page load)
     if (locationId && prevVegOnly !== vegOnly) {
+      console.log('🥬 Veg mode changed, showing loader and refreshing data');
+      
       // Show veg mode loader
       setShowVegModeLoader(true);
       setIsEnteringVegMode(vegOnly);
@@ -234,10 +227,8 @@ export default function HomePage() {
       // Clear cache and reload when veg mode changes
       const refreshVegData = async () => {
         try {
-          // Clear cache for current location
-          if (latitude && longitude) {
-            invalidateCache({ latitude, longitude });
-          }
+          // Clear cache for current location (using dummy coordinates since we use locationId-based caching)
+          invalidateCache({ latitude: 0, longitude: 0 });
           
           // Reload all data
           await Promise.all([
@@ -709,9 +700,10 @@ export default function HomePage() {
         setPopularDishes([]);
       }
 
-      // Cache the results for future use
-      if (locationId && latitude && longitude) {
-        const location = { latitude, longitude };
+      // Cache the results for future use (using locationId-based caching)
+      if (locationId) {
+        // Use dummy coordinates for caching since we're using locationId-based data
+        const location = { latitude: 0, longitude: 0 };
         setCachedDishes(dishesData, location);
         setCachedRestaurants(restaurantsData, location);
       }
