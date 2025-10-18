@@ -21,7 +21,11 @@ interface LocationOnboardingProps {
   onClose?: () => void;
 }
 
-export default function LocationOnboarding(props: LocationOnboardingProps = {}) {
+export default function LocationOnboardingPage() {
+  return <LocationOnboarding />;
+}
+
+export function LocationOnboarding(props: LocationOnboardingProps = {}) {
   const { isModal = false, onClose } = props;
   const router = useRouter();
   const { latitude, longitude, setLocation } = useLocationStore();
