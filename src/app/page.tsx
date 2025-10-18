@@ -24,6 +24,7 @@ import { FoodHacksPromo } from '@/components/ui/food-hacks-promo';
 import { useVegMode } from '@/contexts/VegModeContext';
 import { HackOfTheDay } from '@/components/ui/deal-of-the-day';
 import { readCache, writeCache } from '@/lib/smart-cache';
+import { useAppCache } from '@/hooks/useAppCache';
 import LocationChangeLoader from '@/components/ui/location-change-loader';
 import VegModeLoader from '@/components/ui/veg-mode-loader';
 import { LocationOnboarding } from '@/components/ui/location-onboarding';
@@ -48,6 +49,7 @@ export default function HomePage() {
   const { latitude, longitude, locationName, locationId, setLocation } = useLocationStore();
   const { cart, addItem } = useCartStore();
   const { vegOnly, onVegModeToggle } = useVegMode();
+  const { getCachedData, setCachedData, invalidateCache: invalidateAppCache } = useAppCache();
   const {
     setRestaurants: setCachedRestaurants,
     setDishes: setCachedDishes,
@@ -113,6 +115,144 @@ export default function HomePage() {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+
+  // Load home data using app cache for instant loading
+  const loadHomeDataWithCache = async () => {
+    try {
+      console.log('🏠 Loading home data with cache for locationId:', locationId);
+      
+      // Load all data in parallel using cache
+      const [restaurants, dishes, hacks, nearbyDishes, recentOrders] = await Promise.all([
+        getCachedData('popular_restaurants', () => loadPopularContentData(), vegOnly),
+        getCachedData('popular_dishes', () => loadPopularDishesData(), vegOnly),
+        getCachedData('hacks_of_day', () => loadHacksOfTheDayData(), vegOnly),
+        getCachedData('nearby_dishes', () => loadNearbyDishesData(), vegOnly),
+        getCachedData('recent_orders', () => loadRecentOrdersData(), vegOnly)
+      ]);
+
+      // Set data immediately for instant UI
+      setPopularRestaurants(restaurants);
+      setPopularDishes(dishes);
+      setHacksOfTheDay(hacks);
+      setNearbyDishesSections(nearbyDishes);
+      setRecentDishes(recentOrders);
+      
+      // Set loading states to false
+      setPopularLoading(false);
+      setHacksLoading(false);
+      setNearbyDishesLoading(false);
+      setRecentLoading(false);
+      
+      console.log('✅ Home data loaded from cache');
+    } catch (error) {
+      console.error('❌ Error loading home data:', error);
+      // Fallback to normal loading
+      loadPopularContent();
+      loadHacksOfTheDay();
+      loadNearbyNonFeaturedDishes();
+      loadRecentlyOrdered();
+    }
+  };
+
+  // Individual data loading functions for cache
+  const loadPopularContentData = async () => {
+    const response = await fetch(`/api/restaurants/by-location?locationId=${locationId}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`);
+    const data = await response.json();
+    return data.data || [];
+  };
+
+  const loadPopularDishesData = async () => {
+    const response = await fetch(`/api/restaurants/by-location?locationId=${locationId}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`);
+    const data = await response.json();
+    const restaurants = data.data || [];
+    return restaurants.flatMap((r: any) => 
+      (r.featuredItems || []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        image: item.image || '/images/dish-placeholder.svg',
+        price: item.price,
+        originalPrice: item.originalPrice,
+        restaurant: r.name,
+        restaurantId: r.id,
+        dietaryTags: item.dietaryTags || [],
+        stockLeft: item.stockLeft,
+        soldOut: item.soldOut === true || item.stockLeft === null
+      }))
+    );
+  };
+
+  const loadHacksOfTheDayData = async () => {
+    const response = await fetch(`/api/restaurants/by-location?locationId=${locationId}${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`);
+    const data = await response.json();
+    const restaurants = data.data || [];
+    const hacks: any[] = [];
+    restaurants.forEach((r: any) => {
+      (r.hackItems || []).forEach((item: any) => {
+        const isVeg = Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg');
+        if (vegOnly && !isVeg) return;
+        hacks.push({
+          id: item.id,
+          name: item.name,
+          image: item.image || '/images/dish-placeholder.svg',
+          price: item.price,
+          originalPrice: item.originalPrice,
+          restaurant: r.name,
+          restaurantId: r.id,
+          dietaryTags: item.dietaryTags || [],
+          stockLeft: item.stockLeft,
+          soldOut: item.soldOut === true || item.stockLeft === null
+        });
+      });
+    });
+    return hacks;
+  };
+
+  const loadNearbyDishesData = async () => {
+    const response = await fetch(`/api/restaurants/by-location?locationId=${locationId}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`);
+    const data = await response.json();
+    const restaurants = data.data || [];
+    const allDishes: any[] = [];
+    restaurants.forEach((r: any) => {
+      (r.nonFeaturedItems || []).forEach((item: any) => {
+        const isVeg = Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg');
+        if (vegOnly && !isVeg) return;
+        allDishes.push({
+          id: item.id,
+          name: item.name,
+          image: item.image || '/images/dish-placeholder.svg',
+          price: item.price,
+          originalPrice: item.originalPrice,
+          restaurant: r.name,
+          restaurantId: r.id,
+          dietaryTags: item.dietaryTags || [],
+          stockLeft: item.stockLeft,
+          soldOut: item.soldOut === true || item.stockLeft === null
+        });
+      });
+    });
+    // Split into 3 sections
+    const shuffled = allDishes.sort(() => Math.random() - 0.5);
+    const sectionSize = Math.ceil(shuffled.length / 3);
+    return [
+      shuffled.slice(0, sectionSize),
+      shuffled.slice(sectionSize, sectionSize * 2),
+      shuffled.slice(sectionSize * 2)
+    ];
+  };
+
+  const loadRecentOrdersData = async () => {
+    const response = await fetch('/api/orders?limit=10&paymentStatus=COMPLETED');
+    const data = await response.json();
+    return (data.data?.orders || []).slice(0, 4).map((order: any) => ({
+      id: order.id,
+      name: order.items?.[0]?.name || 'Order',
+      image: order.items?.[0]?.image || '/images/dish-placeholder.svg',
+      price: order.totalAmount,
+      restaurant: order.restaurant?.name || 'Restaurant',
+      restaurantId: order.restaurantId,
+      orderNumber: order.orderNumber
+    }));
+  };
 
   // Function to get and process preloaded data from splash screen
   const getPreloadedData = () => {
@@ -318,47 +458,8 @@ export default function HomePage() {
     console.log('🏠 Loading data for locationId:', locationId);
     console.log('🏠 Location state:', { latitude, longitude, locationName, locationId });
     
-    // Check for preloaded data first (from splash screen)
-    const preloadedData = getPreloadedData();
-    if (preloadedData && preloadedData.success) {
-      console.log('🚀 Using preloaded data from splash screen:', {
-        restaurants: preloadedData.restaurants?.length || 0,
-        dishes: preloadedData.dishes?.length || 0,
-        hacks: preloadedData.hacks?.length || 0,
-        nearbyDishes: preloadedData.nearbyDishes?.flat().length || 0,
-        recentOrders: preloadedData.recentOrders?.length || 0
-      });
-      
-      // Use preloaded data immediately for instant loading
-      if (preloadedData.restaurants) setPopularRestaurants(preloadedData.restaurants);
-      if (preloadedData.dishes) setPopularDishes(preloadedData.dishes);
-      if (preloadedData.hacks) setHacksOfTheDay(preloadedData.hacks);
-      if (preloadedData.nearbyDishes) setNearbyDishesSections(preloadedData.nearbyDishes);
-      if (preloadedData.recentOrders) setRecentDishes(preloadedData.recentOrders);
-      
-      // Set loading states to false for instant UI
-      setPopularLoading(false);
-      setHacksLoading(false);
-      setNearbyDishesLoading(false);
-      setRecentLoading(false);
-      
-      // Clear preloaded data to free up memory
-      sessionStorage.removeItem('aasta_preloaded_data');
-      
-      // Refresh in background to ensure data is up-to-date
-      setTimeout(() => {
-        loadPopularContent(true);
-        loadHacksOfTheDay();
-        loadNearbyNonFeaturedDishes(true);
-        loadRecentlyOrdered();
-      }, 100);
-    } else {
-      // No preloaded data, load normally
-      loadPopularContent();
-    loadHacksOfTheDay();
-    loadNearbyNonFeaturedDishes();
-    loadRecentlyOrdered();
-    }
+    // Load data using app cache for instant loading
+    loadHomeDataWithCache();
   }, [session, status, locationId]);
 
   // Lightweight polling for DB changes (restaurants/menu): refetch on etag change
