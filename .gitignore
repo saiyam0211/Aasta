@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# firebase
+aastatechnology-firebase-adminsdk-fbsvc-a79143e6a4.json
+
 # debug
 npm-debug.log*
 yarn-debug.log*

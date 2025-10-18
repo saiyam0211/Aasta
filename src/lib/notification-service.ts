@@ -1,137 +1,300 @@
-import nodemailer from 'nodemailer';
-import webPush from 'web-push';
-import { prisma } from '@/lib/prisma';
-import { getSocketManager } from '@/lib/socket-server';
+import admin from './firebase-admin';
+import { prisma } from './prisma';
 
-interface NotificationData {
+export interface NotificationData {
   title: string;
   body: string;
-  data?: any;
-  userId: string;
-  type:
-    | 'ORDER_UPDATE'
-    | 'DELIVERY_ALERT'
-    | 'PROMOTION'
-    | 'SYSTEM_ANNOUNCEMENT'
-    | 'RESTAURANT_NOTIFICATION';
+  imageUrl?: string;
+  data?: Record<string, string>;
+  actions?: Array<{
+    id: string;
+    title: string;
+  }>;
 }
 
-class NotificationService {
-  // Email setup
-  private transporter = nodemailer.createTransport({
-    service: 'gmail', // Example service
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+export interface OrderNotificationData {
+  orderId: string;
+  status: string;
+  restaurantName?: string;
+  customerName?: string;
+}
 
-  // Web-push setup
-  constructor() {
-    webPush.setVapidDetails(
-      'mailto:example@domain.com',
-      process.env.VAPID_PUBLIC_KEY!,
-      process.env.VAPID_PRIVATE_KEY!
-    );
+export class NotificationService {
+  // Send notification to specific user
+  async sendToUser(userId: string, notification: NotificationData) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { fcmToken: true, name: true }
+      });
+
+      if (!user?.fcmToken) {
+        throw new Error('User FCM token not found');
+      }
+
+      const message = {
+        token: user.fcmToken,
+        notification: {
+          title: notification.title,
+          body: notification.body,
+          imageUrl: notification.imageUrl
+        },
+        data: {
+          type: 'custom',
+          ...notification.data
+        },
+        android: {
+          notification: {
+            imageUrl: notification.imageUrl,
+            sound: 'default',
+            channelId: 'food_delivery',
+            actions: notification.actions || []
+          }
+        },
+        apns: {
+          payload: {
+            aps: {
+              alert: {
+                title: notification.title,
+                body: notification.body
+              },
+              sound: 'default',
+              badge: 1,
+              'mutable-content': 1,
+              'category': 'FOOD_DELIVERY'
+            }
+          }
+        }
+      };
+
+      const result = await admin.messaging().send(message);
+      console.log('Notification sent successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      throw error;
+    }
+  }
+
+  // Send notification to multiple users
+  async sendToMultipleUsers(userIds: string[], notification: NotificationData) {
+    try {
+      const users = await prisma.user.findMany({
+        where: { 
+          id: { in: userIds },
+          fcmToken: { not: null }
+        },
+        select: { fcmToken: true, name: true }
+      });
+
+      if (users.length === 0) {
+        throw new Error('No users with FCM tokens found');
+      }
+
+      const tokens = users.map(user => user.fcmToken).filter(Boolean) as string[];
+
+      const message = {
+        tokens,
+        notification: {
+          title: notification.title,
+          body: notification.body,
+          imageUrl: notification.imageUrl
+        },
+        data: {
+          type: 'broadcast',
+          ...notification.data
+        },
+        android: {
+          notification: {
+            imageUrl: notification.imageUrl,
+            sound: 'default',
+            channelId: 'food_delivery',
+            actions: notification.actions || []
+          }
+        },
+        apns: {
+          payload: {
+            aps: {
+              alert: {
+                title: notification.title,
+                body: notification.body
+              },
+              sound: 'default',
+              badge: 1,
+              'mutable-content': 1,
+              'category': 'FOOD_DELIVERY'
+            }
+          }
+        }
+      };
+
+      const result = await admin.messaging().sendMulticast(message);
+      console.log('Multicast notification sent:', result);
+      return result;
+    } catch (error) {
+      console.error('Error sending multicast notification:', error);
+      throw error;
+    }
   }
 
   // Send order update notification
-  async sendOrderUpdate(orderId: string, status: string) {
+  async sendOrderUpdate(orderData: OrderNotificationData) {
     const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        customer: {
-          include: {
-            user: true,
-          },
-        },
-        restaurant: true,
-      },
-    });
-
-    if (order) {
-      // Send notifications here
-      const payload = JSON.stringify({
-        title: 'Order Update',
-        body: `Your order status is now: ${status}`,
-      });
-
-      // Socket.io
-      const socketManager = getSocketManager();
-      socketManager?.sendOrderUpdate(orderId, status);
-
-      // Email (only if user has an email)
-      const to = order.customer.user.email;
-      if (to) {
-        await this.sendEmail(to, 'Order Update', payload);
+      where: { orderNumber: orderData.orderId },
+      include: { 
+        user: { select: { fcmToken: true, name: true } },
+        restaurant: { select: { name: true } }
       }
-
-      // Push
-      await this.sendPushNotification(order.customer.id, payload);
-    }
-  }
-
-  // Send delivery alert
-  async sendDeliveryAlert(deliveryPartnerId: string, message: string) {
-    const partner = await prisma.deliveryPartner.findUnique({
-      where: { id: deliveryPartnerId },
-      include: {
-        user: true,
-      },
     });
 
-    if (partner) {
-      const payload = JSON.stringify({
-        title: 'Delivery Alert',
-        body: message,
-      });
-
-      // Socket.io
-      const socketManager = getSocketManager();
-      socketManager?.sendDeliveryAlert(deliveryPartnerId, message);
-
-      // Telegram notification could go here
+    if (!order?.user?.fcmToken) {
+      throw new Error('Order user FCM token not found');
     }
+
+    const notification = this.getOrderNotification(orderData.status, orderData);
+    
+    const message = {
+      token: order.user.fcmToken,
+      notification: {
+        title: notification.title,
+        body: notification.body,
+        imageUrl: notification.imageUrl
+      },
+      data: {
+        orderId: orderData.orderId,
+        type: 'order_update',
+        status: orderData.status,
+        screen: 'order_details'
+      },
+      android: {
+        notification: {
+          imageUrl: notification.imageUrl,
+          sound: 'default',
+          channelId: 'order_updates',
+          actions: notification.actions
+        }
+      },
+      apns: {
+        payload: {
+          aps: {
+            alert: {
+              title: notification.title,
+              body: notification.body
+            },
+            sound: 'default',
+            badge: 1,
+            'mutable-content': 1,
+            'category': 'ORDER_UPDATE'
+          }
+        }
+      }
+    };
+
+    return await admin.messaging().send(message);
   }
 
-  // Send email
-  private async sendEmail(to: string, subject: string, text: string) {
-    try {
-      await this.transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to,
-        subject,
-        text,
-      });
-    } catch (error) {
-      console.error('Email error:', error);
-    }
+  // Get order notification based on status
+  private getOrderNotification(status: string, orderData: OrderNotificationData) {
+    const notifications = {
+      CONFIRMED: {
+        title: '✅ Order Confirmed!',
+        body: `Your order from ${orderData.restaurantName} has been placed successfully`,
+        imageUrl: 'https://your-cdn.com/order-confirmed.gif',
+        actions: [
+          { id: 'view_order', title: 'View Order' },
+          { id: 'track_order', title: 'Track Order' }
+        ]
+      },
+      PREPARING: {
+        title: '🍕 Your order is being prepared!',
+        body: `Chef at ${orderData.restaurantName} is cooking your delicious meal`,
+        imageUrl: 'https://your-cdn.com/cooking-animation.gif',
+        actions: [
+          { id: 'view_order', title: 'View Order' },
+          { id: 'contact_restaurant', title: 'Contact Restaurant' }
+        ]
+      },
+      OUT_FOR_DELIVERY: {
+        title: '🚚 Your order is out for delivery!',
+        body: `Our delivery partner is on the way with your order from ${orderData.restaurantName}`,
+        imageUrl: 'https://your-cdn.com/delivery-truck.jpg',
+        actions: [
+          { id: 'track_delivery', title: 'Track Delivery' },
+          { id: 'contact_driver', title: 'Contact Driver' }
+        ]
+      },
+      DELIVERED: {
+        title: '🎉 Order Delivered!',
+        body: `Enjoy your meal from ${orderData.restaurantName}! Rate your experience`,
+        imageUrl: 'https://your-cdn.com/delivered.jpg',
+        actions: [
+          { id: 'rate_order', title: 'Rate Order' },
+          { id: 'reorder', title: 'Reorder' }
+        ]
+      },
+      CANCELLED: {
+        title: '❌ Order Cancelled',
+        body: `Your order from ${orderData.restaurantName} has been cancelled`,
+        imageUrl: 'https://your-cdn.com/cancelled.jpg',
+        actions: [
+          { id: 'view_order', title: 'View Order' },
+          { id: 'order_again', title: 'Order Again' }
+        ]
+      }
+    };
+
+    return notifications[status as keyof typeof notifications] || {
+      title: 'Order Update',
+      body: `Your order status has been updated to ${status}`,
+      actions: [
+        { id: 'view_order', title: 'View Order' }
+      ]
+    };
   }
 
-  // Send push notification
-  private async sendPushNotification(userId: string, payload: string) {
-    const subscriptions = await prisma.pushSubscription.findMany({
-      where: {
+  // Send marketing notification
+  async sendMarketingNotification(userIds: string[], campaign: string, notification: NotificationData) {
+    return await this.sendToMultipleUsers(userIds, {
+      ...notification,
+      data: {
+        type: 'marketing',
+        campaign,
+        screen: 'home'
+      }
+    });
+  }
+
+  // Schedule notification for later
+  async scheduleNotification(userId: string, notification: NotificationData, scheduleTime: Date) {
+    // Store in database for scheduled sending
+    await prisma.scheduledNotification.create({
+      data: {
         userId,
-        active: true,
-      },
+        title: notification.title,
+        body: notification.body,
+        imageUrl: notification.imageUrl,
+        data: notification.data,
+        actions: notification.actions,
+        scheduledFor: scheduleTime,
+        status: 'PENDING'
+      }
     });
 
-    for (const subscription of subscriptions) {
-      const pushSubscription = {
-        endpoint: subscription.endpoint,
-        keys: {
-          auth: subscription.auth,
-          p256dh: subscription.p256dh,
-        },
-      };
+    console.log(`Notification scheduled for ${scheduleTime}`);
+  }
 
-      try {
-        await webPush.sendNotification(pushSubscription, payload);
-      } catch (error) {
-        console.error('Push notification error:', error);
+  // Get notification statistics
+  async getNotificationStats() {
+    const stats = await prisma.notificationLog.aggregate({
+      _count: {
+        id: true
       }
-    }
+    });
+
+    return {
+      totalSent: stats._count.id,
+      // Add more statistics as needed
+    };
   }
 }
 

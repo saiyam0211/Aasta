@@ -15,6 +15,7 @@ model User {
   phone                  String?                 @unique
   role                   UserRole                @default(CUSTOMER)
   googleId               String?                 @unique
+  fcmToken               String?                 @unique
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   password               String?
@@ -27,6 +28,8 @@ model User {
   restaurant             Restaurant?
   sessions               Session[]
   userActivities         UserActivity[]
+  notificationLogs        NotificationLog[]
+  scheduledNotifications  ScheduledNotification[]
 
   @@map("users")
 }
@@ -562,4 +565,47 @@ enum StopStatus {
   PENDING
   COMPLETED
   SKIPPED
+}
+
+// Notification Models
+model NotificationLog {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  body        String
+  imageUrl    String?
+  data        Json?
+  actions     Json?
+  sentAt      DateTime @default(now())
+  status      String   @default("SENT")
+  messageId   String?
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notification_logs")
+}
+
+model ScheduledNotification {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  body        String
+  imageUrl    String?
+  data        Json?
+  actions     Json?
+  scheduledFor DateTime
+  status      ScheduledNotificationStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  sentAt      DateTime?
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("scheduled_notifications")
+}
+
+enum ScheduledNotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
 }
