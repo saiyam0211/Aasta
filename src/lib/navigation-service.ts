@@ -54,9 +54,11 @@ class NavigationService {
     return { ...this.navigationState };
   }
 
-  subscribe(listener: (state: NavigationState) => void) {
+  subscribe(listener: (state: NavigationState) => void): () => void {
     this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   private notifyListeners() {

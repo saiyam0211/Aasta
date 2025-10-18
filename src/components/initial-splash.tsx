@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import Lottie from 'lottie-react';
 import { dataPreloader } from '@/lib/data-preloader';
 import { useLocationStore } from '@/hooks/useLocation';
+import { useVegMode } from '@/contexts/VegModeContext';
 
 export default function InitialSplash() {
   const [show, setShow] = useState(false);
   const [preloadProgress, setPreloadProgress] = useState(0);
-  const { locationId, vegOnly } = useLocationStore();
+  const { locationId } = useLocationStore();
+  const { vegOnly } = useVegMode();
 
   useEffect(() => {
     const initializeSplash = async () => {
