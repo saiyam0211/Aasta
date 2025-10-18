@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import localFont from 'next/font/local';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocationStore } from '@/hooks/useLocation';
 import { toast } from 'sonner';
 import { HomeHeader } from '@/components/ui/home-header';
@@ -117,7 +117,7 @@ export default function HomePage() {
       .replace(/(^-|-$)/g, '');
 
   // Load home data using app cache for instant loading
-  const loadHomeDataWithCache = async () => {
+  const loadHomeDataWithCache = useCallback(async () => {
     try {
       console.log('🏠 Loading home data with cache for locationId:', locationId);
       
@@ -152,7 +152,7 @@ export default function HomePage() {
       loadNearbyNonFeaturedDishes();
       loadRecentlyOrdered();
     }
-  };
+  }, [locationId, vegOnly, getCachedData, setPopularRestaurants, setPopularDishes, setHacksOfTheDay, setNearbyDishesSections, setRecentDishes, setPopularLoading, setHacksLoading, setNearbyDishesLoading, setRecentLoading, loadPopularContent, loadHacksOfTheDay, loadNearbyNonFeaturedDishes, loadRecentlyOrdered]);
 
   // Individual data loading functions for cache
   const loadPopularContentData = async () => {
@@ -460,7 +460,7 @@ export default function HomePage() {
     
     // Load data using app cache for instant loading
     loadHomeDataWithCache();
-  }, [session, status, locationId]);
+  }, [session, status, locationId, loadHomeDataWithCache]);
 
   // Lightweight polling for DB changes (restaurants/menu): refetch on etag change
   useEffect(() => {
@@ -475,21 +475,19 @@ export default function HomePage() {
           last = etag;
           setUpdateEtag(etag);
           if (locationId) {
-            loadPopularContent(true);
-            loadHacksOfTheDay();
-            // background refresh with order preservation to avoid UI jumps
-            loadNearbyNonFeaturedDishes(true);
-            loadRecentlyOrdered();
+            // Only refresh if data actually changed
+            console.log('🔄 Data changed, refreshing cache...');
+            loadHomeDataWithCache();
           }
         }
       } catch {}
-      if (!stop) setTimeout(poll, 2000); // tighten to ~2s
+      if (!stop) setTimeout(poll, 10000); // Reduce to 10s polling
     };
     poll();
     return () => {
       stop = true;
     };
-  }, [locationId]);
+  }, [locationId, loadHomeDataWithCache]);
 
   // Handle veg mode changes - show loader and refresh data
   useEffect(() => {

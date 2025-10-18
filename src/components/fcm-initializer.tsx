@@ -4,12 +4,7 @@ import { useEffect } from 'react';
 import { useFCM } from '@/hooks/useFCM';
 
 export default function FCMInitializer() {
-  const { initializeFCM } = useFCM();
-
-  useEffect(() => {
-    // Initialize FCM when the app starts
-    initializeFCM();
-  }, [initializeFCM]);
-
+  // FCM is already initialized in the useFCM hook
+  // This component is just a placeholder for future FCM setup
   return null; // This component doesn't render anything
 }

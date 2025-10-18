@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 // Mock FCM for development (replace with actual FCM when packages are installed)
@@ -18,7 +18,7 @@ export const useFCM = () => {
   const [fcmToken, setFcmToken] = useState<string | null>(null);
   const router = useRouter();
 
-  const initializeFCM = async () => {
+  const initializeFCM = useCallback(async () => {
     try {
       console.log('🚀 Initializing FCM...');
       
@@ -115,11 +115,13 @@ export const useFCM = () => {
     } catch (error) {
       console.error('❌ Error initializing FCM:', error);
     }
-  };
+  }, [router]);
 
   useEffect(() => {
-    initializeFCM();
-  }, []);
+    if (!isInitialized) {
+      initializeFCM();
+    }
+  }, [initializeFCM, isInitialized]);
 
   return {
     isInitialized,
