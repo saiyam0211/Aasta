@@ -87,122 +87,81 @@ export function LocationOnboarding({ isModal = false, onClose }: LocationOnboard
   };
 
   return (
-    <div className="min-h-screen bg-[#d3fb6b]">
-      <div className="flex min-h-screen flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6">
-          <button
-            onClick={handleBackClick}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm"
-          >
-            <svg
-              className="h-5 w-5 text-black"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-          <div className="text-center">
-            <h1 className="text-xl font-bold text-black">Select Location</h1>
+    <div className="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-black/50 backdrop-blur-md">
+      <div className="w-full max-w-md px-6">
+        <div className="rounded-3xl bg-[#002a01] p-6 shadow-2xl">
+          <div className="inline-block rounded-2xl border border-[#002a01] bg-[#002a01]/30 bg-white/60 px-4 py-2 text-sm font-semibold text-[#002a01] backdrop-blur-sm">
+            Location
           </div>
-          <div className="w-10" /> {/* Spacer for centering */}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 px-6 pb-6">
-          {/* Animation */}
-          <div className="mb-8 flex justify-center">
+          <div className="mt-2">
             <Lottie
-              animationData={locationAnim}
-              loop={true}
+              animationData={locationAnim as any}
+              loop
               autoplay
-              style={{ width: 200, height: 200 }}
+              style={{ width: '100%', height: 300 }}
             />
           </div>
-
-          {/* Title and Description */}
-          <div className="mb-8 text-center">
-            <h2 className="mb-4 text-2xl font-bold text-black">
-              Choose Your Location
-            </h2>
-            <p className="text-gray-700">
-              Select your location to see restaurants and food available in your area.
-            </p>
-          </div>
-
-          {/* Location Dropdown */}
-          <div className="mb-8">
-            <label className="mb-3 block text-sm font-medium text-gray-700">
-              Select Location
-            </label>
+          <h1 className="text-4xl font-extrabold text-[#fff]">
+            Where should we deliver the hacks?
+          </h1>
+          <p className="mt-4 text-lg text-[#fff]/80">
+            Select your location to see nearby restaurants and get quick deliveries.
+          </p>
+          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+          <div className="mt-6 space-y-3">
+            {/* Location Dropdown */}
             <div className="relative">
               <button
+                type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full rounded-2xl border-2 border-gray-300 bg-white px-4 py-4 text-left text-black focus:border-[#002a01] focus:outline-none"
+                disabled={isLoadingLocations}
+                className="w-full rounded-3xl bg-white/20 border border-white/30 px-6 py-4 text-left text-lg font-medium text-white backdrop-blur-sm hover:bg-white/30 transition-colors disabled:opacity-50"
               >
                 <div className="flex items-center justify-between">
-                  <span className={selectedLocation ? 'text-black' : 'text-gray-500'}>
+                  <span>
                     {selectedLocation 
-                      ? `${selectedLocation.name}, ${selectedLocation.city}` 
-                      : 'Choose a location'
+                      ? `${selectedLocation.name}, ${selectedLocation.city}`
+                      : isLoadingLocations 
+                        ? 'Loading locations...'
+                        : 'Select your location'
                     }
                   </span>
-                  <ChevronDown 
-                    className={`h-5 w-5 text-gray-400 transition-transform ${
-                      isDropdownOpen ? 'rotate-180' : ''
-                    }`} 
-                  />
+                  <ChevronDown className={`h-5 w-5 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>
               </button>
               
               {isDropdownOpen && (
-                <div className="absolute z-10 mt-2 w-full rounded-2xl border border-gray-200 bg-white shadow-lg">
-                  {locations.length > 0 ? (
-                    locations.map((location) => (
-                      <button
-                        key={location.id}
-                        onClick={() => {
-                          setSelectedLocation(location);
-                          setIsDropdownOpen(false);
-                        }}
-                        className="w-full px-4 py-3 text-left text-black hover:bg-gray-50 first:rounded-t-2xl last:rounded-b-2xl"
-                      >
-                        <div className="font-medium">{location.name}</div>
-                        <div className="text-sm text-gray-600">{location.city}, {location.state}</div>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="px-4 py-3 text-gray-500">
-                      {error || 'Loading locations...'}
-                    </div>
-                  )}
+                <div className="absolute top-full left-0 right-0 mt-2 max-h-60 overflow-y-auto rounded-2xl bg-white/95 backdrop-blur-sm border border-white/30 shadow-xl z-10">
+                  {locations.map((location) => (
+                    <button
+                      key={location.id}
+                      onClick={() => {
+                        setSelectedLocation(location);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full px-6 py-4 text-left hover:bg-white/50 transition-colors border-b border-gray-200/50 last:border-b-0"
+                    >
+                      <div className="font-medium text-gray-900">
+                        {location.name}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {location.city}
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
+            
+            {/* Continue Button */}
+            <button
+              onClick={() => selectedLocation && selectLocation(selectedLocation)}
+              disabled={!selectedLocation || isRequesting}
+              className="w-full rounded-3xl bg-[#dcf874] py-7 text-xl font-semibold text-black shadow-md active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRequesting ? 'Setting Location...' : 'Continue'}
+            </button>
           </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 rounded-lg bg-red-100 p-3 text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* Continue Button */}
-          <button
-            onClick={() => selectedLocation && selectLocation(selectedLocation)}
-            disabled={!selectedLocation || isRequesting}
-            className="w-full rounded-3xl bg-[#dcf874] py-7 text-xl font-semibold text-black shadow-md active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isRequesting ? 'Setting Location...' : 'Continue'}
-          </button>
         </div>
       </div>
     </div>
