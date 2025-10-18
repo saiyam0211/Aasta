@@ -128,7 +128,7 @@ export class NotificationService {
         }
       };
 
-      const result = await admin.messaging().sendMulticast(message);
+      const result = await admin.messaging().sendEachForMulticast(message);
       console.log('Multicast notification sent:', result);
       return result;
     } catch (error) {
@@ -142,19 +142,23 @@ export class NotificationService {
     const order = await prisma.order.findUnique({
       where: { orderNumber: orderData.orderId },
       include: { 
-        user: { select: { fcmToken: true, name: true } },
+        customer: { 
+          include: {
+            user: { select: { fcmToken: true, name: true } }
+          }
+        },
         restaurant: { select: { name: true } }
       }
     });
 
-    if (!order?.user?.fcmToken) {
+    if (!order?.customer?.user?.fcmToken) {
       throw new Error('Order user FCM token not found');
     }
 
     const notification = this.getOrderNotification(orderData.status, orderData);
     
     const message = {
-      token: order.user.fcmToken,
+      token: order.customer.user.fcmToken,
       notification: {
         title: notification.title,
         body: notification.body,

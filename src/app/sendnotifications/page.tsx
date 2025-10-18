@@ -397,7 +397,7 @@ export default function SendNotificationsPage() {
             </div>
             
             <div className="p-6">
-              {stats?.recentNotifications?.length > 0 ? (
+              {stats?.recentNotifications && stats.recentNotifications.length > 0 ? (
                 <div className="space-y-4">
                   {stats.recentNotifications.map((notification) => (
                     <div key={notification.id} className="border border-gray-200 rounded-lg p-4">

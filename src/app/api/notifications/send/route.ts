@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const requestBody = await request.json();
     const { 
       type, 
       title, 
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       data, 
       actions,
       scheduleTime 
-    } = body;
+    } = requestBody;
 
     // Validate required fields
     if (!title || !body) {
