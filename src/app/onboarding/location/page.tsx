@@ -21,12 +21,8 @@ interface LocationOnboardingProps {
   onClose?: () => void;
 }
 
-export default function LocationOnboardingPage() {
-  return <LocationOnboarding />;
-}
-
-export function LocationOnboarding(props: LocationOnboardingProps = {}) {
-  const { isModal = false, onClose } = props;
+// Main component content
+function LocationOnboardingContent({ isModal = false, onClose }: LocationOnboardingProps) {
   const router = useRouter();
   const { latitude, longitude, setLocation } = useLocationStore();
   const [isRequesting, setIsRequesting] = useState(false);
@@ -172,4 +168,9 @@ export function LocationOnboarding(props: LocationOnboardingProps = {}) {
       </div>
     </div>
   );
+}
+
+// Default export for Next.js page
+export default function LocationOnboardingPage() {
+  return <LocationOnboardingContent isModal={false} />;
 }
