@@ -924,13 +924,27 @@ export default function HomePage() {
     return <div className="min-h-screen" />;
   }
 
-  // Show location modal if no location is set
-  if (!locationId) {
+  // Show location modal only if no location is set AND user just signed up
+  // Check if this is the first time after signup
+  const [showLocationModalAfterSignup, setShowLocationModalAfterSignup] = useState(false);
+  
+  useEffect(() => {
+    if (status === 'authenticated' && !locationId) {
+      // Check if user just signed up (you can add more sophisticated logic here)
+      const hasSeenLocationModal = localStorage.getItem('aasta_location_modal_seen');
+      if (!hasSeenLocationModal) {
+        setShowLocationModalAfterSignup(true);
+        localStorage.setItem('aasta_location_modal_seen', 'true');
+      }
+    }
+  }, [status, locationId]);
+
+  if (showLocationModalAfterSignup) {
     return (
       <div className="min-h-screen bg-[#d3fb6b]">
         <LocationOnboarding 
           isModal={true} 
-          onClose={() => {}} // No-op for automatic modal
+          onClose={() => setShowLocationModalAfterSignup(false)}
         />
       </div>
     );
@@ -958,10 +972,12 @@ export default function HomePage() {
       
       {/* Location Modal - Manual trigger */}
       {showLocationModal && (
-        <LocationOnboarding 
-          isModal={true} 
-          onClose={() => setShowLocationModal(false)} 
-        />
+        <div className="fixed inset-0 z-50">
+          <LocationOnboarding 
+            isModal={true} 
+            onClose={() => setShowLocationModal(false)} 
+          />
+        </div>
       )}
       {/* Full-screen onboarding handles location; fallback UI kept for legacy */}
       {/* {showLocationPrompt && (
