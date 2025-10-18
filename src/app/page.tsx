@@ -27,6 +27,9 @@ import { readCache, writeCache } from '@/lib/smart-cache';
 import LocationChangeLoader from '@/components/ui/location-change-loader';
 import VegModeLoader from '@/components/ui/veg-mode-loader';
 import { LocationOnboarding } from '@/components/ui/location-onboarding';
+import { dataPreloader } from '@/lib/data-preloader';
+import NavigationOverlay from '@/components/navigation-overlay';
+import { navigationService } from '@/lib/navigation-service';
 // Custom inline animation (no JSON)
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -169,11 +172,42 @@ export default function HomePage() {
     console.log('🏠 Loading data for locationId:', locationId);
     console.log('🏠 Location state:', { latitude, longitude, locationName, locationId });
     
-    // Load all data for the selected location
-    loadPopularContent();
-    loadHacksOfTheDay();
-    loadNearbyNonFeaturedDishes();
-    loadRecentlyOrdered();
+    // Check for preloaded data first
+    const preloadedData = dataPreloader.getCachedData(locationId, vegOnly);
+    if (preloadedData && preloadedData.success) {
+      console.log('🚀 Using preloaded data:', {
+        restaurants: preloadedData.restaurants.length,
+        dishes: preloadedData.dishes.length,
+        hacks: preloadedData.hacks.length,
+        nearbyDishes: preloadedData.nearbyDishes.flat().length,
+        recentOrders: preloadedData.recentOrders.length
+      });
+      
+      // Use preloaded data immediately
+      setPopularRestaurants(preloadedData.restaurants);
+      setPopularDishes(preloadedData.dishes);
+      setHacksOfTheDay(preloadedData.hacks);
+      setNearbyDishesSections(preloadedData.nearbyDishes);
+      setRecentDishes(preloadedData.recentOrders);
+      setPopularLoading(false);
+      setHacksLoading(false);
+      setNearbyDishesLoading(false);
+      setRecentLoading(false);
+      
+      // Refresh in background to ensure data is up-to-date
+      setTimeout(() => {
+        loadPopularContent(true);
+        loadHacksOfTheDay();
+        loadNearbyNonFeaturedDishes(true);
+        loadRecentlyOrdered();
+      }, 100);
+    } else {
+      // No preloaded data, load normally
+      loadPopularContent();
+      loadHacksOfTheDay();
+      loadNearbyNonFeaturedDishes();
+      loadRecentlyOrdered();
+    }
   }, [session, status, locationId]);
 
   // Lightweight polling for DB changes (restaurants/menu): refetch on etag change
@@ -953,6 +987,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#d3fb6b]">
+      {/* Navigation Overlay */}
+      <NavigationOverlay />
+      
       {/* Location Change Loader */}
       {showLocationChangeLoader && <LocationChangeLoader />}
       
@@ -964,7 +1001,7 @@ export default function HomePage() {
       
       {/* Location Modal - Manual trigger */}
       {showLocationModal && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-[9999]">
           <LocationOnboarding 
             isModal={true} 
             onClose={() => setShowLocationModal(false)} 
@@ -1011,8 +1048,14 @@ export default function HomePage() {
           openProduct(dish);
         }}
         onFilterClick={() => router.push('/search')}
-        onCartClick={() => router.push('/cart')}
-        onProfileClick={() => router.push('/profile')}
+        onCartClick={() => {
+          navigationService.startNavigation('/cart');
+          setTimeout(() => router.push('/cart'), 50);
+        }}
+        onProfileClick={() => {
+          navigationService.startNavigation('/profile');
+          setTimeout(() => router.push('/profile'), 50);
+        }}
         onRefresh={refreshData}
         className="z-10"
         resetSignal={headerResetSignal}

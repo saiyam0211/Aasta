@@ -87,7 +87,7 @@ export function LocationOnboarding({ isModal = false, onClose }: LocationOnboard
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-black/50 backdrop-blur-md">
+    <div className="fixed inset-0 z-[9999] flex min-h-screen w-full items-center justify-center bg-black/50 backdrop-blur-md">
       <div className="w-full max-w-md px-6">
         <div className="rounded-3xl bg-[#002a01] p-6 shadow-2xl">
           <div className="inline-block rounded-2xl border border-[#002a01] bg-[#002a01]/30 bg-white/60 px-4 py-2 text-sm font-semibold text-[#002a01] backdrop-blur-sm">

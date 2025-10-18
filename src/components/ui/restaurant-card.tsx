@@ -10,6 +10,7 @@ import { googleMapsService } from '@/lib/google-maps';
 import Lottie from 'lottie-react';
 import closedAnim from '../../../public/lotties/closed.json';
 import { useRouter } from 'next/navigation';
+import { navigationService } from '@/lib/navigation-service';
 
 export interface RestaurantSummary {
   id: string;
@@ -160,9 +161,10 @@ export function RestaurantCard({
       )}
       onClick={() => {
         if (restaurant.isOpen === false) return;
-        // Smooth client-side navigation - no page refresh
+        // Instant navigation with feedback
         if (href) {
-          router.push(href);
+          navigationService.startNavigation(href);
+          setTimeout(() => router.push(href), 50);
         }
         onClick?.(restaurant.id);
       }}

@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
+import { navigationService } from '@/lib/navigation-service';
 import {
   Star,
   Clock,
@@ -88,8 +89,10 @@ export function MobileRestaurantCard({
     >
       <div 
         onClick={() => {
-          // Smooth client-side navigation - no page refresh
-          router.push(`/restaurants/${id}`);
+          // Instant navigation with feedback
+          const href = `/restaurants/${id}`;
+          navigationService.startNavigation(href);
+          setTimeout(() => router.push(href), 50);
         }}
       >
         {/* Image Container */}
