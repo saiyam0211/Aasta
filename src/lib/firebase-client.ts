@@ -11,7 +11,7 @@ const firebaseConfig = {
   authDomain: 'aastatechnology.firebaseapp.com',
   projectId: 'aastatechnology',
   storageBucket: 'aastatechnology.firebasestorage.app',
-  messagingSenderId: '629804234684',
+  messagingSenderId: '629804234684', // Firebase Project Number (correct!)
   appId: '1:629804234684:web:c9d49ee282594651c41db9',
   measurementId: 'G-FT4JT14DPJ',
 };

@@ -151,8 +151,8 @@ export class NotificationService {
   async sendOrderUpdate(orderData: OrderNotificationData) {
     const order = await prisma.order.findUnique({
       where: { orderNumber: orderData.orderId },
-      include: { 
-        customer: { 
+      include: {
+        customer: {
           include: {
             user: { select: { fcmToken: true, name: true } }
           }
