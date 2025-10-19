@@ -156,7 +156,7 @@ export class NotificationService {
         if (response.success && users[i] && users[i].id) {
           await this.logNotification(users[i].id, notification, response);
         } else if (!response.success && response.error?.code === 'messaging/registration-token-not-registered' && users[i]?.fcmToken) {
-          invalidTokens.push(users[i].fcmToken);
+          invalidTokens.push(users[i].fcmToken!);
         }
       }
       
