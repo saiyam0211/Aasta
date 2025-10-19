@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
           const notification = {
             title: scheduled.title,
             body: scheduled.body,
-            imageUrl: scheduled.imageUrl,
+            imageUrl: scheduled.imageUrl || undefined,
             data: scheduled.data,
             actions: scheduled.actions
           };
