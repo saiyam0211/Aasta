@@ -48,7 +48,6 @@ export class NotificationService {
             imageUrl: notification.imageUrl,
             sound: 'default',
             channelId: 'food_delivery',
-            actions: notification.actions || []
           }
         },
         apns: {
@@ -109,7 +108,6 @@ export class NotificationService {
             imageUrl: notification.imageUrl,
             sound: 'default',
             channelId: 'food_delivery',
-            actions: notification.actions || []
           }
         },
         apns: {
