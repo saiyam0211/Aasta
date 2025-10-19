@@ -9,6 +9,11 @@ export default function FCMInitializer() {
   useEffect(() => {
     // Initialize FCM when the app starts
     if (!isInitialized) {
+      // Force FCM token regeneration by clearing localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('fcm_token');
+        localStorage.removeItem('fcm_token_timestamp');
+      }
       initializeFCM();
     }
   }, [initializeFCM, isInitialized]);
