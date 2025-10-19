@@ -2,16 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-
-// Mock FCM for development (replace with actual FCM when packages are installed)
-const mockFCM = {
-  requestPermissions: async () => ({ receive: 'granted' }),
-  getToken: async () => 'mock-fcm-token-' + Math.random().toString(36).substr(2, 9),
-  addListener: (event: string, callback: (data: any) => void) => {
-    console.log(`Mock FCM listener added for ${event}`);
-    return { remove: () => console.log(`Mock FCM listener removed for ${event}`) };
-  }
-};
+import { Capacitor } from '@capacitor/core';
+import { FCM } from '@capacitor-community/fcm';
+import { PushNotifications } from '@capacitor/push-notifications';
 
 export const useFCM = () => {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -22,12 +15,24 @@ export const useFCM = () => {
     try {
       console.log('🚀 Initializing FCM...');
       
+      // Check if running on native platform
+      if (!Capacitor.isNativePlatform()) {
+        console.log('📱 Not running on native platform, skipping FCM initialization');
+        return;
+      }
+      
       // Request permissions
-      const permission = await mockFCM.requestPermissions();
+      const permission = await PushNotifications.requestPermissions();
       
       if (permission.receive === 'granted') {
+        console.log('✅ Push notification permissions granted');
+        
+        // Register for push notifications
+        await PushNotifications.register();
+        
         // Get FCM token
-        const token = await mockFCM.getToken();
+        const tokenResult = await FCM.getToken();
+        const token = tokenResult.token;
         setFcmToken(token);
         console.log('📱 FCM Token:', token);
         
@@ -48,64 +53,9 @@ export const useFCM = () => {
           console.error('❌ Error registering FCM token:', error);
         }
         
-        // Listen for notifications
-        mockFCM.addListener('notification', (notification) => {
-          console.log('📨 Notification received:', notification);
-          
-          // Handle deep linking based on notification data
-          if (notification.data?.screen) {
-            switch (notification.data.screen) {
-              case 'order_details':
-                router.push(`/orders/${notification.data.orderId}`);
-                break;
-              case 'order_tracking':
-                router.push(`/orders/${notification.data.orderId}/tracking`);
-                break;
-              case 'restaurant':
-                router.push(`/restaurants/${notification.data.restaurantId}`);
-                break;
-              case 'home':
-                router.push('/');
-                break;
-              default:
-                router.push('/');
-            }
-          }
-        });
-        
-        // Handle notification actions
-        mockFCM.addListener('notificationAction', (action) => {
-          console.log('🔘 Notification action:', action);
-          
-          switch (action.actionId) {
-            case 'view_order':
-              router.push(`/orders/${action.data.orderId}`);
-              break;
-            case 'track_delivery':
-              router.push(`/orders/${action.data.orderId}/tracking`);
-              break;
-            case 'rate_order':
-              router.push(`/orders/${action.data.orderId}/rate`);
-              break;
-            case 'reorder':
-              router.push(`/restaurants/${action.data.restaurantId}`);
-              break;
-            case 'view_restaurant':
-              router.push(`/restaurants/${action.data.restaurantId}`);
-              break;
-            case 'browse_menu':
-              router.push(`/restaurants/${action.data.restaurantId}`);
-              break;
-            case 'view_cart':
-              router.push('/cart');
-              break;
-            case 'checkout':
-              router.push('/cart');
-              break;
-            default:
-              router.push('/');
-          }
-        });
+        // Note: FCM listeners will be added in a future update
+        // For now, we focus on token registration
+        console.log('📱 FCM token registered, listeners will be added later');
         
         setIsInitialized(true);
         console.log('✅ FCM initialized successfully');
