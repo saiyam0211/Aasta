@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
             title: scheduled.title,
             body: scheduled.body,
             imageUrl: scheduled.imageUrl || undefined,
-            data: scheduled.data,
-            actions: scheduled.actions
+            data: scheduled.data as Record<string, string> | undefined,
+            actions: scheduled.actions as Array<{ id: string; title: string }> | undefined
           };
 
           await notificationService.sendToUser(scheduled.userId, notification);
