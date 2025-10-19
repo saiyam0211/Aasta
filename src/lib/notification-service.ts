@@ -48,7 +48,7 @@ export class NotificationService {
             imageUrl: notification.imageUrl,
             sound: 'default',
             channelId: 'food_delivery',
-            icon: 'ic_notification',
+            icon: 'ic_notification_white',
             color: '#ffd500'
           }
         },
@@ -110,7 +110,7 @@ export class NotificationService {
             imageUrl: notification.imageUrl,
             sound: 'default',
             channelId: 'food_delivery',
-            icon: 'ic_notification',
+            icon: 'ic_notification_white',
             color: '#ffd500'
           }
         },
@@ -189,6 +189,8 @@ export class NotificationService {
           imageUrl: notification.imageUrl,
           sound: 'default',
           channelId: 'order_updates',
+          icon: 'ic_notification',
+          color: '#ffd500',
           actions: notification.actions
         }
       },
