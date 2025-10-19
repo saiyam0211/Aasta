@@ -89,7 +89,7 @@ export class NotificationService {
           id: { in: userIds },
           fcmToken: { not: null }
         },
-        select: { fcmToken: true, name: true }
+        select: { id: true, fcmToken: true, name: true }
       });
 
       if (users.length === 0) {
