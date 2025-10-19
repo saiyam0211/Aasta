@@ -56,15 +56,23 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (targetType === 'specific' && targetUsers?.length > 0) {
+      if (targetType === 'all') {
+        // Schedule for all users with FCM tokens
+        const users = await prisma.user.findMany({
+          where: { fcmToken: { not: null } },
+          select: { id: true }
+        });
+        
+        const userIds = users.map(user => user.id);
+        await notificationService.scheduleNotificationForMultipleUsers(userIds, notification, scheduleDate);
+        result = { message: `Notifications scheduled for ${userIds.length} users` };
+      } else if (targetType === 'specific' && targetUsers?.length > 0) {
         // Schedule for specific users
-        for (const userId of targetUsers) {
-          await notificationService.scheduleNotification(userId, notification, scheduleDate);
-        }
-        result = { message: 'Notifications scheduled successfully' };
+        await notificationService.scheduleNotificationForMultipleUsers(targetUsers, notification, scheduleDate);
+        result = { message: `Notifications scheduled for ${targetUsers.length} users` };
       } else {
         return NextResponse.json(
-          { error: 'Scheduled notifications require specific target users' },
+          { error: 'Invalid target type or no target users specified' },
           { status: 400 }
         );
       }

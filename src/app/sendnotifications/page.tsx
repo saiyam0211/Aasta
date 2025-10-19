@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Send, Users, Clock, BarChart3, Bell, Image, Link, Calendar } from 'lucide-react';
+import { Send, Users, Clock, BarChart3, Bell, Image, Link, Calendar, Upload, X } from 'lucide-react';
 
 interface NotificationStats {
   totalSent: number;
@@ -36,6 +36,7 @@ export default function SendNotificationsPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [processingScheduled, setProcessingScheduled] = useState(false);
   
   // Notification form state
   const [notification, setNotification] = useState({
@@ -49,6 +50,11 @@ export default function SendNotificationsPage() {
     actions: '',
     scheduleTime: ''
   });
+
+  // Image upload state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -147,6 +153,85 @@ export default function SendNotificationsPage() {
     }));
   };
 
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setImagePreview(result.url);
+        setNotification(prev => ({ ...prev, imageUrl: result.url }));
+        toast.success('Image uploaded successfully!');
+      } else {
+        toast.error(result.error || 'Failed to upload image');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      handleImageUpload(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview('');
+    setNotification(prev => ({ ...prev, imageUrl: '' }));
+  };
+
+  const handleProcessScheduled = async () => {
+    setProcessingScheduled(true);
+    try {
+      const response = await fetch('/api/notifications/trigger-scheduled', {
+        method: 'POST'
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success('Scheduled notifications processed successfully!');
+        loadStats();
+      } else {
+        toast.error(result.error || 'Failed to process scheduled notifications');
+      }
+    } catch (error) {
+      console.error('Error processing scheduled notifications:', error);
+      toast.error('Failed to process scheduled notifications');
+    } finally {
+      setProcessingScheduled(false);
+    }
+  };
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -160,11 +245,32 @@ export default function SendNotificationsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Bell className="h-8 w-8 text-green-500" />
-            Push Notifications
-          </h1>
-          <p className="text-gray-600 mt-2">Send notifications to your users</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <Bell className="h-8 w-8 text-green-500" />
+                Push Notifications
+              </h1>
+              <p className="text-gray-600 mt-2">Send notifications to your users</p>
+            </div>
+            <button
+              onClick={handleProcessScheduled}
+              disabled={processingScheduled}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {processingScheduled ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Clock className="h-4 w-4" />
+                  Process Scheduled
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -273,19 +379,67 @@ export default function SendNotificationsPage() {
                 />
               </div>
 
-              {/* Image URL */}
+              {/* Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Image className="inline h-4 w-4 mr-1" />
-                  Image URL (Optional)
+                  Notification Image (Optional)
                 </label>
-                <input
-                  type="url"
-                  value={notification.imageUrl}
-                  onChange={(e) => setNotification(prev => ({ ...prev, imageUrl: e.target.value }))}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
+                
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className="mb-4 relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-full h-48 object-cover rounded-lg border"
+                    />
+                    <button
+                      onClick={removeImage}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                
+                {/* Upload Options */}
+                <div className="space-y-3">
+                  {/* File Upload */}
+                  <div>
+                    <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors">
+                      <div className="flex flex-col items-center">
+                        {uploadingImage ? (
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+                        ) : (
+                          <Upload className="h-8 w-8 text-gray-400" />
+                        )}
+                        <p className="text-sm text-gray-500 mt-2">
+                          {uploadingImage ? 'Uploading...' : 'Click to upload image'}
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        disabled={uploadingImage}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  
+                  {/* Or URL Input */}
+                  <div>
+                    <p className="text-sm text-gray-500 mb-2">Or enter image URL:</p>
+                    <input
+                      type="url"
+                      value={notification.imageUrl}
+                      onChange={(e) => setNotification(prev => ({ ...prev, imageUrl: e.target.value }))}
+                      placeholder="https://example.com/image.jpg"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Target Type */}

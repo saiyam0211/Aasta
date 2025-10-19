@@ -37,7 +37,7 @@ export class NotificationService {
         notification: {
           title: notification.title,
           body: notification.body,
-          imageUrl: notification.imageUrl
+          imageUrl: notification.imageUrl ? `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${notification.imageUrl}` : undefined
         },
         data: {
           type: 'custom',
@@ -45,7 +45,7 @@ export class NotificationService {
         },
         android: {
           notification: {
-            imageUrl: notification.imageUrl,
+            imageUrl: notification.imageUrl ? `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${notification.imageUrl}` : undefined,
             sound: 'default',
             channelId: 'food_delivery',
             icon: 'ic_stat_aasta',
@@ -70,6 +70,10 @@ export class NotificationService {
 
       const result = await admin.messaging().send(message);
       console.log('Notification sent successfully:', result);
+      
+      // Log the notification
+      await this.logNotification(userId, notification, result);
+      
       return result;
     } catch (error) {
       console.error('Error sending notification:', error);
@@ -99,7 +103,7 @@ export class NotificationService {
         notification: {
           title: notification.title,
           body: notification.body,
-          imageUrl: notification.imageUrl
+          imageUrl: notification.imageUrl ? `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${notification.imageUrl}` : undefined
         },
         data: {
           type: 'broadcast',
@@ -107,7 +111,7 @@ export class NotificationService {
         },
         android: {
           notification: {
-            imageUrl: notification.imageUrl,
+            imageUrl: notification.imageUrl ? `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${notification.imageUrl}` : undefined,
             sound: 'default',
             channelId: 'food_delivery',
             icon: 'ic_stat_aasta',
@@ -144,6 +148,23 @@ export class NotificationService {
           }
         });
       }
+      
+      // Log notifications for successful sends and collect invalid tokens
+      const invalidTokens: string[] = [];
+      for (let i = 0; i < result.responses.length; i++) {
+        const response = result.responses[i];
+        if (response.success && users[i] && users[i].id) {
+          await this.logNotification(users[i].id, notification, response);
+        } else if (!response.success && response.error?.code === 'messaging/registration-token-not-registered' && users[i]?.fcmToken) {
+          invalidTokens.push(users[i].fcmToken);
+        }
+      }
+      
+      // Clean up invalid tokens
+      if (invalidTokens.length > 0) {
+        await this.cleanupInvalidTokens(invalidTokens);
+      }
+      
       return result;
     } catch (error) {
       console.error('Error sending multicast notification:', error);
@@ -301,6 +322,66 @@ export class NotificationService {
     });
 
     console.log(`Notification scheduled for ${scheduleTime}`);
+  }
+
+  // Schedule notification for multiple users
+  async scheduleNotificationForMultipleUsers(userIds: string[], notification: NotificationData, scheduleTime: Date) {
+    const scheduledNotifications = userIds.map(userId => ({
+      userId,
+      title: notification.title,
+      body: notification.body,
+      imageUrl: notification.imageUrl,
+      data: notification.data,
+      actions: notification.actions,
+      scheduledFor: scheduleTime,
+      status: 'PENDING' as const
+    }));
+
+    await prisma.scheduledNotification.createMany({
+      data: scheduledNotifications
+    });
+
+    console.log(`Notifications scheduled for ${userIds.length} users at ${scheduleTime}`);
+  }
+
+  // Log notification to database
+  private async logNotification(userId: string, notification: NotificationData, result: any) {
+    try {
+      await prisma.notificationLog.create({
+        data: {
+          userId,
+          title: notification.title,
+          body: notification.body,
+          imageUrl: notification.imageUrl,
+          data: notification.data,
+          actions: notification.actions,
+          sentAt: new Date(),
+          status: 'SENT',
+          messageId: result.messageId || result
+        }
+      });
+    } catch (error) {
+      console.error('Error logging notification:', error);
+    }
+  }
+
+  // Clean up invalid FCM tokens
+  async cleanupInvalidTokens(invalidTokens: string[]) {
+    try {
+      await prisma.user.updateMany({
+        where: {
+          fcmToken: {
+            in: invalidTokens
+          }
+        },
+        data: {
+          fcmToken: null
+        }
+      });
+      console.log(`Cleaned up ${invalidTokens.length} invalid FCM tokens`);
+    } catch (error) {
+      console.error('Error cleaning up invalid tokens:', error);
+    }
   }
 
   // Get notification statistics
