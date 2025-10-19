@@ -48,6 +48,8 @@ export class NotificationService {
             imageUrl: notification.imageUrl,
             sound: 'default',
             channelId: 'food_delivery',
+            icon: 'ic_notification',
+            color: '#ffd500'
           }
         },
         apns: {
@@ -108,6 +110,8 @@ export class NotificationService {
             imageUrl: notification.imageUrl,
             sound: 'default',
             channelId: 'food_delivery',
+            icon: 'ic_notification',
+            color: '#ffd500'
           }
         },
         apns: {

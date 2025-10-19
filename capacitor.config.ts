@@ -21,7 +21,9 @@ const config: CapacitorConfig = {
         channelDescription: 'Order updates and promotions',
         sound: 'default',
         importance: 'high',
-        visibility: 'public'
+        visibility: 'public',
+        icon: 'ic_notification',
+        iconColor: '#ffd500'
       },
       ios: {
         // FCM automatically handles iOS APNs configuration
