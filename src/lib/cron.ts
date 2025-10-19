@@ -38,9 +38,9 @@ export async function processScheduledNotifications() {
           const notification = {
             title: scheduled.title,
             body: scheduled.body,
-            imageUrl: scheduled.imageUrl,
-            data: scheduled.data,
-            actions: scheduled.actions
+            imageUrl: scheduled.imageUrl || undefined,
+            data: scheduled.data as Record<string, string> | undefined,
+            actions: scheduled.actions as Array<{ id: string; title: string }> | undefined
           };
 
           await notificationService.sendToUser(scheduled.userId, notification);
