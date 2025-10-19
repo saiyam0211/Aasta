@@ -4,19 +4,7 @@ import path from 'path';
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
   try {
-    // Try to use the service account JSON file first
-    const serviceAccountPath = path.join(process.cwd(), 'aastatechnology-firebase-adminsdk-fbsvc-a79143e6a4.json');
-    
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccountPath),
-      projectId: 'aastatechnology'
-    });
-    
-    console.log('✅ Firebase Admin SDK initialized with service account file');
-  } catch (error) {
-    console.error('❌ Failed to initialize Firebase Admin SDK with service account file:', error);
-    
-    // Fallback to environment variables
+    // Use environment variables for consistency with client config
     const serviceAccount = {
       type: "service_account",
       project_id: process.env.FIREBASE_PROJECT_ID || 'aastatechnology',
@@ -36,6 +24,22 @@ if (!admin.apps.length) {
     });
     
     console.log('✅ Firebase Admin SDK initialized with environment variables');
+  } catch (error) {
+    console.error('❌ Failed to initialize Firebase Admin SDK with environment variables:', error);
+    
+    // Fallback to service account JSON file
+    try {
+      const serviceAccountPath = path.join(process.cwd(), 'aastatechnology-firebase-adminsdk-fbsvc-a79143e6a4.json');
+      
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccountPath),
+        projectId: 'aastatechnology'
+      });
+      
+      console.log('✅ Firebase Admin SDK initialized with service account file');
+    } catch (fallbackError) {
+      console.error('❌ Failed to initialize Firebase Admin SDK with service account file:', fallbackError);
+    }
   }
 }
 
