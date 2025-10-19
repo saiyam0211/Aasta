@@ -22,7 +22,7 @@ const config: CapacitorConfig = {
         sound: 'default',
         importance: 'high',
         visibility: 'public',
-        icon: 'ic_notification_white',
+        icon: 'ic_stat_aasta',
         iconColor: '#ffd500'
       },
       ios: {
