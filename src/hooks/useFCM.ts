@@ -21,14 +21,6 @@ export const useFCM = () => {
         return;
       }
       
-      // Clear any existing FCM token first to force regeneration
-      try {
-        await FCM.deleteToken();
-        console.log('🗑️ Cleared existing FCM token');
-      } catch (error) {
-        console.log('ℹ️ No existing FCM token to clear');
-      }
-      
       // Request permissions
       const permission = await PushNotifications.requestPermissions();
       
