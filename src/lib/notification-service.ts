@@ -128,8 +128,20 @@ export class NotificationService {
         }
       };
 
+      console.log('📤 Sending multicast message:', JSON.stringify(message, null, 2));
       const result = await admin.messaging().sendEachForMulticast(message);
-      console.log('Multicast notification sent:', result);
+      console.log('✅ Multicast notification sent:', result);
+      console.log('📊 Success count:', result.successCount);
+      console.log('❌ Failure count:', result.failureCount);
+      if (result.responses) {
+        result.responses.forEach((response, index) => {
+          if (response.success) {
+            console.log(`✅ Message ${index} sent successfully:`, response.messageId);
+          } else {
+            console.log(`❌ Message ${index} failed:`, response.error);
+          }
+        });
+      }
       return result;
     } catch (error) {
       console.error('Error sending multicast notification:', error);
