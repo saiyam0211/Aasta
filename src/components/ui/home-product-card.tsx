@@ -20,7 +20,7 @@ function VegMark({ isVegetarian }: { isVegetarian: boolean }) {
   return (
     <span
       className={cn(
-        'inline-flex h-4 w-4 items-center justify-center rounded-sm border-2',
+        'inline-flex h-4 w-4 items-center justify-center rounded-sm border-1',
         isVegetarian ? 'border-green-600 bg-white' : 'border-red-600 bg-white'
       )}
     >
@@ -62,15 +62,15 @@ export function HomeProductCard({
   const hasDiscount = !!dish.originalPrice && dish.originalPrice > dish.price;
   const discountPct = hasDiscount
     ? Math.round(
-        ((dish.originalPrice! - dish.price) / dish.originalPrice!) * 100
-      )
+      ((dish.originalPrice! - dish.price) / dish.originalPrice!) * 100
+    )
     : 0;
   const savedAmount = hasDiscount ? dish.originalPrice! - dish.price : 0;
 
   // Auto-toggle discount text every 5 seconds
   useEffect(() => {
     if (!hasDiscount) return;
-    
+
     const interval = setInterval(() => {
       setShowDiscountText(prev => !prev);
     }, 5000);
@@ -147,7 +147,7 @@ export function HomeProductCard({
   return (
     <div
       className={cn(
-        'cursor-pointer rounded-2xl border border-gray-100 bg-white p-3 shadow-xs transition-transform duration-150',
+        'cursor-pointer rounded-2xl bg-white p-2 transition-transform duration-150',
         // 'scale-100 hover:scale-120', // keep hover effect
         // clicked && 'scale-105', // add click effect
         className
@@ -157,9 +157,8 @@ export function HomeProductCard({
       aria-label={`View ${dish.name}`}
     >
       {/* Image with centered ADD overlay */}
-      
-      <div className="relative mb-6 h-36 w-full overflow-hidden rounded-xl bg-gray-100">
-        
+      <div className="relative mb-4 h-40 w-auto overflow-hidden rounded-3xl shadow-none border-none">
+
         <SafeImage
           src={dish.image}
           alt={dish.name}
@@ -173,14 +172,49 @@ export function HomeProductCard({
           <img
             src="/images/sold-out.png"
             alt="Sold Out"
-            className="absolute inset-0 m-auto h-[100%] w-[100%]"
+            className="absolute object-contain -right-2 h-[100%] w-[100%]"
           />
+
         )}
+
+        {/* {!dish.soldOut && (
+          <>
+            <div className="absolute top-1 right-2 z-50">
+              <VegMark isVegetarian={isVeg} />
+            </div>
+            <div className="h-10 w-10 bg-white z-40 absolute -top-1 rounded-bl-2xl -right-1" />
+
+            <div className="absolute top-[0rem] right-[1.2rem] w-8 h-8 overflow-visible">
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 40 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ transform: "rotate(270deg)" }}
+              >
+                <path d="M40 0 A16 16 0 0 1 24 16 L40 16 Z" fill="white" />
+              </svg>
+            </div>
+
+            <div className="absolute top-[2.2rem] -right-[1rem] w-8 h-8 overflow-visible">
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 40 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ transform: "rotate(270deg)" }}
+              >
+                <path d="M40 0 A16 16 0 0 1 24 16 L40 16 Z" fill="white" />
+              </svg>
+            </div>
+          </>
+        )} */}
       </div>
 
-      {/* Chips row: show distance only; hide when not available */}
-      <div className="mb-2 flex items-center gap-2">
-        <VegMark isVegetarian={isVeg} />
+      {/* Chips row: show distance hidden for now! */}
+      {/* <div className="mb-2 flex items-center gap-2">
         {dish.distanceText && (
           <InfoChip>
             <>
@@ -196,28 +230,32 @@ export function HomeProductCard({
             </>
           </InfoChip>
         )}
+      </div> */}
+
+      {/* Title + VegMark in one row */}
+      <div className=" flex items-start justify-between px-2">
+        <div className="flex-1 min-w-0">
+          <div className="line-clamp-2 ml-0.5 text-sm leading-5 font-semibold text-gray-900">
+            {dish.name}
+          </div>
+          <div className="mb-2 flex items-center gap-1 text-gray-700">
+            <span className="text-sm text-gray-500">({dish.restaurant})</span>
+          </div>
+        </div>
+        <div className="flex-shrink-0 pl-2 pt-0.5">
+          <VegMark isVegetarian={isVeg} />
+        </div>
       </div>
 
-      {/* Title */}
-      <div className="mb-1 line-clamp-2 text-sm leading-5 font-semibold text-gray-900">
-        {dish.name}
-      </div>
-
-      {/* Rating */}
-      <div className="mb-2 flex items-center gap-1 text-gray-700">
-        {/* <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" /> */}
-        {/* <span className="text-sm font-medium">{dish.rating}</span> */}
-        <span className="text-sm text-gray-500">({dish.restaurant})</span>
-      </div>
 
       {/* Discount */}
       {hasDiscount && (
-        <div className="mb-1 h-4 text-[12px] font-semibold text-blue-600 relative overflow-hidden">
+        <div className=" h-4 text-[12px] font-semibold text-blue-600 relative overflow-hidden px-2">
           <div
             className={cn(
-              "absolute inset-0 flex items-center transition-all duration-500 ease-in-out",
-              showDiscountText 
-                ? "transform translate-y-0 opacity-100" 
+              "absolute inset-0 flex items-center transition-all duration-500 ease-in-out px-2",
+              showDiscountText
+                ? "transform translate-y-0 opacity-100"
                 : "transform -translate-y-full opacity-0"
             )}
           >
@@ -225,9 +263,9 @@ export function HomeProductCard({
           </div>
           <div
             className={cn(
-              "absolute inset-0 flex items-center transition-all duration-500 ease-in-out",
-              !showDiscountText 
-                ? "transform translate-y-0 opacity-100" 
+              "absolute inset-0 flex items-center transition-all duration-500 ease-in-out px-2",
+              !showDiscountText
+                ? "transform translate-y-0 opacity-100"
                 : "transform translate-y-full opacity-0"
             )}
           >
@@ -237,50 +275,50 @@ export function HomeProductCard({
       )}
 
       {/* Price row */}
-      <div className="relative flex items-center justify-between">
+      <div className="relative flex items-center justify-between px-2">
         <div className="mt-2 flex flex-col items-baseline">
+          <span className="text-xl font-bold text-gray-900">₹{dish.price}</span>
           {dish.originalPrice && (
-            <span className="text-xs text-gray-400 line-through">
+            <span className="text-md text-gray-400 line-through">
               ₹{dish.originalPrice}
             </span>
           )}
-          <span className="text-lg font-bold text-gray-900">₹{dish.price}</span>
         </div>
-        <div className="relative mt-4 border-1 border-white">
-          {quantity > 0 ? (
-            <div className="-gap-2 inline-flex h-9 items-center rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm">
+        {!dish.soldOut && (
+          <div className="absolute right-0 bottom-1 border-1 border-white">
+            {quantity > 0 ? (
+              <div className="-gap-2 inline-flex h-9 items-center rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm">
+                <button
+                  onClick={handleDecrease}
+                  className="h-8 w-8 rounded-md text-md mx-auto flex items-center justify-center text-[#002a01]"
+                  aria-label={`Decrease ${dish.name}`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-minus-icon lucide-minus"><path d="M5 12h14"/></svg>
+                </button>
+                <span className="text-lg min-w-[1.5rem] text-center font-medium">
+                  {quantity}
+                </span>
+                <button
+                  onClick={handleIncrease}
+                  className="h-8 w-8 rounded-md text-md mx-auto flex items-center justify-center text-[#002a01]"
+                  aria-label={`Increase ${dish.name}`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-plus-icon lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={handleDecrease}
-                className="h-8 w-8 rounded-md text-lg text-[#002a01]"
-                aria-label={`Decrease ${dish.name}`}
+                onClick={handleAddToCart}
+                className={cn(
+                  "px-1 py-1 rounded-md border border-green-600/30 bg-white mx-auto my-auto flex items-center justify-center text-xl font-semibold text-[#002a01] shadow-sm"
+                )}
+                aria-label={`Add ${dish.name}`}
               >
-                −
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-plus-icon lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
               </button>
-              <span className="text-md min-w-[1.5rem] text-center font-medium">
-                {quantity}
-              </span>
-              <button
-                onClick={handleIncrease}
-                className="h-8 w-8 rounded-md text-lg text-[#002a01]"
-                aria-label={`Increase ${dish.name}`}
-              >
-                +
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={dish.soldOut ? undefined : handleAddToCart}
-              disabled={dish.soldOut}
-              className={cn(
-                "h-9 rounded-md border border-green-600/30 bg-white px-4 text-xl font-semibold text-[#002a01] shadow-sm",
-                dish.soldOut && "cursor-not-allowed opacity-50"
-              )}
-              aria-label={`Add ${dish.name}`}
-            >
-              {dish.soldOut ? 'Sold' : 'Add'}
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
