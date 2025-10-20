@@ -20,6 +20,16 @@ export interface OrderNotificationData {
 }
 
 export class NotificationService {
+  // Helper method to get absolute image URL
+  private getAbsoluteImageUrl(imageUrl: string): string {
+    // If it's already a complete URL (starts with http/https), return as is
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    // Otherwise, prepend the base URL
+    return `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${imageUrl}`;
+  }
+
   // Send notification to specific user
   async sendToUser(userId: string, notification: NotificationData) {
     try {
@@ -37,7 +47,7 @@ export class NotificationService {
         notification: {
           title: notification.title,
           body: notification.body,
-          imageUrl: notification.imageUrl ? `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${notification.imageUrl}` : undefined
+          image: notification.imageUrl ? this.getAbsoluteImageUrl(notification.imageUrl) : undefined
         },
         data: {
           type: 'custom',
@@ -45,7 +55,7 @@ export class NotificationService {
         },
         android: {
           notification: {
-            imageUrl: notification.imageUrl ? `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${notification.imageUrl}` : undefined,
+            image: notification.imageUrl ? this.getAbsoluteImageUrl(notification.imageUrl) : undefined,
             sound: 'default',
             channelId: 'food_delivery',
             icon: 'ic_stat_aasta',
@@ -103,7 +113,7 @@ export class NotificationService {
         notification: {
           title: notification.title,
           body: notification.body,
-          imageUrl: notification.imageUrl ? `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${notification.imageUrl}` : undefined
+          image: notification.imageUrl ? this.getAbsoluteImageUrl(notification.imageUrl) : undefined
         },
         data: {
           type: 'broadcast',
@@ -111,7 +121,7 @@ export class NotificationService {
         },
         android: {
           notification: {
-            imageUrl: notification.imageUrl ? `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}${notification.imageUrl}` : undefined,
+            image: notification.imageUrl ? this.getAbsoluteImageUrl(notification.imageUrl) : undefined,
             sound: 'default',
             channelId: 'food_delivery',
             icon: 'ic_stat_aasta',

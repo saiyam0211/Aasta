@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Check if AWS credentials are available
 const hasAwsCredentials = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_S3_BUCKET_NAME;
@@ -47,15 +48,18 @@ export async function POST(request: NextRequest) {
     if (!hasAwsCredentials || !s3Client || !BUCKET_NAME) {
       console.log('AWS S3 credentials not configured, using placeholder image');
       
-      // Return a placeholder image URL for development
-      const placeholderUrl = `https://via.placeholder.com/400x300/ffd500/ffffff?text=${encodeURIComponent(filename)}`;
+      // Convert file to base64 for immediate use
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const base64 = buffer.toString('base64');
+      const dataUrl = `data:${file.type};base64,${base64}`;
       
       return NextResponse.json({ 
         success: true, 
-        url: placeholderUrl,
+        url: dataUrl,
         filename: filename,
         key: `placeholder-${filename}`,
-        message: 'AWS S3 not configured. Using placeholder image.'
+        message: 'AWS S3 not configured. Using base64 image.'
       });
     }
 
@@ -79,12 +83,19 @@ export async function POST(request: NextRequest) {
 
     await s3Client.send(uploadCommand);
 
-    // Return public URL
-    const publicUrl = `https://${BUCKET_NAME}.s3.amazonaws.com/${key}`;
+    // Generate presigned URL for 7 days (expires with image cleanup)
+    const getObjectCommand = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    });
+    
+    const presignedUrl = await getSignedUrl(s3Client, getObjectCommand, { 
+      expiresIn: 7 * 24 * 60 * 60 // 7 days
+    });
     
     return NextResponse.json({ 
       success: true, 
-      url: publicUrl,
+      url: presignedUrl,
       filename: filename,
       key: key
     });
