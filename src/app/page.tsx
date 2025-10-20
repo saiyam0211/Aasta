@@ -1467,7 +1467,7 @@ export default function HomePage() {
         ) : (
           <>
             {/* Popular foods */}
-            <div className="relative min-h-screen w-full bg-white">
+            <div className="relative min-h-screen  w-full bg-transparent">
               {/* Emerald Glow Background */}
               {/* <div
                 className="absolute inset-0"

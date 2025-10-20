@@ -362,8 +362,8 @@ export function HomeProductCardList({
   return (
     <div className="relative">
       {/* edge fades to hint horizontal scroll */}
-      <div className="fade-left absolute inset-y-0 z-50 left-0 w-8 pointer-events-none" />
-      <div className="fade-right absolute inset-y-0 right-0 z-50 w-8 pointer-events-none" />
+      <div className="fade-left absolute inset-y-0 z-50 left-0 w-4 pointer-events-none" />
+      <div className="fade-right absolute inset-y-0 right-0 z-50 w-4 pointer-events-none" />
 
       <div
         className="scrollbar-hide flex gap-6 overflow-x-auto pb-6"

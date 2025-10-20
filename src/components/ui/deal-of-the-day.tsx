@@ -179,6 +179,16 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
         })}
       </div>
 
+      <div
+        className="absolute inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: "url('/pattern.png')",
+          backgroundRepeat: "repeat",
+          opacity: 0.2,
+          backgroundSize: "120px",
+        }}
+      />
+
       {/* Content */}
       <div className="relative z-10 p-6">
         {/* Header - Hack of the Day */}
@@ -322,7 +332,7 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
               )}
               aria-label={`Add ${deal.name}`}
             >
-              {deal.soldOut ? 'Sold out' : 'Add to cart'}
+              {deal.soldOut ? 'Out of Stock' : 'Add to cart'}
             </button>
 
             {/* Centered quantity controls */}
@@ -336,7 +346,7 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
             >
               <div className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-[#cefd4f] px-5 py-2 h-14">
                 <button
-                  className="flex h-6 w-6 items-center mx-auto justify-center rounded-full transition-colors"
+                  className="flex h-6 w-6 items-center mx-auto justify-center rounded-full"
                   onClick={handleDecrease}
                   aria-label={`Decrease ${deal.name}`}
                 >
@@ -344,7 +354,7 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
                 </button>
                 <span className=" text-center px-2 text-2xl font-semibold text-gray-600">{quantity}</span>
                 <button
-                  className="flex h-6 w-6 items-center mx-auto justify-center rounded-full transition-colors"
+                  className="flex h-6 w-6 items-center mx-auto justify-center rounded-full"
                   onClick={handleIncrease}
                   aria-label={`Increase ${deal.name}`}
                 >

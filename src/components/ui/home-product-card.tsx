@@ -233,7 +233,7 @@ export function HomeProductCard({
       </div> */}
 
       {/* Title + VegMark in one row */}
-      <div className=" flex items-start justify-between px-2">
+      <div className="-mt-2 flex items-start justify-between px-2">
         <div className="flex-1 min-w-0">
           <div className="ml-0.5 text-lg my-1 leading-5 font-semibold text-gray-900">
             {dish.name}
