@@ -56,6 +56,14 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
     : 0;
   const savedAmount = hasDiscount ? deal.originalPrice! - deal.price : 0;
 
+  // Robust veg/non-veg detection (prefer explicit tags, then fallback to flag)
+  const tagsLower = Array.isArray(deal.dietaryTags)
+    ? deal.dietaryTags.map((t) => String(t).toLowerCase())
+    : [];
+  const hasNonVegTag = tagsLower.some((t) => /(non[-\s]?veg|egg|chicken|mutton|fish|meat)/i.test(t));
+  const hasVegTag = tagsLower.some((t) => /(\bveg\b|vegetarian|vegan)/i.test(t));
+  const isVeg = hasNonVegTag ? false : (hasVegTag ? true : !!deal.isVegetarian);
+
   // Auto-toggle discount text every 5 seconds
   useEffect(() => {
     if (!hasDiscount) return;
@@ -128,57 +136,108 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
 
   return (
     <div className={cn(
-      "relative rounded-3xl overflow-hidden min-w-[320px] flex-shrink-0 snap-center bg-neutral-900 mt-10",
+      "relative rounded-3xl overflow-hidden w-[90%] h-auto flex-shrink-0 snap-center bg-neutral-900 mt-10",
       "border border-white/10 shadow-lg"
     )}>
-      {/* Subtle background gradient */}
-      <div className="absolute inset-0 opacity-30">
-        <div className={cn(
-          "absolute inset-0 bg-gradient-to-br from-transparent to-transparent",
-          deal.isVegetarian ? "via-emerald-700/30" : "via-rose-700/30"
-        )} />
+      {/* Subtle radial flower-like background gradient, center of flower is bottom right (center at 85% 88%) */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div
+          className={cn(
+            "absolute inset-0",
+            "opacity-45 animate-[radialFlowerExpand_3.4s_ease-in-out_infinite]"
+          )}
+          style={{
+            background: isVeg
+              ? 'radial-gradient(ellipse 120% 80% at 85% 88%, rgba(16,185,129,0.50) 0%, rgba(16,185,129,0.14) 54%, rgba(0,0,0,0.06) 77%, transparent 100%)'
+              : 'radial-gradient(ellipse 120% 80% at 85% 88%, rgba(244,63,94,0.44) 0%, rgba(244,63,94,0.12) 47%, rgba(0,0,0,0.06) 77%, transparent 100%)',
+            filter: 'blur(2.5px)'
+          }}
+        />
+        {/* "Flower petal" effect radiating from bottom right as center */}
+        {[...Array(7)].map((_, i) => {
+          const angle = (i / 7) * 2 * Math.PI;
+          const cx = 85 + 22 * Math.cos(angle + 0.45); // center x is now 85%
+          const cy = 88 + 18 * Math.sin(angle + 0.85); // center y is now 88%
+          return (
+            <div
+              key={i}
+              className={`absolute rounded-full`}
+              style={{
+                left: `${cx}%`,
+                top: `${cy}%`,
+                width: `${54 + 18 * Math.sin(angle)}px`,
+                height: `${57 + 18 * Math.cos(angle)}px`,
+                zIndex: 0,
+                background: isVeg
+                  ? "radial-gradient(circle at 54% 48%,rgba(16,185,129,0.18) 0%,rgba(16,185,129,0.10) 78%,transparent 100%)"
+                  : "radial-gradient(circle at 54% 48%,rgba(244,63,94,0.17) 0%,rgba(244,63,94,0.09) 72%,transparent 100%)",
+                filter: `blur(9px) brightness(0.62)`,
+                opacity: 0.41 - i * 0.045
+              }}
+            />
+          );
+        })}
       </div>
 
       {/* Content */}
       <div className="relative z-10 p-6">
-        {/* Header */}
+        {/* Header - Hack of the Day */}
         <div className="text-center mb-6">
           <div className="flex justify-center">
             <img 
-              src={deal.isVegetarian ? "/HACK-VEG.svg" : "/HACK-NONVEG.svg"}
-              alt={deal.isVegetarian ? "Hack Veg" : "Hack Non-Veg"}
+              src={isVeg ? "/HACK-VEG.svg" : "/HACK-NONVEG.svg"}
+              alt={isVeg ? "Hack Veg" : "Hack Non-Veg"}
               className="h-24 w-auto opacity-90"
             />
           </div>
         </div>
 
         {/* Dish Image */}
-        <div className="relative mx-auto w-64 h-40 mb-6">
-          <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl p-1 border border-white/10">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30 rounded-2xl" />
+        <div className="relative mx-auto w-full h-40 mb-10">
+          <div className="relative bg-white/5 backdrop-blur-sm rounded-3xl p-1 border border-white/10">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30 rounded-3xl" />
             <SafeImage
               src={deal.image}
               alt={deal.name}
-              className={cn("w-full h-48 object-cover rounded-2xl", deal.soldOut && "grayscale")}
+              className={cn("w-full h-60 object-cover rounded-3xl", deal.soldOut && "grayscale")}
               fallbackSrc="/images/dish-placeholder.svg"
             />
           </div>
           {deal.soldOut && (
-            <img src="/images/sold-out.png" alt="Sold Out" className="absolute inset-0  h-full w-full" />
+            <img src="/images/sold-out.png" alt="Sold Out" className="absolute inset-0 top-0 right-0 object-cover h-[200%] w-[200%]" />
           )}
           
           {/* Price Badge */}
-          <div className="absolute top-46 left-1/2 transform -translate-x-1/2 z-10">
+          <div className="absolute top-56 left-1/2 transform -translate-x-1/2 z-10">
             <div className={cn(
-              "px-5 py-2 rounded-xl shadow-lg border border-white/10",
-              deal.isVegetarian 
+              "px-5 py-2 rounded-3xl shadow-lg border border-white/10",
+              isVeg 
                 ? "bg-gradient-to-r from-emerald-500 to-emerald-600" 
                 : "bg-gradient-to-r from-rose-500 to-rose-600"
             )}>
               <div className="flex items-center gap-2 text-white">
                 <span className="text-2xl font-semibold">₹{deal.price}</span>
                 {hasDiscount && (
-                  <span className="text-sm line-through/80 opacity-80">₹{deal.originalPrice}</span>
+                  <span
+                    className="text-md mt-1 opacity-80 relative"
+                    style={{
+                      display: 'inline-block',
+                    }}
+                  >
+                    ₹{deal.originalPrice}
+                    {/* Custom tilt strike-through */}
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-0 right-0 top-1/2 h-0.5"
+                      style={{
+                        background: 'rgba(255,255,255,0.7)',
+                        transform: 'rotate(-8deg)',
+                        width: '100%',
+                        height: '2px',
+                        top: '55%',
+                      }}
+                    />
+                  </span>
                 )}
               </div>
             </div>
@@ -188,32 +247,32 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
         {/* Info Pills */}
         <div className="flex items-center justify-center gap-3 mb-6 mt-24">
           {/* Time */}
-          <div className={cn(
+          {/* <div className={cn(
             "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium border",
-            deal.isVegetarian 
+            isVeg 
               ? "bg-emerald-900/40 border-emerald-700 text-emerald-100" 
               : "bg-rose-900/40 border-rose-700 text-rose-100"
           )}>
             <span className={cn(
               "inline-block h-2 w-2 rounded-full",
-              deal.isVegetarian ? "bg-emerald-400" : "bg-rose-400"
+              isVeg ? "bg-emerald-400" : "bg-rose-400"
             )} />
             <span>{deal.preparationTime} mins</span>
-          </div>
+          </div> */}
 
           {/* Serving Size */}
-          <div className="rounded-full px-3 py-1.5 text-xs font-medium border bg-white/5 border-white/10 text-white/90">
+          {/* <div className="rounded-full px-3 py-1.5 text-xs font-medium border bg-white/5 border-white/10 text-white/90">
             <span>{deal.servingSize || 'Serves 1'}</span>
-          </div>
+          </div> */}
         </div>
 
         {/* Dish Name */}
-        <h3 className="text-center text-2xl font-semibold text-white mb-2 leading-tight">
+        <h3 className="text-center text-3xl mt-8 font-semibold text-white mb-2 leading-tight">
           {deal.name}
         </h3>
 
         {/* Dynamic Text with Enhanced Transition */}
-        <div className="h-6 text-center text-sm font-medium mb-8 relative overflow-hidden text-white/90">
+        <div className="h-6 text-center text-lg font-medium mb-8 relative overflow-hidden text-white/90">
           {hasDiscount ? (
             <>
               <div
@@ -222,7 +281,7 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
                   showDiscountText 
                     ? "translate-y-0 opacity-100" 
                     : "-translate-y-full opacity-0",
-                  deal.isVegetarian ? "text-emerald-300" : "text-rose-300"
+                  isVeg ? "text-emerald-300" : "text-rose-300"
                 )}
               >
                 <span>{discountPct}% OFF</span>
@@ -233,7 +292,7 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
                   !showDiscountText 
                     ? "translate-y-0 opacity-100" 
                     : "translate-y-full opacity-0",
-                  deal.isVegetarian ? "text-emerald-300" : "text-rose-300"
+                  isVeg ? "text-emerald-300" : "text-rose-300"
                 )}
               >
                 <span>You'll save ₹{savedAmount}</span>
@@ -244,43 +303,56 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
           )}
         </div>
 
-        {/* Add Button / Quantity Controls */}
-        <div className="flex justify-center">
-          {quantity > 0 ? (
-            <div className="flex items-center gap-3 mx-8 h-14">
-              <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-[#cefd4f] px-5 py-2 h-14">
-                <button
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-[#002a01] shadow-sm hover:bg-gray-100 transition-colors"
-                  onClick={handleDecrease}
-                  aria-label={`Decrease ${deal.name}`}
-                >
-                  <Minus className="h-3 w-3 text-white" />
-                </button>
-                <span className="min-w-[20px] text-center text-lg font-semibold text-gray-600">{quantity}</span>
-                <button
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-[#002a01] shadow-sm hover:bg-gray-100 transition-colors"
-                  onClick={handleIncrease}
-                  aria-label={`Increase ${deal.name}`}
-                >
-                  <Plus className="h-3 w-3 text-white" />
-                </button>
-              </div>
-            </div>
-          ) : (
+        {/* Add Button / Quantity Controls - keep original styles, add slide animation */}
+        <div className="flex items-center justify-center w-full">
+          <div className="relative w-80 h-14 flex items-center justify-center mx-auto">
+            {/* Centered Add button */}
             <button
               onClick={deal.soldOut ? undefined : handleAddToCart}
               disabled={deal.soldOut}
               className={cn(
-                "px-6 py-4 rounded-xl text-md font-semibold shadow-lg border",
-                deal.isVegetarian 
-                  ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-500 text-white" 
-                  : "bg-rose-600 hover:bg-rose-700 border-rose-500 text-white",
-                deal.soldOut && "cursor-not-allowed opacity-50"
+                "absolute left-1/2 top-1/2 z-10 transition-all duration-300 p-4 rounded-2xl text-lg font-semibold border transform -translate-x-1/2 -translate-y-1/2",
+                isVeg
+                  ? "bg-emerald-500 border-emerald-500 text-white"
+                  : "bg-rose-500 border-rose-500 text-white",
+                deal.soldOut && "cursor-not-allowed opacity-20 bg-rose-900 border-rose-900 text-white",
+                quantity > 0
+                  ? "translate-y-[120%] opacity-0 pointer-events-none"
+                  : "translate-y-[-50%] opacity-100"
               )}
+              aria-label={`Add ${deal.name}`}
             >
               {deal.soldOut ? 'Sold out' : 'Add to cart'}
             </button>
-          )}
+
+            {/* Centered quantity controls */}
+            <div
+              className={cn(
+                "absolute left-1/2 top-1/2 flex items-center w-auto transition-all duration-300 transform -translate-x-1/2 -translate-y-1/2",
+                quantity > 0
+                  ? "translate-y-[-50%] opacity-100"
+                  : "translate-y-[120%] opacity-0 pointer-events-none"
+              )}
+            >
+              <div className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-[#cefd4f] px-5 py-2 h-14">
+                <button
+                  className="flex h-6 w-6 items-center mx-auto justify-center rounded-full transition-colors"
+                  onClick={handleDecrease}
+                  aria-label={`Decrease ${deal.name}`}
+                >
+                  <Minus className="h-8 w-8 text-black" />
+                </button>
+                <span className=" text-center px-2 text-2xl font-semibold text-gray-600">{quantity}</span>
+                <button
+                  className="flex h-6 w-6 items-center mx-auto justify-center rounded-full transition-colors"
+                  onClick={handleIncrease}
+                  aria-label={`Increase ${deal.name}`}
+                >
+                  <Plus className="h-8 w-8 text-black" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -288,8 +360,20 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
 }
 
 export function HackOfTheDay({ deals, onAdd, className }: HackOfTheDayProps) {
-  // Limit to maximum 2 items
-  const limitedDeals = deals.slice(0, 2);
+  // Helper to detect veg/non-veg same as DealCard
+  const isVegDeal = (deal: Deal): boolean => {
+    const tagsLower = Array.isArray(deal.dietaryTags)
+      ? deal.dietaryTags.map((t) => String(t).toLowerCase())
+      : [];
+    const hasNonVegTag = tagsLower.some((t) => /(non[-\s]?veg|egg|chicken|mutton|fish|meat)/i.test(t));
+    const hasVegTag = tagsLower.some((t) => /(\bveg\b|vegetarian|vegan)/i.test(t));
+    return hasNonVegTag ? false : (hasVegTag ? true : !!deal.isVegetarian);
+  };
+
+  // Show Veg first, then Non-Veg; limit to maximum 2 items
+  const limitedDeals = [...deals]
+    .sort((a, b) => (isVegDeal(a) === isVegDeal(b) ? 0 : isVegDeal(a) ? -1 : 1))
+    .slice(0, 2);
   
   return (
     <div className={cn("relative", className)}>

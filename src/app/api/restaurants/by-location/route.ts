@@ -139,6 +139,7 @@ export async function GET(request: NextRequest) {
       return {
         id: restaurant.id,
         name: restaurant.name,
+        address: restaurant.address,
         image: restaurant.imageUrl,
         bannerImage: restaurant.imageUrl, // Use same image for banner
         cuisineTypes: restaurant.cuisineTypes,

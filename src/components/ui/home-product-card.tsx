@@ -147,7 +147,7 @@ export function HomeProductCard({
   return (
     <div
       className={cn(
-        'cursor-pointer rounded-2xl bg-white p-2 transition-transform duration-150',
+        'cursor-pointer rounded-2xl bg-white p-auto transition-transform duration-150',
         // 'scale-100 hover:scale-120', // keep hover effect
         // clicked && 'scale-105', // add click effect
         className
@@ -157,7 +157,7 @@ export function HomeProductCard({
       aria-label={`View ${dish.name}`}
     >
       {/* Image with centered ADD overlay */}
-      <div className="relative mb-4 h-40 w-auto overflow-hidden rounded-3xl shadow-none border-none">
+      <div className="relative mb-4 h-40 w-auto overflow-hidden rounded-3xl shadow-none border-none mx-auto">
 
         <SafeImage
           src={dish.image}
@@ -172,9 +172,9 @@ export function HomeProductCard({
           <img
             src="/images/sold-out.png"
             alt="Sold Out"
-            className="absolute object-contain -right-2 h-[100%] w-[100%]"
+            className="absolute top-0 -right-4 object-contain h-full w-full z-20"
+            style={{ pointerEvents: 'none' }}
           />
-
         )}
 
         {/* {!dish.soldOut && (
@@ -235,11 +235,11 @@ export function HomeProductCard({
       {/* Title + VegMark in one row */}
       <div className=" flex items-start justify-between px-2">
         <div className="flex-1 min-w-0">
-          <div className="line-clamp-2 ml-0.5 text-sm leading-5 font-semibold text-gray-900">
+          <div className="ml-0.5 text-lg my-1 leading-5 font-semibold text-gray-900">
             {dish.name}
           </div>
-          <div className="mb-2 flex items-center gap-1 text-gray-700">
-            <span className="text-sm text-gray-500">({dish.restaurant})</span>
+          <div className="mb-1 flex items-center gap-1 text-gray-700">
+            <span className="text-md text-gray-500">({dish.restaurant})</span>
           </div>
         </div>
         <div className="flex-shrink-0 pl-2 pt-0.5">
@@ -250,7 +250,7 @@ export function HomeProductCard({
 
       {/* Discount */}
       {hasDiscount && (
-        <div className=" h-4 text-[12px] font-semibold text-blue-600 relative overflow-hidden px-2">
+        <div className=" h-4 text-[13.5px] font-semibold text-blue-600 relative overflow-hidden px-2">
           <div
             className={cn(
               "absolute inset-0 flex items-center transition-all duration-500 ease-in-out px-2",
@@ -277,46 +277,102 @@ export function HomeProductCard({
       {/* Price row */}
       <div className="relative flex items-center justify-between px-2">
         <div className="mt-2 flex flex-col items-baseline">
-          <span className="text-xl font-bold text-gray-900">₹{dish.price}</span>
           {dish.originalPrice && (
             <span className="text-md text-gray-400 line-through">
               ₹{dish.originalPrice}
             </span>
           )}
+          <span className="text-xl font-bold text-gray-900">₹{dish.price}</span>
         </div>
         {!dish.soldOut && (
           <div className="absolute right-0 bottom-1 border-1 border-white">
-            {quantity > 0 ? (
-              <div className="-gap-2 inline-flex h-9 items-center rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm">
-                <button
-                  onClick={handleDecrease}
-                  className="h-8 w-8 rounded-md text-md mx-auto flex items-center justify-center text-[#002a01]"
-                  aria-label={`Decrease ${dish.name}`}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-minus-icon lucide-minus"><path d="M5 12h14"/></svg>
-                </button>
-                <span className="text-lg min-w-[1.5rem] text-center font-medium">
-                  {quantity}
-                </span>
-                <button
-                  onClick={handleIncrease}
-                  className="h-8 w-8 rounded-md text-md mx-auto flex items-center justify-center text-[#002a01]"
-                  aria-label={`Increase ${dish.name}`}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-plus-icon lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                </button>
-              </div>
-            ) : (
+            <div className="relative w-[96px] h-9">
               <button
                 onClick={handleAddToCart}
                 className={cn(
-                  "px-1 py-1 rounded-md border border-green-600/30 bg-white mx-auto my-auto flex items-center justify-center text-xl font-semibold text-[#002a01] shadow-sm"
+                  "absolute right-0 top-0 z-10 transition-all duration-300 px-1 py-1 rounded-md border border-green-600/30 bg-white flex items-center justify-center text-xl font-semibold text-[#002a01] shadow-sm",
+                  quantity > 0
+                    ? "translate-y-[120%] opacity-0 pointer-events-none"
+                    : "translate-y-0 opacity-100"
                 )}
                 aria-label={`Add ${dish.name}`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-plus-icon lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-plus-icon lucide-plus"
+                >
+                  <path d="M5 12h14" />
+                  <path d="M12 5v14" />
+                </svg>
               </button>
-            )}
+
+              <div
+                className={cn(
+                  "absolute right-0 top-0 flex items-center transition-all duration-300 w-[96px]",
+                  quantity > 0
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-[120%] opacity-0 pointer-events-none"
+                )}
+              >
+                <div className="-gap-2 inline-flex h-9 items-center rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm pl-0 pr-2">
+                  {/* Animate minus and qty from bottom */}
+                  <div className="flex items-center transition-transform duration-300 delay-100 translate-y-0">
+                    <button
+                      onClick={handleDecrease}
+                      className="h-8 w-8 rounded-md text-md mx-auto flex items-center justify-center text-[#002a01] transition-transform duration-300 "
+                      aria-label={`Decrease ${dish.name}`}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="lucide lucide-minus-icon lucide-minus"
+                      >
+                        <path d="M5 12h14" />
+                      </svg>
+                    </button>
+                    <span className="text-lg min-w-[1.5rem] text-center font-medium transition-transform duration-300 ml-0">
+                      {quantity}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleIncrease}
+                    className="h-8 w-8 rounded-md text-md mx-auto flex items-center justify-center text-[#002a01]"
+                    aria-label={`Increase ${dish.name}`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-plus-icon lucide-plus"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="M12 5v14" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -10,6 +10,7 @@ import {
   TrendingUp,
   History,
   RefreshCw,
+  CircleUser,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -332,7 +333,7 @@ export function HomeHeader({
             onClick={onProfileClick}
             className="flex h-12 w-12 items-center justify-center rounded-full border border-[#d3fb6b] bg-white/50 backdrop-blur-sm transition-colors"
           >
-            <CircleUserRound className="h-7 w-7 text-black font-normal" />
+            <CircleUser className="h-7 w-7 text-black font-normal" strokeWidth={1.8} />
           </button>
         </div>
       </div>

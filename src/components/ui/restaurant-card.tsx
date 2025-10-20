@@ -28,6 +28,7 @@ export interface RestaurantSummary {
   latitude?: number | null;
   longitude?: number | null;
   averagePreparationTime?: number;
+  address?: string | null;
 }
 
 interface RestaurantCardProps {
@@ -57,6 +58,9 @@ export function RestaurantCard({
 }: RestaurantCardProps) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
+  const [currentImage, setCurrentImage] = useState<string | null>(null);
+  const [previousImage, setPreviousImage] = useState<string | null>(null);
+  const [isFading, setIsFading] = useState(false);
   const [distanceText, setDistanceText] = useState<string | null>(null);
   const { latitude, longitude } = useLocationStore();
 
@@ -70,6 +74,58 @@ export function RestaurantCard({
     restaurant.imageUrl ||
     '/images/restaurant-placeholder.svg';
   const heroImage = current?.image || heroFallback;
+
+  // Keep latest index in a ref to avoid stale closures
+  const indexRef = useRef<number>(index);
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => { indexRef.current = index; }, [index]);
+
+  const getImageForIndex = (i: number): string => {
+    if (items && items.length > 0) {
+      const safe = items[i % items.length];
+      return safe?.image || heroFallback;
+    }
+    return heroFallback;
+  };
+
+  const advanceTo = (nextIdx: number, reschedule: boolean = false) => {
+    // Capture the image being shown now as the 'previous' layer
+    const prev = currentImage ?? getImageForIndex(indexRef.current);
+    setPreviousImage(prev);
+    // Set next image and index in the same tick so chip and image change together
+    setCurrentImage(getImageForIndex(nextIdx));
+    setIndex(nextIdx);
+    setIsFading(true);
+    // Finish the fade
+    setTimeout(() => {
+      setIsFading(false);
+      setPreviousImage(null);
+      if (reschedule) scheduleNext();
+    }, 250);
+  };
+
+  // Initialize image states and auto-advance every 5s
+  useEffect(() => {
+    setCurrentImage(heroImage);
+  }, [heroImage]);
+
+  const scheduleNext = () => {
+    if (!items || items.length <= 1) return;
+    if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+    const delay = 10000 + Math.floor(Math.random() * 5000);
+    timeoutIdRef.current = setTimeout(() => {
+      const nextIdx = (indexRef.current + 1) % items.length;
+      advanceTo(nextIdx, true);
+    }, delay);
+  };
+
+  useEffect(() => {
+    scheduleNext();
+    return () => {
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
 
   // Calculate distance using Google Maps
   useEffect(() => {
@@ -141,11 +197,10 @@ export function RestaurantCard({
     const dx = end - start;
     const threshold = 40; // pixels
     if (Math.abs(dx) > threshold && items && items.length > 1) {
-      if (dx < 0) {
-        setIndex((i) => (i + 1) % items.length);
-      } else {
-        setIndex((i) => (i - 1 + items.length) % items.length);
-      }
+      const nextIdx = dx < 0
+        ? (indexRef.current + 1) % items.length
+        : (indexRef.current - 1 + items.length) % items.length;
+      advanceTo(nextIdx);
     }
     touchStartX.current = null;
     touchEndX.current = null;
@@ -154,7 +209,8 @@ export function RestaurantCard({
   const content = (
     <div
       className={cn(
-        'w-full overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-md',
+        'w-full overflow-hidden bg-white',
+        'flex', // Make container flex for horizontal layout
         restaurant.isOpen === false ? 'cursor-not-allowed' : 'cursor-pointer',
         className
       )}
@@ -167,38 +223,43 @@ export function RestaurantCard({
         onClick?.(restaurant.id);
       }}
     >
-      {/* Image with swipe */}
+      {/* Image with swipe on the left */}
       <div
-        className="relative h-40 bg-gray-100 select-none"
+        className="relative h-48 w-40 rounded-3xl bg-gray-100 select-none flex-shrink-0"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <SafeImage
-          key={index}
-          src={heroImage}
-          alt={restaurant.name}
-          className={cn(
-            'absolute inset-0 h-full w-full object-cover',
-            restaurant.isOpen === false ? 'opacity-70' : undefined
-          )}
-          fallbackSrc="/images/restaurant-placeholder.svg"
-        />
+        {/* Crossfade: previous image fades out, current fades in */}
+        {previousImage && (
+          <SafeImage
+            src={previousImage}
+            alt={restaurant.name}
+            className={cn(
+              'absolute inset-0 h-full rounded-3xl w-full object-cover transition-opacity duration-200 ease-out',
+              isFading ? 'opacity-0' : 'opacity-100',
+              restaurant.isOpen === false ? 'opacity-70' : undefined
+            )}
+            fallbackSrc="/images/restaurant-placeholder.svg"
+          />
+        )}
+        {currentImage && (
+          <SafeImage
+            key={index}
+            src={currentImage}
+            alt={restaurant.name}
+            className={cn(
+              'absolute inset-0 h-full rounded-3xl w-full object-cover transition-opacity duration-200 ease-out',
+              isFading ? 'opacity-100' : 'opacity-100',
+              restaurant.isOpen === false ? 'opacity-70' : undefined
+            )}
+            fallbackSrc="/images/restaurant-placeholder.svg"
+          />
+        )}
         {/* Closed Lottie on top when restaurant is inactive */}
         {restaurant.isOpen === false && (
           <div className="pointer-events-none absolute -top-35 left-1/2 z-20 -translate-x-1/2">
             <Lottie animationData={closedAnim as any} loop autoplay style={{ width: 400, height: 400 }} />
-          </div>
-        )}
-        {/* Featured dish chip */}
-        {current && (
-          <div className="absolute top-3 left-3">
-            <InfoChip>
-              <span className="line-clamp-1 max-w-[150px] font-medium">
-                {current.name}
-              </span>
-              <span className="font-bold">₹{current.price}</span>
-            </InfoChip>
           </div>
         )}
         {/* Dots */}
@@ -217,42 +278,65 @@ export function RestaurantCard({
         )}
       </div>
 
-      {/* Body */}
-      <div className="p-4">
-        <div className="mb-2 flex items-start justify-between">
-          <div>
-            <div className="mb-2 line-clamp-1 text-2xl leading-5 font-semibold text-gray-900">
-              {restaurant.name}
+      {/* Content on the right */}
+      <div className="flex-1 relative px-4 py-5 flex flex-col justify-between">
+        <div>
+          {/* Featured dish chip */}
+          {current && (
+            <div className={cn("absolute top-1 left-0 ml-4 transition-opacity duration-200 ease-out",
+              isFading ? 'opacity-50' : 'opacity-100')}
+            >
+              <InfoChip>
+                <span className="line-clamp-1 max-w-[150px] font-medium">
+                  {current.name}
+                </span>
+                • 
+                <span className="font-bold">₹{current.price}</span>
+              </InfoChip>
             </div>
-            {restaurant.isOpen === false && (
-              <div className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700">
-                Closed currently
+          )}
+          <div className={cn("mb-2 flex items-start justify-between", current ? "mt-6" : "mt-0")}>
+            <div>
+              <div className="mb-2 text-2xl leading-5 font-bold text-gray-900">
+                {restaurant.name}
               </div>
-            )}
-            {/* {restaurant.cuisineTypes && restaurant.cuisineTypes.length > 0 && (
-              <div className="mt-1 line-clamp-1 text-xs text-gray-500">
-                {restaurant.cuisineTypes.join(', ')}
-              </div>
-            )} */}
+              {restaurant.address && (
+                <div className="-mt-1 mb-1 text-sm text-gray-600 max-w-[220px] truncate">
+                  {restaurant.address.length > 50
+                    ? `${restaurant.address.slice(0, 30)}...`
+                    : restaurant.address}
+                </div>
+              )}
+              {restaurant.isOpen === false && (
+                <div className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700">
+                  Closed currently
+                </div>
+              )}
+              {/* {restaurant.cuisineTypes && restaurant.cuisineTypes.length > 0 && (
+                <div className="mt-1 line-clamp-1 text-xs text-gray-500">
+                  {restaurant.cuisineTypes.join(', ')}
+                </div>
+              )} */}
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col text-xs text-gray-600">
+        <div className="flex flex-col text-sm text-gray-600 mt-2">
           <div className="mb-2 flex items-center gap-1">
-            <Clock className="h-4 w-4" />
+            <Clock className="h-5 w-5" />
             <span>
-              {typeof restaurant.estimatedDeliveryTime === 'string'
-                ? restaurant.estimatedDeliveryTime
-                : `${restaurant.estimatedDeliveryTime ?? '--'} min`}
+            {typeof restaurant.estimatedDeliveryTime === 'string'
+              ? restaurant.estimatedDeliveryTime
+              : `${(restaurant.estimatedDeliveryTime ?? restaurant.averagePreparationTime ?? 20)} min`}
             </span>
           </div>
-          {/* Show calculated distance or fallback to existing distanceKm */}
+          {/* Show calculated distance or fallback to existing distanceKm
           {distanceText && (
             <div className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
               <span>{distanceText}</span>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </div>

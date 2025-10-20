@@ -157,7 +157,7 @@ export function HomeProductCard({
   return (
     <div
       className={cn(
-        'cursor-pointer rounded-2xl border border-gray-100 bg-white p-3 shadow-xs transition-transform duration-150',
+        'cursor-pointer rounded-2xl overflow-hidden bg-white p-auto transition-transform duration-150',
         // 'scale-100 hover:scale-120', // keep hover effect
         // clicked && 'scale-105', // add click effect
         className
@@ -167,9 +167,7 @@ export function HomeProductCard({
       aria-label={`View ${dish.name}`}
     >
       {/* Image with centered ADD overlay */}
-      
-      <div className="relative mb-6 h-36 w-full overflow-hidden rounded-xl bg-gray-100">
-        
+      <div className="relative mb-4 h-40 w-auto overflow-hidden rounded-3xl shadow-none border-none mx-auto">
         <SafeImage
           src={dish.image}
           alt={dish.name}
@@ -183,51 +181,35 @@ export function HomeProductCard({
           <img
             src="/images/sold-out.png"
             alt="Sold Out"
-            className="absolute inset-0 m-auto h-[100%] w-[100%]"
+            className="absolute top-0 -right-4 object-contain h-full w-full z-20"
+            style={{ pointerEvents: 'none' }}
           />
         )}
       </div>
 
-      {/* Chips row: show distance only; hide when not available */}
-      <div className="mb-2 flex items-center gap-2">
-        <VegMark isVegetarian={isVeg} />
-        {dish.distanceText && (
-          <InfoChip>
-            <>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="h-3 w-3"
-              >
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" />
-              </svg>
-              {dish.distanceText}
-            </>
-          </InfoChip>
-        )}
-      </div>
-
-      {/* Title */}
-      <div className="mb-1 line-clamp-2 text-sm leading-5 font-semibold text-gray-900">
-        {dish.name}
-      </div>
-
-      {/* Rating */}
-      <div className="mb-2 flex items-center gap-1 text-gray-700">
-        {/* <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" /> */}
-        {/* <span className="text-sm font-medium">{dish.rating}</span> */}
-        <span className="text-sm text-gray-500">({dish.restaurant})</span>
+      {/* Title + VegMark in one row */}
+      <div className=" flex items-start justify-between px-2">
+        <div className="flex-1 min-w-0">
+          <div className="ml-0.5 text-lg my-1 leading-5 font-semibold text-gray-900">
+            {dish.name}
+          </div>
+          <div className="mb-1 flex items-center gap-1 text-gray-700">
+            <span className="text-md text-gray-500">({dish.restaurant})</span>
+          </div>
+        </div>
+        <div className="flex-shrink-0 pl-2 pt-0.5">
+          <VegMark isVegetarian={isVeg} />
+        </div>
       </div>
 
       {/* Discount */}
       {hasDiscount && (
-        <div className="mb-1 h-4 text-[12px] font-semibold text-blue-600 relative overflow-hidden">
+        <div className=" h-4 text-[13.5px] font-semibold text-blue-600 relative overflow-hidden px-2">
           <div
             className={cn(
-              "absolute inset-0 flex items-center transition-all duration-500 ease-in-out",
-              showDiscountText 
-                ? "transform translate-y-0 opacity-100" 
+              "absolute inset-0 flex items-center transition-all duration-500 ease-in-out px-2",
+              showDiscountText
+                ? "transform translate-y-0 opacity-100"
                 : "transform -translate-y-full opacity-0"
             )}
           >
@@ -235,9 +217,9 @@ export function HomeProductCard({
           </div>
           <div
             className={cn(
-              "absolute inset-0 flex items-center transition-all duration-500 ease-in-out",
-              !showDiscountText 
-                ? "transform translate-y-0 opacity-100" 
+              "absolute inset-0 flex items-center transition-all duration-500 ease-in-out px-2",
+              !showDiscountText
+                ? "transform translate-y-0 opacity-100"
                 : "transform translate-y-full opacity-0"
             )}
           >
@@ -247,50 +229,106 @@ export function HomeProductCard({
       )}
 
       {/* Price row */}
-      <div className="relative flex items-center justify-between">
+      <div className="relative flex items-center justify-between px-2">
         <div className="mt-2 flex flex-col items-baseline">
           {dish.originalPrice && (
-            <span className="text-xs text-gray-400 line-through">
+            <span className="text-md text-gray-400 line-through">
               ₹{dish.originalPrice}
             </span>
           )}
-          <span className="text-lg font-bold text-gray-900">₹{dish.price}</span>
+          <span className="text-xl font-bold text-gray-900">₹{dish.price}</span>
         </div>
-        <div className="relative mt-4 border-1 border-white">
-          {quantity > 0 ? (
-            <div className="-gap-2 inline-flex h-9 items-center rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm">
+        {!dish.soldOut && (
+          <div className="absolute right-0 bottom-2 border-1 border-white">
+            <div className="relative w-[96px] h-9">
               <button
-                onClick={handleDecrease}
-                className="h-8 w-8 rounded-md text-lg text-[#002a01]"
-                aria-label={`Decrease ${dish.name}`}
+                onClick={handleAddToCart}
+                className={cn(
+                  "absolute right-0 top-0 z-10 transition-all duration-300 px-1 py-1 rounded-md border border-green-600/30 bg-white flex items-center justify-center text-xl font-semibold text-[#002a01] shadow-sm",
+                  quantity > 0
+                    ? "translate-y-[120%] opacity-0 pointer-events-none"
+                    : "translate-y-0 opacity-100"
+                )}
+                aria-label={`Add ${dish.name}`}
               >
-                −
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-plus-icon lucide-plus"
+                >
+                  <path d="M5 12h14" />
+                  <path d="M12 5v14" />
+                </svg>
               </button>
-              <span className="text-md min-w-[1.5rem] text-center font-medium">
-                {quantity}
-              </span>
-              <button
-                onClick={handleIncrease}
-                className="h-8 w-8 rounded-md text-lg text-[#002a01]"
-                aria-label={`Increase ${dish.name}`}
+
+              <div
+                className={cn(
+                  "absolute right-0 top-0 flex items-center transition-all duration-300 w-[96px]",
+                  quantity > 0
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-[120%] opacity-0 pointer-events-none"
+                )}
               >
-                +
-              </button>
+                <div className="-gap-2 inline-flex h-9 items-center rounded-md border border-green-600/30 bg-[#d3fb6b] shadow-sm pl-0 pr-2">
+                  {/* Animate minus and qty from bottom */}
+                  <div className="flex items-center transition-transform duration-300 delay-100 translate-y-0">
+                    <button
+                      onClick={handleDecrease}
+                      className="h-8 w-8 rounded-md text-md mx-auto flex items-center justify-center text-[#002a01] transition-transform duration-300 "
+                      aria-label={`Decrease ${dish.name}`}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="lucide lucide-minus-icon lucide-minus"
+                      >
+                        <path d="M5 12h14" />
+                      </svg>
+                    </button>
+                    <span className="text-lg min-w-[1.5rem] text-center font-medium transition-transform duration-300 ml-0">
+                      {quantity}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleIncrease}
+                    className="h-8 w-8 rounded-md text-md mx-auto flex items-center justify-center text-[#002a01]"
+                    aria-label={`Increase ${dish.name}`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-plus-icon lucide-plus"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="M12 5v14" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
-          ) : (
-            <button
-              onClick={dish.soldOut ? undefined : handleAddToCart}
-              disabled={dish.soldOut}
-              className={cn(
-                "h-9 rounded-md border border-green-600/30 bg-white px-4 text-xl font-semibold text-[#002a01] shadow-sm",
-                dish.soldOut && "cursor-not-allowed opacity-50"
-              )}
-              aria-label={`Add ${dish.name}`}
-            >
-              {dish.soldOut ? 'Sold' : 'Add'}
-            </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -324,11 +362,11 @@ export function HomeProductCardList({
   return (
     <div className="relative">
       {/* edge fades to hint horizontal scroll */}
-      <div className="fade-left absolute inset-y-0 left-0 w-6 pointer-events-none" />
-      <div className="fade-right absolute inset-y-0 right-0 w-10 pointer-events-none" />
+      <div className="fade-left absolute inset-y-0 z-50 left-0 w-8 pointer-events-none" />
+      <div className="fade-right absolute inset-y-0 right-0 z-50 w-8 pointer-events-none" />
 
       <div
-        className="scrollbar-hide flex gap-8 overflow-x-auto pb-6"
+        className="scrollbar-hide flex gap-6 overflow-x-auto pb-6"
         ref={scrollerRef}
       >
         {dishes.map((dish) => (

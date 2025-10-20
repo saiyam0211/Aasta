@@ -120,7 +120,7 @@ export default function HomePage() {
   const loadHomeDataWithCache = useCallback(async () => {
     try {
       console.log('🏠 Loading home data with cache for locationId:', locationId);
-      
+
       // Load all data in parallel using cache
       const [restaurants, dishes, hacks, nearbyDishes, recentOrders] = await Promise.all([
         getCachedData('popular_restaurants', () => loadPopularContentData(), vegOnly),
@@ -136,13 +136,13 @@ export default function HomePage() {
       setHacksOfTheDay(hacks);
       setNearbyDishesSections(nearbyDishes);
       setRecentDishes(recentOrders);
-      
+
       // Set loading states to false
       setPopularLoading(false);
       setHacksLoading(false);
       setNearbyDishesLoading(false);
       setRecentLoading(false);
-      
+
       console.log('✅ Home data loaded from cache');
     } catch (error) {
       console.error('❌ Error loading home data:', error);
@@ -165,7 +165,7 @@ export default function HomePage() {
     const response = await fetch(`/api/restaurants/by-location?locationId=${locationId}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`);
     const data = await response.json();
     const restaurants = data.data || [];
-    return restaurants.flatMap((r: any) => 
+    return restaurants.flatMap((r: any) =>
       (r.featuredItems || []).map((item: any) => ({
         id: item.id,
         name: item.name,
@@ -259,18 +259,18 @@ export default function HomePage() {
     try {
       const stored = sessionStorage.getItem('aasta_preloaded_data');
       if (!stored) return null;
-      
+
       const preloadedData = JSON.parse(stored);
-      
+
       // Check if data is for current location
       if (preloadedData.locationId !== locationId) {
         return null;
       }
-      
+
       // Check if data is fresh (less than 5 minutes old)
       const isFresh = Date.now() - preloadedData.timestamp < 5 * 60 * 1000;
       if (!isFresh) return null;
-      
+
       // Process the preloaded data into the expected format
       const processedData: any = {
         success: true,
@@ -280,7 +280,7 @@ export default function HomePage() {
         nearbyDishes: [],
         recentOrders: []
       };
-      
+
       // Process each result
       preloadedData.results.forEach((result: any) => {
         if (result.success && result.data) {
@@ -300,9 +300,9 @@ export default function HomePage() {
                   isOpen: r.isOpen,
                   featuredItems: r.featuredItems || []
                 }));
-                
+
                 // Extract featured dishes
-                processedData.dishes = result.data.flatMap((r: any) => 
+                processedData.dishes = result.data.flatMap((r: any) =>
                   (r.featuredItems || []).map((item: any) => ({
                     id: item.id,
                     name: item.name,
@@ -318,7 +318,7 @@ export default function HomePage() {
                 );
               }
               break;
-              
+
             case 'hacks':
               if (Array.isArray(result.data)) {
                 const hacks: any[] = [];
@@ -326,7 +326,7 @@ export default function HomePage() {
                   (r.hackItems || []).forEach((item: any) => {
                     const isVeg = Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg');
                     if (vegOnly && !isVeg) return;
-                    
+
                     hacks.push({
                       id: item.id,
                       name: item.name,
@@ -344,7 +344,7 @@ export default function HomePage() {
                 processedData.hacks = hacks;
               }
               break;
-              
+
             case 'nearby':
               if (Array.isArray(result.data)) {
                 const allDishes: any[] = [];
@@ -352,7 +352,7 @@ export default function HomePage() {
                   (r.nonFeaturedItems || []).forEach((item: any) => {
                     const isVeg = Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg');
                     if (vegOnly && !isVeg) return;
-                    
+
                     allDishes.push({
                       id: item.id,
                       name: item.name,
@@ -367,7 +367,7 @@ export default function HomePage() {
                     });
                   });
                 });
-                
+
                 // Split into 3 sections
                 const shuffled = allDishes.sort(() => Math.random() - 0.5);
                 const sectionSize = Math.ceil(shuffled.length / 3);
@@ -378,7 +378,7 @@ export default function HomePage() {
                 ];
               }
               break;
-              
+
             case 'recent':
               if (result.data?.orders) {
                 processedData.recentOrders = result.data.orders.slice(0, 4).map((order: any) => ({
@@ -395,7 +395,7 @@ export default function HomePage() {
           }
         }
       });
-      
+
       return processedData;
     } catch (error) {
       console.error('Error processing preloaded data:', error);
@@ -433,7 +433,7 @@ export default function HomePage() {
       // Clear cache when location changes
       // Use dummy coordinates for cache invalidation since we're using locationId-based caching
       invalidateCache({ latitude: 0, longitude: 0 });
-      
+
       // Reset veg mode state to ensure it works properly with new location
       // This ensures veg mode toggle works correctly after location change
       console.log('🔄 Location changed, resetting veg mode state');
@@ -457,7 +457,7 @@ export default function HomePage() {
     // This ensures data loads properly when app reopens with stored locationId
     console.log('🏠 Loading data for locationId:', locationId);
     console.log('🏠 Location state:', { latitude, longitude, locationName, locationId });
-    
+
     // Load data using app cache for instant loading
     loadHomeDataWithCache();
   }, [session, status, locationId, loadHomeDataWithCache]);
@@ -480,7 +480,7 @@ export default function HomePage() {
             loadHomeDataWithCache();
           }
         }
-      } catch {}
+      } catch { }
       if (!stop) setTimeout(poll, 10000); // Reduce to 10s polling
     };
     poll();
@@ -492,28 +492,28 @@ export default function HomePage() {
   // Handle veg mode changes - show loader and refresh data
   useEffect(() => {
     if (status !== 'authenticated') return;
-    
-    console.log('🥬 Veg mode effect triggered:', { 
-      vegOnly, 
-      prevVegOnly, 
-      locationId, 
-      shouldAnimate: locationId && prevVegOnly !== vegOnly 
+
+    console.log('🥬 Veg mode effect triggered:', {
+      vegOnly,
+      prevVegOnly,
+      locationId,
+      shouldAnimate: locationId && prevVegOnly !== vegOnly
     });
-    
+
     // Only show animation if veg mode actually changed (not on initial page load)
     if (locationId && prevVegOnly !== vegOnly) {
       console.log('🥬 Veg mode changed, showing loader and refreshing data');
-      
+
       // Show veg mode loader
       setShowVegModeLoader(true);
       setIsEnteringVegMode(vegOnly);
-    
-    // Clear cache and reload when veg mode changes
+
+      // Clear cache and reload when veg mode changes
       const refreshVegData = async () => {
         try {
           // Clear cache for current location (using dummy coordinates since we use locationId-based caching)
           invalidateCache({ latitude: 0, longitude: 0 });
-          
+
           // Reload all data
           await Promise.all([
             loadPopularContent(true),
@@ -521,7 +521,7 @@ export default function HomePage() {
             loadNearbyNonFeaturedDishes(),
             loadRecentlyOrdered()
           ]);
-          
+
           // Hide loader after data is loaded
           setTimeout(() => {
             setShowVegModeLoader(false);
@@ -531,10 +531,10 @@ export default function HomePage() {
           setShowVegModeLoader(false);
         }
       };
-      
+
       refreshVegData();
     }
-    
+
     // Update previous state
     setPrevVegOnly(vegOnly);
   }, [vegOnly, locationId, invalidateCache, prevVegOnly]);
@@ -548,7 +548,7 @@ export default function HomePage() {
         setHacksOfTheDay(cached.data);
         setHacksLoading(false);
       } else {
-      setHacksLoading(true);
+        setHacksLoading(true);
       }
       const res = await fetch(
         `/api/restaurants/by-location?locationId=${locationId}${vegOnly ? '&veg=1' : ''}`
@@ -590,14 +590,14 @@ export default function HomePage() {
       }
       // Defensive: ensure hacks belong to allowed restaurants and limit to 2 items
       const filteredHacks = hacks.filter((h) => allowedRestaurantIds.has(h.restaurantId));
-      
+
       // Sort to ensure veg items come first, then non-veg
       const sortedHacks = filteredHacks.sort((a, b) => {
         if (a.isVegetarian && !b.isVegetarian) return -1;
         if (!a.isVegetarian && b.isVegetarian) return 1;
         return 0;
       });
-      
+
       // Limit to maximum 2 items (1 veg + 1 non-veg)
       const finalList = sortedHacks.slice(0, 2);
       setHacksOfTheDay(finalList);
@@ -619,7 +619,7 @@ export default function HomePage() {
         setRecentDishes(cached.data.slice(0, 4));
         setRecentLoading(false);
       } else {
-      setRecentLoading(true);
+        setRecentLoading(true);
       }
       const res = await fetch(`/api/orders?limit=4&paymentStatus=COMPLETED&_=${Date.now()}`);
       if (!res.ok) {
@@ -656,8 +656,8 @@ export default function HomePage() {
             const a =
               Math.sin(dLat / 2) * Math.sin(dLat / 2) +
               Math.cos((latitude * Math.PI) / 180) *
-                Math.cos((rLat * Math.PI) / 180) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+              Math.cos((rLat * Math.PI) / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             const km = R * c;
             distText = `${km.toFixed(1)} km`;
@@ -691,10 +691,10 @@ export default function HomePage() {
       // Veg filter when toggle is ON
       const finalItems = vegOnly
         ? items.filter((d) =>
-            Array.isArray(d.dietaryTags)
-              ? d.dietaryTags.includes('Veg')
-              : !!(d as any).isVegetarian
-          )
+          Array.isArray(d.dietaryTags)
+            ? d.dietaryTags.includes('Veg')
+            : !!(d as any).isVegetarian
+        )
         : items;
       // Do not depend on nearby restaurants; show last 4 completed items
       const finalFour = finalItems.slice(0, 4);
@@ -718,7 +718,7 @@ export default function HomePage() {
         setNearbyDishesSections(cached.data);
         setNearbyDishesLoading(false);
       } else {
-      setNearbyDishesLoading(true);
+        setNearbyDishesLoading(true);
       }
       // Get restaurants by location (composite response includes item buckets)
       const restaurantsRes = await fetch(
@@ -736,6 +736,7 @@ export default function HomePage() {
       const restaurants: RestaurantSummary[] = restaurantsRaw.map((x: any) => ({
         id: x.id,
         name: x.name,
+        address: x.address,
         imageUrl: x.image,
         bannerImage: x.bannerImage,
         cuisineTypes: x.cuisineTypes,
@@ -1042,6 +1043,7 @@ export default function HomePage() {
       ).map((r: any) => ({
         id: r.id,
         name: r.name,
+        address: r.address,
         imageUrl: r.imageUrl,
         bannerImage: undefined,
         cuisineTypes: r.cuisineTypes,
@@ -1054,14 +1056,14 @@ export default function HomePage() {
           typeof r.isOpen === 'boolean'
             ? r.isOpen
             : String(r.status || '')
-                .toUpperCase()
-                .trim() === 'ACTIVE',
+              .toUpperCase()
+              .trim() === 'ACTIVE',
         featuredItems: Array.isArray(r.featuredItems)
           ? r.featuredItems.map((it: any) => ({
-              name: it.name,
-              price: it.price,
-              image: it.imageUrl || '/images/dish-placeholder.svg',
-            }))
+            name: it.name,
+            price: it.price,
+            image: it.imageUrl || '/images/dish-placeholder.svg',
+          }))
           : [],
       }));
       console.log('[Home] Search mapped restaurants count:', mappedRestaurants.length);
@@ -1080,12 +1082,12 @@ export default function HomePage() {
             const isVeg = Array.isArray(it.dietaryTags)
               ? it.dietaryTags.includes('Veg')
               : false;
-            
+
             // Skip non-vegetarian items when veg mode is on
             if (vegOnly && !isVeg) {
               return;
             }
-            
+
             const dish: Dish = {
               id: it.id,
               name: it.name,
@@ -1101,7 +1103,7 @@ export default function HomePage() {
               description: it.description || undefined,
               dietaryTags: it.dietaryTags || [],
               restaurantId: r.id,
-            stockLeft: typeof it.stockLeft === 'number' ? it.stockLeft : null,
+              stockLeft: typeof it.stockLeft === 'number' ? it.stockLeft : null,
             };
             items.push(dish);
           }
@@ -1160,9 +1162,9 @@ export default function HomePage() {
       : byName
         ? { id: byName.id, name: byName.name }
         : ({
-            id: `rest-${slugify(dish.restaurant)}`,
-            name: dish.restaurant,
-          } as any);
+          id: `rest-${slugify(dish.restaurant)}`,
+          name: dish.restaurant,
+        } as any);
     const cartItem = {
       menuItemId: dish.id,
       menuItem: {
@@ -1216,21 +1218,21 @@ export default function HomePage() {
   }
 
   if (showLocationModalAfterSignup) {
-  return (
-    <div className="min-h-screen bg-[#d3fb6b]">
-        <LocationOnboarding 
-          isModal={true} 
+    return (
+      <div className="min-h-screen bg-[#d3fb6b]">
+        <LocationOnboarding
+          isModal={true}
           onClose={() => setShowLocationModalAfterSignup(false)}
         />
-          </div>
+      </div>
     );
   }
 
   // Debug location values
-  console.log('🏠 Home page render:', { 
-    latitude, 
-    longitude, 
-    status, 
+  console.log('🏠 Home page render:', {
+    latitude,
+    longitude,
+    status,
     session: !!session,
     shouldShowModal: (!latitude || !longitude)
   });
@@ -1239,19 +1241,19 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#d3fb6b]">
       {/* Location Change Loader */}
       {showLocationChangeLoader && <LocationChangeLoader />}
-      
+
       {/* Veg Mode Loader */}
-      <VegModeLoader 
-        isVisible={showVegModeLoader} 
-        isEntering={isEnteringVegMode} 
+      <VegModeLoader
+        isVisible={showVegModeLoader}
+        isEntering={isEnteringVegMode}
       />
-      
+
       {/* Location Modal - Manual trigger */}
       {showLocationModal && (
         <div className="fixed inset-0 z-[9999]">
-          <LocationOnboarding 
-            isModal={true} 
-            onClose={() => setShowLocationModal(false)} 
+          <LocationOnboarding
+            isModal={true}
+            onClose={() => setShowLocationModal(false)}
           />
         </div>
       )}
@@ -1332,7 +1334,7 @@ export default function HomePage() {
       )} */}
 
       {/* Inline Search Results or Popular Sections */}
-      <div className="rounded-t-[70px] bg-white px-4 pt-8 pb-28">
+      <div className="rounded-t-[70px] bg-white px-4 pt-8 pb-28 shadow-[inset_0_12px_18px_-10px_rgba(0,0,0,0.20)]">
         {searchQuery ? (
           <>
             {/* Dishes */}
@@ -1363,16 +1365,16 @@ export default function HomePage() {
                         dish.restaurantId
                           ? { id: dish.restaurantId, name: dish.restaurant }
                           : restaurantResults.find(
-                                (r) => r.name === dish.restaurant
-                              )
+                            (r) => r.name === dish.restaurant
+                          )
                             ? {
-                                id: (
-                                  restaurantResults.find(
-                                    (r) => r.name === dish.restaurant
-                                  ) as any
-                                ).id,
-                                name: dish.restaurant,
-                              }
+                              id: (
+                                restaurantResults.find(
+                                  (r) => r.name === dish.restaurant
+                                ) as any
+                              ).id,
+                              name: dish.restaurant,
+                            }
                             : undefined
                       }
                     />
@@ -1503,103 +1505,116 @@ export default function HomePage() {
                   ))}
                 {visiblePopularDishes.length > 0
                   ? visiblePopularDishes.map((dish) => (
-                      <HomeProductCard
-                        key={dish.id}
-                        dish={dish as Dish}
-                        onAdd={handleAdd}
-                        onClick={openProduct}
-                        restaurantContext={
-                          (dish as Dish).restaurantId
-                            ? {
-                                id: (dish as Dish).restaurantId!,
-                                name: (dish as Dish).restaurant,
-                              }
-                            : undefined
-                        }
-                      />
-                    ))
-                  : !popularLoading && (
-                      <div className="col-span-2 flex flex-col items-center justify-center py-12 text-center">
-                        <div className="mb-4 rounded-full bg-gray-100 p-4">
-                          <svg
-                            className="h-12 w-12 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 5.477 9.246 5 7.5 5s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                            />
-                          </svg>
-                        </div>
-                        <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                          No trending FoodHacks here (yet).
-                        </h3>
-                        <p className="mb-4 max-w-sm text-sm text-gray-600">
-                          Couldn’t spot any popular Food Hack nearby. Try
-                          searching for your favorites or update your location
-                          for more options.
-                        </p>
-                        <button
-                          onClick={() =>
-                            router.push('/onboarding/location?reselect=1')
+                    <HomeProductCard
+                      key={dish.id}
+                      dish={dish as Dish}
+                      onAdd={handleAdd}
+                      onClick={openProduct}
+                      restaurantContext={
+                        (dish as Dish).restaurantId
+                          ? {
+                            id: (dish as Dish).restaurantId!,
+                            name: (dish as Dish).restaurant,
                           }
-                          className="rounded-full bg-black px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                          : undefined
+                      }
+                    />
+                  ))
+                  : !popularLoading && (
+                    <div className="col-span-2 flex flex-col items-center justify-center py-12 text-center">
+                      <div className="mb-4 rounded-full bg-gray-100 p-4">
+                        <svg
+                          className="h-12 w-12 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
                         >
-                          Update Location
-                        </button>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 5.477 9.246 5 7.5 5s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                          />
+                        </svg>
                       </div>
-                    )}
-            </div>
-          </div>
-
-          {/* Recently ordered - only show if there are recent dishes */}
-          {recentDishes.length > 0 && (
-            <div className="relative mt-10">
-              <div className="relative mb-3 flex items-center justify-end">
-                <h2
-                  className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
-                  style={{ letterSpacing: '-0.08em' }}
-                >
-                  Recently ordered
-                  <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
-                  <span
-                    className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
-                    style={{ backgroundImage: "url('/highlighter.png')" }}
-                  />
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {recentDishes.slice(0, 4).map((dish, idx) => (
-                  <HomeProductCard
-                    key={`recent-${dish.id}-${idx}`}
-                    dish={dish}
-                    onAdd={handleAdd}
-                    onClick={openProduct}
-                  />
-                ))}
+                      <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                        No trending FoodHacks here (yet).
+                      </h3>
+                      <p className="mb-4 max-w-sm text-sm text-gray-600">
+                        Couldn’t spot any popular Food Hack nearby. Try
+                        searching for your favorites or update your location
+                        for more options.
+                      </p>
+                      <button
+                        onClick={() =>
+                          router.push('/onboarding/location?reselect=1')
+                        }
+                        className="rounded-full bg-black px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                      >
+                        Update Location
+                      </button>
+                    </div>
+                  )}
               </div>
             </div>
-          )}
 
-          {/* Show loading state only when loading and no dishes yet */}
-          {recentLoading && recentDishes.length === 0 && (
-            <div className="relative mt-10">
-              <div className="grid grid-cols-2 gap-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-48 animate-pulse rounded-2xl bg-gray-100" />
-                ))}
+            {/* Recently ordered - only show if there are recent dishes */}
+            {recentDishes.length > 0 && (
+              <div className="relative mt-10">
+                <div className="relative mb-3 flex items-center justify-end">
+                  <h2
+                    className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
+                    style={{ letterSpacing: '-0.08em' }}
+                  >
+                    Recently ordered
+                    <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
+                    <span
+                      className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
+                      style={{ backgroundImage: "url('/highlighter.png')" }}
+                    />
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {recentDishes.slice(0, 4).map((dish, idx) => (
+                    <HomeProductCard
+                      key={`recent-${dish.id}-${idx}`}
+                      dish={dish}
+                      onAdd={handleAdd}
+                      onClick={openProduct}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Hack of the Day Section */}
+            {/* Show loading state only when loading and no dishes yet */}
+            {recentLoading && recentDishes.length === 0 && (
+              <div className="relative mt-10">
+                <div className="grid grid-cols-2 gap-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-48 animate-pulse rounded-2xl bg-gray-100" />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Hack of the Day Section */}
             {(hacksLoading || hacksOfTheDay.length > 0) && (
-              <div className="py-8">
+              <div className="mt-8">
+                {/* <div className="-mb-10 relative flex items-center justify-end">
+                  <h2
+                    className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
+                    style={{ letterSpacing: '-0.08em' }}
+                  >
+                    Our Recommendations
+                    <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
+                    <span
+                      className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
+                      style={{ backgroundImage: "url('/highlighter.png')" }}
+                    />
+                  </h2>
+                </div> */}
                 {hacksLoading ? (
                   <div className="flex gap-4 overflow-x-auto pb-4">
                     {Array.from({ length: 2 }).map((_, i) => (
@@ -1619,50 +1634,14 @@ export default function HomePage() {
               </div>
             )}
 
-        {/* Nearby Products (Non-featured, within 5km) - three deduped vertical carousels */}
-        <div className="mt-6 space-y-6">
-          <div className="relative mb-3 flex items-center justify-end">
-            <h2
-              className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
-              style={{ letterSpacing: '-0.08em' }}
-            >
-              Nearby foods
-              <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
-              <span
-                className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
-                style={{ backgroundImage: "url('/highlighter.png')" }}
-              />
-            </h2>
-          </div>
-           {(nearbyDishesLoading && visibleNearbySections.flat().length === 0) && (
-            <div className="flex gap-8 overflow-x-auto pb-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="min-w-[192px] h-60 animate-pulse rounded-2xl bg-gray-100" />
-              ))}
-            </div>
-          )}
-           {visibleNearbySections.map((section, idx) => (
-            section.length > 0 ? (
-               <div key={idx} className={vegToggleAnimating ? "gap-8 transition-opacity duration-200 opacity-90" : "gap-8"}>
-                <HomeProductCardList
-                  dishes={section}
-                  onAdd={handleAdd}
-                  onClick={openProduct}
-                  showDistance
-                />
-              </div>
-            ) : null
-          ))}
-        </div>
-
-            {/* Restaurants list */}
-            <div className="space-y-8 pt-6">
-              <div className="flex items-center justify-end">
+            {/* Nearby Products (Non-featured, within 5km) - three deduped vertical carousels */}
+            <div className="mt-6 space-y-6">
+              <div className="relative mb-3 flex items-center justify-end">
                 <h2
-                  className={`${brandFont.className} font-brand text-[70px] font-semibold`}
+                  className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
                   style={{ letterSpacing: '-0.08em' }}
                 >
-                  Restaurants
+                  Nearby foods
                   <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
                   <span
                     className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
@@ -1670,6 +1649,44 @@ export default function HomePage() {
                   />
                 </h2>
               </div>
+              {(nearbyDishesLoading && visibleNearbySections.flat().length === 0) && (
+                <div className="flex gap-8 overflow-x-auto pb-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="min-w-[192px] h-60 animate-pulse rounded-2xl bg-gray-100" />
+                  ))}
+                </div>
+              )}
+              {visibleNearbySections.map((section, idx) => (
+                section.length > 0 ? (
+                  <div key={idx} className={vegToggleAnimating ? "gap-8 transition-opacity duration-200 opacity-90" : "gap-8"}>
+                    <HomeProductCardList
+                      dishes={section}
+                      onAdd={handleAdd}
+                      onClick={openProduct}
+                      showDistance
+                    />
+                  </div>
+                ) : null
+              ))}
+            </div>
+
+            {/* Restaurants list */}
+            <div className="space-y-1 pt-6">
+              <div className="flex items-center justify-end relative">
+                {/* <span
+                  className="pointer-events-none absolute -right-64 top-2 -translate-x-1/2 z-0 mt-8 ml-24 h-[80px] w-[290px] bg-contain bg-center bg-no-repeat"
+                  style={{ backgroundImage: "url('/highlighter.png')" }}
+                  aria-hidden="true"
+                /> */}
+                <h2
+                  className={`${brandFont.className} font-brand text-[70px] font-semibold relative z-10`}
+                  style={{ letterSpacing: '-0.08em' }}
+                >
+                  Restaurants
+                  <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
+                </h2>
+              </div>
+
               {popularLoading ? (
                 <div className="space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
@@ -1681,14 +1698,15 @@ export default function HomePage() {
                 </div>
               ) : popularRestaurants.length > 0 ? (
                 popularRestaurants.map((r) => (
-                  <RestaurantCard
-                    key={r.id}
-                    restaurant={r}
-                    href={`/restaurants/${r.id}`}
-                  />
+                  <div key={r.id} className="mb-8">
+                    <RestaurantCard
+                      restaurant={r}
+                      href={`/restaurants/${r.id}`}
+                    />
+                  </div>
                 ))
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="flex flex-col items-center justify-center py-0 text-center">
                   <div className="mb-4 rounded-full bg-gray-100 p-4">
                     <svg
                       className="h-12 w-12 text-gray-400"
