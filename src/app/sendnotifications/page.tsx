@@ -37,6 +37,7 @@ export default function SendNotificationsPage() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [processingScheduled, setProcessingScheduled] = useState(false);
+  const [cleaningUp, setCleaningUp] = useState(false);
   
   // Notification form state
   const [notification, setNotification] = useState({
@@ -232,6 +233,29 @@ export default function SendNotificationsPage() {
     }
   };
 
+  const handleCleanupImages = async () => {
+    setCleaningUp(true);
+    try {
+      const response = await fetch('/api/cleanup/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success(`Cleanup completed: ${result.result.deletedCount} images deleted`);
+      } else {
+        toast.error(result.error || 'Failed to cleanup images');
+      }
+    } catch (error) {
+      console.error('Error cleaning up images:', error);
+      toast.error('Failed to cleanup images');
+    } finally {
+      setCleaningUp(false);
+    }
+  };
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -253,23 +277,42 @@ export default function SendNotificationsPage() {
               </h1>
               <p className="text-gray-600 mt-2">Send notifications to your users</p>
             </div>
-            <button
-              onClick={handleProcessScheduled}
-              disabled={processingScheduled}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {processingScheduled ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Clock className="h-4 w-4" />
-                  Process Scheduled
-                </>
-              )}
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCleanupImages}
+                disabled={cleaningUp}
+                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {cleaningUp ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Cleaning...
+                  </>
+                ) : (
+                  <>
+                    <X className="h-4 w-4" />
+                    Cleanup Images
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleProcessScheduled}
+                disabled={processingScheduled}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {processingScheduled ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Clock className="h-4 w-4" />
+                    Process Scheduled
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 

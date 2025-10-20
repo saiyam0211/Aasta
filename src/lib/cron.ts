@@ -10,7 +10,7 @@ export async function processScheduledNotifications() {
     const scheduledNotifications = await prisma.scheduledNotification.findMany({
       where: {
         status: 'PENDING',
-        scheduledFor: {
+        scheduledFor: { 
           lte: now
         }
       },
@@ -83,6 +83,32 @@ export async function processScheduledNotifications() {
   }
 }
 
+// Cleanup old notification images
+export async function cleanupOldImages() {
+  try {
+    console.log('🧹 Starting cleanup of old notification images...');
+    
+    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/cleanup/images`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log(`✅ Cleanup completed: ${result.deletedCount} images deleted out of ${result.totalCount} total`);
+    } else {
+      console.error('❌ Cleanup failed:', result.error);
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Error during cleanup:', error);
+  }
+}
+
 // Run the processor every minute
 export function startScheduledNotificationProcessor() {
   console.log('🚀 Starting scheduled notification processor...');
@@ -92,4 +118,16 @@ export function startScheduledNotificationProcessor() {
   
   // Then process every minute
   setInterval(processScheduledNotifications, 60 * 1000);
+  
+  // Cleanup old images daily at midnight
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  const msUntilMidnight = midnight.getTime() - now.getTime();
+  
+  setTimeout(() => {
+    cleanupOldImages();
+    // Then run every 24 hours
+    setInterval(cleanupOldImages, 24 * 60 * 60 * 1000);
+  }, msUntilMidnight);
 }
