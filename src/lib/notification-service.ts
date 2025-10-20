@@ -19,6 +19,8 @@ export interface OrderNotificationData {
   customerName?: string;
 }
 
+
+
 export class NotificationService {
   // Helper method to get absolute image URL
   private getAbsoluteImageUrl(imageUrl: string): string {
