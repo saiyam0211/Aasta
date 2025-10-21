@@ -9,7 +9,7 @@ import { SafeImage } from '@/components/ui/safe-image';
 import { useCartStore } from '@/lib/store';
 import { shareContent, generateProductShareData } from '@/lib/share-utils';
 import { toast } from 'sonner';
-import { useHaptics } from '@/hooks/useHaptics';
+import { hapticAddToCart, hapticIncreaseQuantity, hapticDecreaseQuantity, hapticModalOpen, hapticModalClose } from '@/haptics';
 
 interface ProductBottomSheetProps {
   open: boolean;
@@ -50,7 +50,6 @@ export function ProductBottomSheet({
   onAdd,
 }: ProductBottomSheetProps) {
   const [quantity, setQuantity] = React.useState(1);
-  const { medium, light } = useHaptics();
 
   const getItemQuantityInCart = useCartStore((s) => s.getItemQuantityInCart);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
@@ -58,7 +57,12 @@ export function ProductBottomSheet({
   const existingQuantity = dish ? getItemQuantityInCart(dish.id) : 0;
 
   React.useEffect(() => {
-    if (open) setQuantity(1);
+    if (open) {
+      setQuantity(1);
+      hapticModalOpen();
+    } else {
+      hapticModalClose();
+    }
   }, [open]);
 
   const isVeg = React.useMemo(() => {
@@ -76,14 +80,14 @@ export function ProductBottomSheet({
     ? dish.originalPrice * (existingQuantity > 0 ? existingQuantity : quantity)
     : undefined;
 
-  const handleIncrease = async () => {
+  const handleIncrease = () => {
     if (!dish) return;
-    await light();
+    hapticIncreaseQuantity();
     updateQuantity(dish.id, existingQuantity + 1);
   };
-  const handleDecrease = async () => {
+  const handleDecrease = () => {
     if (!dish) return;
-    await light();
+    hapticDecreaseQuantity();
     updateQuantity(dish.id, existingQuantity - 1);
   };
 
@@ -228,9 +232,9 @@ export function ProductBottomSheet({
               ) : (
                 <button
                   className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#fd6923] text-base font-semibold text-white shadow-sm"
-                  onClick={async () => {
+                  onClick={() => {
                     if (dish) {
-                      await medium();
+                      hapticAddToCart();
                       onAdd(dish, quantity);
                     }
                   }}

@@ -6,7 +6,7 @@ import { SafeImage } from '@/components/ui/safe-image';
 import { toast } from 'sonner';
 import { useCartStore } from '@/lib/store';
 import { Minus, Plus } from 'lucide-react';
-import { useHaptics } from '@/hooks/useHaptics';
+import { hapticAddToCart, hapticIncreaseQuantity, hapticDecreaseQuantity } from '@/haptics';
 
 interface Deal {
   id: string;
@@ -51,7 +51,6 @@ function VegMark({ isVegetarian }: { isVegetarian: boolean }) {
 function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) {
   const hasDiscount = !!deal.originalPrice && deal.originalPrice > deal.price;
   const [showDiscountText, setShowDiscountText] = useState(true); // true = percentage, false = amount saved
-  const { medium, light } = useHaptics();
   
   const discountPct = hasDiscount
     ? Math.round(((deal.originalPrice! - deal.price) / deal.originalPrice!) * 100)
@@ -92,9 +91,9 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
       .replace(/(^-|-$)/g, '');
   };
 
-  const handleAddToCart = async (e: React.MouseEvent) => {
+  const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    await medium();
+    hapticAddToCart();
     const maxStock = typeof deal.stockLeft === 'number' ? deal.stockLeft : undefined;
     const currentQty = quantity || 0;
     if (typeof maxStock === 'number' && maxStock >= 0 && currentQty + 1 > maxStock) {
@@ -122,9 +121,9 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
     onAdd(deal); // Call the original onAdd callback with deal object
   };
 
-  const handleIncrease = async (e: React.MouseEvent) => {
+  const handleIncrease = (e: React.MouseEvent) => {
     e.stopPropagation();
-    await light();
+    hapticIncreaseQuantity();
     const maxStock = typeof deal.stockLeft === 'number' ? deal.stockLeft : undefined;
     if (typeof maxStock === 'number' && maxStock >= 0 && quantity + 1 > maxStock) {
       toast.error(`Only ${maxStock} left in stock`);
@@ -133,9 +132,9 @@ function DealCard({ deal, onAdd }: { deal: Deal; onAdd: (deal: Deal) => void }) 
     updateQuantity(deal.id, quantity + 1);
   };
 
-  const handleDecrease = async (e: React.MouseEvent) => {
+  const handleDecrease = (e: React.MouseEvent) => {
     e.stopPropagation();
-    await light();
+    hapticDecreaseQuantity();
     updateQuantity(deal.id, quantity - 1);
   };
 

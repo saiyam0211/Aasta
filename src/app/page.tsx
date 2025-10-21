@@ -27,13 +27,7 @@ import { readCache, writeCache } from '@/lib/smart-cache';
 import { useAppCache } from '@/hooks/useAppCache';
 import LocationChangeLoader from '@/components/ui/location-change-loader';
 import VegModeLoader from '@/components/ui/veg-mode-loader';
-import { useHaptics } from '@/hooks/useHaptics';
 import { LocationOnboarding } from '@/components/ui/location-onboarding';
-import { HapticsTest } from '@/components/ui/HapticsTest';
-import { HapticsDebug } from '@/components/ui/HapticsDebug';
-import { HapticsDirectTest } from '@/components/ui/HapticsDirectTest';
-import { HapticsSimpleTest } from '@/components/ui/HapticsSimpleTest';
-import { HapticsBasicTest } from '@/components/ui/HapticsBasicTest';
 // Custom inline animation (no JSON)
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -56,7 +50,6 @@ export default function HomePage() {
   const { cart, addItem } = useCartStore();
   const { vegOnly, onVegModeToggle } = useVegMode();
   const { getCachedData, setCachedData, invalidateCache: invalidateAppCache } = useAppCache();
-  const { testHaptics, isNative } = useHaptics();
   const {
     setRestaurants: setCachedRestaurants,
     setDishes: setCachedDishes,
@@ -1308,12 +1301,6 @@ export default function HomePage() {
         resetSignal={headerResetSignal}
       />
 
-      {/* Haptics Test - Remove after testing */}
-      {/* <HapticsTest />
-      <HapticsDebug />
-      <HapticsDirectTest /> */}
-      <HapticsSimpleTest />
-      <HapticsBasicTest />
 
       {/* Removed AddressSheet - we only use location modal */}
 
