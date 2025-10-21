@@ -29,7 +29,6 @@ import LocationChangeLoader from '@/components/ui/location-change-loader';
 import VegModeLoader from '@/components/ui/veg-mode-loader';
 import { LocationOnboarding } from '@/components/ui/location-onboarding';
 import { hideSplashWhenReady } from '@/lib/splash-screen';
-import { welcomeNotificationService } from '@/lib/welcome-notification-service';
 // Custom inline animation (no JSON)
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -159,7 +158,14 @@ export default function HomePage() {
 
       // Trigger welcome notification after data is loaded (5 seconds delay)
       if (session?.user?.id) {
-        welcomeNotificationService.scheduleWelcomeNotification(session.user.id);
+        // Call the API endpoint to trigger welcome notification
+        fetch('/api/welcome-notifications/trigger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: session.user.id })
+        }).catch(error => {
+          console.error('Error triggering welcome notification:', error);
+        });
       }
 
     } catch (error) {
