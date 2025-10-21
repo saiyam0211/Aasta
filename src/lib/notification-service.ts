@@ -49,7 +49,7 @@ export class NotificationService {
         notification: {
           title: notification.title,
           body: notification.body,
-          image: notification.imageUrl ? this.getAbsoluteImageUrl(notification.imageUrl) : undefined
+          image: notification.imageUrl ? this.getAbsoluteImageUrl(notification.imageUrl) : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/_ffd500.png`
         },
         data: {
           type: 'custom',
@@ -61,7 +61,6 @@ export class NotificationService {
             sound: 'default',
             channelId: 'food_delivery',
             icon: 'ic_stat_aasta',
-            largeIcon: 'ic_launcher',
             color: '#ffd500'
           }
         },
@@ -116,7 +115,7 @@ export class NotificationService {
         notification: {
           title: notification.title,
           body: notification.body,
-          image: notification.imageUrl ? this.getAbsoluteImageUrl(notification.imageUrl) : undefined
+          image: notification.imageUrl ? this.getAbsoluteImageUrl(notification.imageUrl) : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/_ffd500.png`
         },
         data: {
           type: 'broadcast',
@@ -128,7 +127,6 @@ export class NotificationService {
             sound: 'default',
             channelId: 'food_delivery',
             icon: 'ic_stat_aasta',
-            largeIcon: 'ic_launcher',
             color: '#ffd500'
           }
         },
