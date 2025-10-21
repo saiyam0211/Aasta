@@ -5,69 +5,49 @@ export const useHaptics = () => {
   const isNative = Capacitor.isNativePlatform();
 
   const light = async () => {
-    if (isNative) {
-      try {
-        console.log('🔊 Triggering light haptic feedback');
-        await Haptics.impact({ style: ImpactStyle.Light });
-      } catch (error) {
-        console.warn('Haptics light failed:', error);
-      }
-    } else {
-      console.log('🔊 Haptics disabled - not on native platform');
+    try {
+      console.log('🔊 Triggering light haptic feedback');
+      await Haptics.impact({ style: ImpactStyle.Light });
+    } catch (error) {
+      console.warn('Haptics light failed:', error);
     }
   };
 
   const medium = async () => {
-    if (isNative) {
-      try {
-        console.log('🔊 Triggering medium haptic feedback');
-        await Haptics.impact({ style: ImpactStyle.Medium });
-      } catch (error) {
-        console.warn('Haptics medium failed:', error);
-      }
-    } else {
-      console.log('🔊 Haptics disabled - not on native platform');
+    try {
+      console.log('🔊 Triggering medium haptic feedback');
+      await Haptics.impact({ style: ImpactStyle.Medium });
+    } catch (error) {
+      console.warn('Haptics medium failed:', error);
     }
   };
 
   const heavy = async () => {
-    if (isNative) {
-      try {
-        console.log('🔊 Triggering heavy haptic feedback');
-        await Haptics.impact({ style: ImpactStyle.Heavy });
-      } catch (error) {
-        console.warn('Haptics heavy failed:', error);
-      }
-    } else {
-      console.log('🔊 Haptics disabled - not on native platform');
+    try {
+      console.log('🔊 Triggering heavy haptic feedback');
+      await Haptics.impact({ style: ImpactStyle.Heavy });
+    } catch (error) {
+      console.warn('Haptics heavy failed:', error);
     }
   };
 
   const selection = async () => {
-    if (isNative) {
-      try {
-        console.log('🔊 Triggering selection haptic feedback');
-        await Haptics.selectionStart();
-      } catch (error) {
-        console.warn('Haptics selection failed:', error);
-      }
-    } else {
-      console.log('🔊 Haptics disabled - not on native platform');
+    try {
+      console.log('🔊 Triggering selection haptic feedback');
+      await Haptics.selectionStart();
+    } catch (error) {
+      console.warn('Haptics selection failed:', error);
     }
   };
 
   const notification = async (type: 'success' | 'warning' | 'error' = 'success') => {
-    if (isNative) {
-      try {
-        console.log('🔊 Triggering notification haptic feedback:', type);
-        await Haptics.notification({ 
-          type: type === 'success' ? NotificationType.Success : type === 'warning' ? NotificationType.Warning : NotificationType.Error 
-        });
-      } catch (error) {
-        console.warn('Haptics notification failed:', error);
-      }
-    } else {
-      console.log('🔊 Haptics disabled - not on native platform');
+    try {
+      console.log('🔊 Triggering notification haptic feedback:', type);
+      await Haptics.notification({ 
+        type: type === 'success' ? NotificationType.Success : type === 'warning' ? NotificationType.Warning : NotificationType.Error 
+      });
+    } catch (error) {
+      console.warn('Haptics notification failed:', error);
     }
   };
 
