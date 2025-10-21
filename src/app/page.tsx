@@ -119,14 +119,39 @@ export default function HomePage() {
       const sessionKey = `welcome_notification_${session.user.id}`;
       const wasTriggered = sessionStorage.getItem(sessionKey);
       console.log('🔍 Checking welcome notification status for user:', session.user.id, 'Triggered:', wasTriggered);
-      if (wasTriggered) {
-        console.log('✅ Welcome notification already sent, setting flag to true');
-        setWelcomeNotificationTriggered(true);
-        notificationSentRef.current = true;
-      } else {
-        console.log('❌ Welcome notification not sent yet, keeping flag false');
-        notificationSentRef.current = false;
-      }
+      
+      // Check database flag first - if user has welcomeNotificationSent: true, don't send notification
+      fetch(`/api/users/${session.user.id}/welcome-status`)
+        .then(response => response.json())
+        .then(data => {
+          console.log('🔍 Database welcome status:', data);
+          if (data.welcomeNotificationSent) {
+            console.log('✅ Welcome notification already sent in database, setting flag to true');
+            setWelcomeNotificationTriggered(true);
+            notificationSentRef.current = true;
+            // Also update sessionStorage to prevent future checks
+            sessionStorage.setItem(sessionKey, 'true');
+          } else if (wasTriggered) {
+            console.log('✅ Welcome notification already sent in session, setting flag to true');
+            setWelcomeNotificationTriggered(true);
+            notificationSentRef.current = true;
+          } else {
+            console.log('❌ Welcome notification not sent yet, keeping flag false');
+            notificationSentRef.current = false;
+          }
+        })
+        .catch(error => {
+          console.error('Error checking welcome status:', error);
+          // Fallback to sessionStorage check
+          if (wasTriggered) {
+            console.log('✅ Welcome notification already sent in session (fallback), setting flag to true');
+            setWelcomeNotificationTriggered(true);
+            notificationSentRef.current = true;
+          } else {
+            console.log('❌ Welcome notification not sent yet (fallback), keeping flag false');
+            notificationSentRef.current = false;
+          }
+        });
     } else {
       // User logged out - clear sessionStorage
       console.log('🚪 User logged out, clearing welcome notification flags');
@@ -150,6 +175,7 @@ export default function HomePage() {
       sessionExists: !!session
     });
     
+    // Only send notification if user is logged in, notification not triggered, and ref is false
     if (session?.user?.id && !welcomeNotificationTriggered && !notificationSentRef.current) {
       console.log('🎉 Triggering welcome notification for user:', session.user.id);
       setWelcomeNotificationTriggered(true);
