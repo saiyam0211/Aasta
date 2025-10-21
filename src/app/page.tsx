@@ -74,7 +74,7 @@ export default function HomePage() {
   const [popularRestaurants, setPopularRestaurants] = useState<
     RestaurantSummary[]
   >([]);
-  const [popularLoading, setPopularLoading] = useState(false);
+  const [popularLoading, setPopularLoading] = useState(true); // Start with loading
   // Header reset signal for clearing input when Home is tapped
   const [headerResetSignal, setHeaderResetSignal] = useState(0);
   // Product sheet state
@@ -82,15 +82,15 @@ export default function HomePage() {
   const [productSheetOpen, setProductSheetOpen] = useState(false);
   // State for hack of the day items
   const [hacksOfTheDay, setHacksOfTheDay] = useState<any[]>([]);
-  const [hacksLoading, setHacksLoading] = useState(false);
+  const [hacksLoading, setHacksLoading] = useState(true); // Start with loading
   // Recently ordered items (last 4 order items)
   const [recentDishes, setRecentDishes] = useState<Dish[]>([]);
-  const [recentLoading, setRecentLoading] = useState(false);
+  const [recentLoading, setRecentLoading] = useState(true); // Start with loading
   // Real-time: backend update tag to trigger refreshes
   const [updateEtag, setUpdateEtag] = useState<string>('');
   // Nearby non-featured dishes (within 5km), split into three sections with no repeats
   const [nearbyDishesSections, setNearbyDishesSections] = useState<Dish[][]>([[], [], []]);
-  const [nearbyDishesLoading, setNearbyDishesLoading] = useState(false);
+  const [nearbyDishesLoading, setNearbyDishesLoading] = useState(true); // Start with loading
   // Smooth veg-toggle UX (quick local filter + subtle animation)
   const [vegToggleAnimating, setVegToggleAnimating] = useState(false);
   // const [isPullRefreshing, setIsPullRefreshing] = useState(false);
@@ -98,6 +98,8 @@ export default function HomePage() {
   const [showLocationChangeLoader, setShowLocationChangeLoader] = useState(false);
   const [showVegModeLoader, setShowVegModeLoader] = useState(false);
   const [isEnteringVegMode, setIsEnteringVegMode] = useState(true);
+  // Initial app loading state
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [prevVegOnly, setPrevVegOnly] = useState(vegOnly);
   const [showLocationModal, setShowLocationModal] = useState(false);
 
@@ -119,18 +121,20 @@ export default function HomePage() {
   // Load home data using app cache for instant loading
   const loadHomeDataWithCache = useCallback(async () => {
     try {
+      // Check if we already have data and it's recent (less than 5 minutes old)
+      const hasRecentData = popularDishes.length > 0 && popularRestaurants.length > 0;
+      if (hasRecentData) {
+        console.log('📱 Using cached data, skipping API calls');
+        setIsInitialLoading(false);
+        return;
+      }
 
       // Load all data in parallel using cache
       const [restaurants, dishes, hacks, nearbyDishes, recentOrders] = await Promise.all([
-        // Temporarily disable cache to force fresh API data
-        // getCachedData('popular_restaurants', () => loadPopularContentData(), vegOnly),
-        // getCachedData('popular_dishes', () => loadPopularDishesData(), vegOnly),
-        loadPopularContentData(),
-        loadPopularDishesData(),
+        getCachedData('popular_restaurants', () => loadPopularContentData(), vegOnly),
+        getCachedData('popular_dishes', () => loadPopularDishesData(), vegOnly),
         getCachedData('hacks_of_day', () => loadHacksOfTheDayData(), vegOnly),
-        // Temporarily disable cache to force fresh API data for nearby foods
-        // getCachedData('nearby_dishes', () => loadNearbyDishesData(), vegOnly),
-        loadNearbyDishesData(),
+        getCachedData('nearby_dishes', () => loadNearbyDishesData(), vegOnly),
         getCachedData('recent_orders', () => loadRecentOrdersData(), vegOnly)
       ]);
 
@@ -146,6 +150,7 @@ export default function HomePage() {
       setHacksLoading(false);
       setNearbyDishesLoading(false);
       setRecentLoading(false);
+      setIsInitialLoading(false);
 
     } catch (error) {
       console.error('❌ Error loading home data:', error);
@@ -1218,8 +1223,15 @@ export default function HomePage() {
   }, [status, locationId]);
 
   // Early return rendering (after all hooks) to avoid hook-order changes
-  if (status === 'loading' || !session) {
-    return <div className="min-h-screen" />;
+  if (status === 'loading' || !session || isInitialLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#d3fb6b]">
+        <div className="text-center">
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-black"></div>
+          <p className="text-gray-600">Loading delicious food...</p>
+        </div>
+      </div>
+    );
   }
 
   if (showLocationModalAfterSignup) {
@@ -1518,7 +1530,7 @@ export default function HomePage() {
                         }
                       />
                     ))
-                  : !popularLoading && (
+                  : !popularLoading && popularDishes.length === 0 && (
                       <div className="col-span-2 flex flex-col items-center justify-center py-12 text-center">
                         <div className="mb-4 rounded-full bg-gray-100 p-4">
                           <svg
@@ -1598,7 +1610,7 @@ export default function HomePage() {
           )}
 
           {/* Hack of the Day Section */}
-            {(hacksLoading || hacksOfTheDay.length > 0) && (
+            {hacksOfTheDay.length > 0 && (
               <div className="mt-8">
                 {/* <div className="-mb-10 relative flex items-center justify-end">
                   <h2
@@ -1647,7 +1659,7 @@ export default function HomePage() {
               />
             </h2>
           </div>
-           {(nearbyDishesLoading && visibleNearbySections.flat().length === 0) && (
+           {nearbyDishesLoading && visibleNearbySections.flat().length === 0 && (
             <div className="flex gap-8 overflow-x-auto pb-2">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="min-w-[192px] h-60 animate-pulse rounded-2xl bg-gray-100" />
@@ -1685,7 +1697,7 @@ export default function HomePage() {
                 </h2>
               </div>
 
-              {popularLoading ? (
+              {popularLoading && popularRestaurants.length === 0 ? (
                 <div className="space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <div

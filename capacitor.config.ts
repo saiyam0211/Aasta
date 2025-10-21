@@ -5,9 +5,9 @@ const config: CapacitorConfig = {
   appName: 'aasta',
   webDir: 'public',
   server: {
-    // PRODUCTION: Comment this out and build app with bundled assets
-    // DEVELOPMENT: Uncomment for live reload
-    // url: 'https://aastadelivery.vercel.app',
+    // PRODUCTION: Point to Vercel deployment
+    // This is the CORRECT approach for Next.js with API routes
+    url: 'https://aastadelivery.vercel.app',
     androidScheme: 'https',
     allowNavigation: ['*'],
     cleartext: false,
