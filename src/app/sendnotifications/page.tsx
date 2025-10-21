@@ -56,6 +56,7 @@ export default function SendNotificationsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [storageType, setStorageType] = useState<'s3' | 'base64' | null>(null);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -184,7 +185,16 @@ export default function SendNotificationsPage() {
       if (result.success) {
         setImagePreview(result.url);
         setNotification(prev => ({ ...prev, imageUrl: result.url }));
-        toast.success('Image uploaded successfully!');
+        
+        // Show different messages based on storage type
+        setStorageType(result.storage);
+        if (result.storage === 'base64') {
+          toast.success('Image uploaded (base64 storage)', {
+            description: 'Consider setting up AWS S3 for better performance'
+          });
+        } else {
+          toast.success('Image uploaded successfully!');
+        }
       } else {
         toast.error(result.error || 'Failed to upload image');
       }
@@ -207,6 +217,7 @@ export default function SendNotificationsPage() {
   const removeImage = () => {
     setImageFile(null);
     setImagePreview('');
+    setStorageType(null);
     setNotification(prev => ({ ...prev, imageUrl: '' }));
   };
 
@@ -443,6 +454,16 @@ export default function SendNotificationsPage() {
                     >
                       <X className="h-4 w-4" />
                     </button>
+                    {/* Storage Type Indicator */}
+                    {storageType && (
+                      <div className={`absolute top-2 left-2 px-2 py-1 rounded text-xs font-medium ${
+                        storageType === 's3' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {storageType === 's3' ? 'AWS S3' : 'Base64'}
+                      </div>
+                    )}
                   </div>
                 )}
                 

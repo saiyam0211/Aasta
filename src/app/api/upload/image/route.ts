@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     // Check if S3 is available
     if (!hasAwsCredentials || !s3Client || !BUCKET_NAME) {
-      console.log('AWS S3 credentials not configured, using placeholder image');
+      console.log('AWS S3 credentials not configured, using base64 fallback');
       
       // Convert file to base64 for immediate use
       const bytes = await file.arrayBuffer();
@@ -58,8 +58,10 @@ export async function POST(request: NextRequest) {
         success: true, 
         url: dataUrl,
         filename: filename,
-        key: `placeholder-${filename}`,
-        message: 'AWS S3 not configured. Using base64 image.'
+        key: `base64-${filename}`,
+        message: 'Using base64 storage (AWS S3 not configured)',
+        warning: 'Images will be embedded in notifications. Consider setting up AWS S3 for better performance.',
+        storage: 'base64'
       });
     }
 
@@ -97,7 +99,8 @@ export async function POST(request: NextRequest) {
       success: true, 
       url: presignedUrl,
       filename: filename,
-      key: key
+      key: key,
+      storage: 's3'
     });
 
   } catch (error) {
