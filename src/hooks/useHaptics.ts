@@ -9,12 +9,10 @@ export const useHaptics = () => {
       console.log('🔊 Triggering light haptic feedback');
       await Haptics.impact({ style: ImpactStyle.Light });
     } catch (error) {
-      console.warn('Haptics light failed:', error);
-      // Fallback to vibrate if impact fails
-      try {
-        await Haptics.vibrate();
-      } catch (vibrateError) {
-        console.warn('Haptics vibrate fallback failed:', vibrateError);
+      console.warn('Haptics light failed, using web fallback:', error);
+      // Fallback to Web Vibration API (works in WebView!)
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50); // Short vibration for light
       }
     }
   };
@@ -24,12 +22,10 @@ export const useHaptics = () => {
       console.log('🔊 Triggering medium haptic feedback');
       await Haptics.impact({ style: ImpactStyle.Medium });
     } catch (error) {
-      console.warn('Haptics medium failed:', error);
-      // Fallback to vibrate if impact fails
-      try {
-        await Haptics.vibrate();
-      } catch (vibrateError) {
-        console.warn('Haptics vibrate fallback failed:', vibrateError);
+      console.warn('Haptics medium failed, using web fallback:', error);
+      // Fallback to Web Vibration API
+      if ('vibrate' in navigator) {
+        navigator.vibrate(100); // Medium vibration
       }
     }
   };
@@ -39,12 +35,10 @@ export const useHaptics = () => {
       console.log('🔊 Triggering heavy haptic feedback');
       await Haptics.impact({ style: ImpactStyle.Heavy });
     } catch (error) {
-      console.warn('Haptics heavy failed:', error);
-      // Fallback to vibrate if impact fails
-      try {
-        await Haptics.vibrate();
-      } catch (vibrateError) {
-        console.warn('Haptics vibrate fallback failed:', vibrateError);
+      console.warn('Haptics heavy failed, using web fallback:', error);
+      // Fallback to Web Vibration API
+      if ('vibrate' in navigator) {
+        navigator.vibrate(200); // Strong vibration for heavy
       }
     }
   };
@@ -116,7 +110,11 @@ export const useHaptics = () => {
       console.log('🔊 Triggering vibrate');
       await Haptics.vibrate();
     } catch (error) {
-      console.warn('Haptics vibrate failed:', error);
+      console.warn('Haptics vibrate failed, using web fallback:', error);
+      // Fallback to Web Vibration API
+      if ('vibrate' in navigator) {
+        navigator.vibrate(100);
+      }
     }
   };
 

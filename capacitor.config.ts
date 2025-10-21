@@ -5,7 +5,9 @@ const config: CapacitorConfig = {
   appName: 'aasta',
   webDir: 'public',
   server: {
-    url: 'https://aastadelivery.vercel.app',
+    // PRODUCTION: Comment this out and build app with bundled assets
+    // DEVELOPMENT: Uncomment for live reload
+    // url: 'https://aastadelivery.vercel.app',
     androidScheme: 'https',
     allowNavigation: ['*'],
     cleartext: false,
