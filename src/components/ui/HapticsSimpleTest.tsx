@@ -43,6 +43,17 @@ export function HapticsSimpleTest() {
     }
   };
 
+  const testVibrateOnly = async () => {
+    try {
+      setResult('Testing vibrate only...');
+      await Haptics.vibrate();
+      setResult('✅ Vibrate successful!');
+    } catch (error) {
+      setResult(`❌ Vibrate failed: ${error}`);
+      console.error('🔊 Vibrate failed:', error);
+    }
+  };
+
   return (
     <div className="fixed top-4 left-4 z-50 bg-green-900 text-white p-3 rounded text-xs max-w-xs">
       <h4 className="font-bold mb-2">Simple Haptics Test</h4>
@@ -64,6 +75,12 @@ export function HapticsSimpleTest() {
           className="w-full bg-red-500 text-white px-2 py-1 rounded text-xs"
         >
           Test Heavy
+        </button>
+        <button
+          onClick={testVibrateOnly}
+          className="w-full bg-purple-500 text-white px-2 py-1 rounded text-xs"
+        >
+          Test Vibrate Only
         </button>
         <div className="text-xs bg-gray-800 p-2 rounded">
           {result}

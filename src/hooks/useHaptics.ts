@@ -10,6 +10,12 @@ export const useHaptics = () => {
       await Haptics.impact({ style: ImpactStyle.Light });
     } catch (error) {
       console.warn('Haptics light failed:', error);
+      // Fallback to vibrate if impact fails
+      try {
+        await Haptics.vibrate();
+      } catch (vibrateError) {
+        console.warn('Haptics vibrate fallback failed:', vibrateError);
+      }
     }
   };
 
@@ -19,6 +25,12 @@ export const useHaptics = () => {
       await Haptics.impact({ style: ImpactStyle.Medium });
     } catch (error) {
       console.warn('Haptics medium failed:', error);
+      // Fallback to vibrate if impact fails
+      try {
+        await Haptics.vibrate();
+      } catch (vibrateError) {
+        console.warn('Haptics vibrate fallback failed:', vibrateError);
+      }
     }
   };
 
@@ -28,6 +40,12 @@ export const useHaptics = () => {
       await Haptics.impact({ style: ImpactStyle.Heavy });
     } catch (error) {
       console.warn('Haptics heavy failed:', error);
+      // Fallback to vibrate if impact fails
+      try {
+        await Haptics.vibrate();
+      } catch (vibrateError) {
+        console.warn('Haptics vibrate fallback failed:', vibrateError);
+      }
     }
   };
 
@@ -92,12 +110,23 @@ export const useHaptics = () => {
     }
   };
 
+  // Simple vibrate-only function as fallback
+  const vibrate = async () => {
+    try {
+      console.log('🔊 Triggering vibrate');
+      await Haptics.vibrate();
+    } catch (error) {
+      console.warn('Haptics vibrate failed:', error);
+    }
+  };
+
   return {
     light,
     medium,
     heavy,
     selection,
     notification,
+    vibrate,
     testHaptics,
     isNative
   };

@@ -33,6 +33,7 @@ import { HapticsTest } from '@/components/ui/HapticsTest';
 import { HapticsDebug } from '@/components/ui/HapticsDebug';
 import { HapticsDirectTest } from '@/components/ui/HapticsDirectTest';
 import { HapticsSimpleTest } from '@/components/ui/HapticsSimpleTest';
+import { HapticsBasicTest } from '@/components/ui/HapticsBasicTest';
 // Custom inline animation (no JSON)
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -1308,10 +1309,11 @@ export default function HomePage() {
       />
 
       {/* Haptics Test - Remove after testing */}
-      <HapticsTest />
+      {/* <HapticsTest />
       <HapticsDebug />
-      <HapticsDirectTest />
+      <HapticsDirectTest /> */}
       <HapticsSimpleTest />
+      <HapticsBasicTest />
 
       {/* Removed AddressSheet - we only use location modal */}
 
