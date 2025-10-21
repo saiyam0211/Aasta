@@ -103,105 +103,37 @@ export default function HomePage() {
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [prevVegOnly, setPrevVegOnly] = useState(vegOnly);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  // Track if welcome notification has been triggered in this session
-  const [welcomeNotificationTriggered, setWelcomeNotificationTriggered] = useState(false);
-  // Use ref to track notification status more reliably
-  const notificationSentRef = useRef(false);
+  // Track if login notification has been triggered in this session
+  const [loginNotificationTriggered, setLoginNotificationTriggered] = useState(false);
 
-  // Check if welcome notification was already sent in this session
+  // Simple login detection - trigger notification only on actual login
   useEffect(() => {
-    console.log('🔍 Session check useEffect triggered:', {
+    console.log('🔍 Login detection useEffect triggered:', {
       userId: session?.user?.id,
+      loginNotificationTriggered,
       sessionExists: !!session
     });
     
-    if (session?.user?.id) {
-      const sessionKey = `welcome_notification_${session.user.id}`;
-      const wasTriggered = sessionStorage.getItem(sessionKey);
-      console.log('🔍 Checking welcome notification status for user:', session.user.id, 'Triggered:', wasTriggered);
+    if (session?.user?.id && !loginNotificationTriggered) {
+      console.log('🎉 User logged in, triggering login notification');
+      setLoginNotificationTriggered(true);
       
-      // Check database flag first - if user has welcomeNotificationSent: true, don't send notification
-      fetch(`/api/users/${session.user.id}/welcome-status`)
-        .then(response => response.json())
-        .then(data => {
-          console.log('🔍 Database welcome status:', data);
-          if (data.welcomeNotificationSent) {
-            console.log('✅ Welcome notification already sent in database, setting flag to true');
-            setWelcomeNotificationTriggered(true);
-            notificationSentRef.current = true;
-            // Also update sessionStorage to prevent future checks
-            sessionStorage.setItem(sessionKey, 'true');
-          } else if (wasTriggered) {
-            console.log('✅ Welcome notification already sent in session, setting flag to true');
-            setWelcomeNotificationTriggered(true);
-            notificationSentRef.current = true;
-          } else {
-            console.log('❌ Welcome notification not sent yet, keeping flag false');
-            notificationSentRef.current = false;
-          }
-        })
-        .catch(error => {
-          console.error('Error checking welcome status:', error);
-          // Fallback to sessionStorage check
-          if (wasTriggered) {
-            console.log('✅ Welcome notification already sent in session (fallback), setting flag to true');
-            setWelcomeNotificationTriggered(true);
-            notificationSentRef.current = true;
-          } else {
-            console.log('❌ Welcome notification not sent yet (fallback), keeping flag false');
-            notificationSentRef.current = false;
-          }
-        });
-    } else {
-      // User logged out - clear sessionStorage
-      console.log('🚪 User logged out, clearing welcome notification flags');
-      setWelcomeNotificationTriggered(false);
-      notificationSentRef.current = false;
-      // Clear all welcome notification sessionStorage entries
-      Object.keys(sessionStorage).forEach(key => {
-        if (key.startsWith('welcome_notification_')) {
-          sessionStorage.removeItem(key);
-        }
+      // Call the API endpoint to trigger login notification (10 seconds delay)
+      fetch('/api/login-notifications/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: session.user.id })
+      }).catch(error => {
+        console.error('Error triggering login notification:', error);
       });
-    }
-  }, [session?.user?.id]);
-
-  // Separate useEffect for welcome notification - only runs once per session
-  useEffect(() => {
-    console.log('🔍 Welcome notification useEffect triggered:', {
-      userId: session?.user?.id,
-      welcomeNotificationTriggered,
-      notificationSentRef: notificationSentRef.current,
-      sessionExists: !!session
-    });
-    
-    // Only send notification if user is logged in, notification not triggered, and ref is false
-    if (session?.user?.id && !welcomeNotificationTriggered && !notificationSentRef.current) {
-      console.log('🎉 Triggering welcome notification for user:', session.user.id);
-      setWelcomeNotificationTriggered(true);
-      notificationSentRef.current = true;
-      // Store in sessionStorage to persist across page reloads
-      const sessionKey = `welcome_notification_${session.user.id}`;
-      sessionStorage.setItem(sessionKey, 'true');
-      
-      // Add a small delay to ensure user is settled on the page
-      setTimeout(() => {
-        console.log('⏰ Sending welcome notification after delay');
-        // Call the API endpoint to trigger welcome notification
-        fetch('/api/welcome-notifications/trigger', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: session.user.id })
-        }).catch(error => {
-          console.error('Error triggering welcome notification:', error);
-        });
-      }, 2000); // 2 second delay
-    } else if (session?.user?.id && (welcomeNotificationTriggered || notificationSentRef.current)) {
-      console.log('⏭️ Welcome notification already sent for user:', session.user.id);
+    } else if (session?.user?.id && loginNotificationTriggered) {
+      console.log('⏭️ Login notification already sent for user:', session.user.id);
     } else if (!session?.user?.id) {
-      console.log('❌ No session found, skipping welcome notification');
+      console.log('🚪 User logged out, resetting login notification flag');
+      setLoginNotificationTriggered(false);
     }
-  }, [session?.user?.id, welcomeNotificationTriggered]);
+  }, [session?.user?.id, loginNotificationTriggered]);
+
 
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
