@@ -39,7 +39,6 @@ class SplashScreenService {
     try {
       const { SplashScreen } = await import('@capacitor/splash-screen');
       await SplashScreen.show({
-        showSpinner: false, // We don't want spinner, just the Lottie animation
         autoHide: false, // We'll control when to hide it
       });
       this.isVisible = true;
