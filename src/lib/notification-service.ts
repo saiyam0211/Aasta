@@ -61,6 +61,7 @@ export class NotificationService {
             sound: 'default',
             channelId: 'food_delivery',
             icon: 'ic_stat_aasta',
+            largeIcon: 'ic_launcher',
             color: '#ffd500'
           }
         },
@@ -127,6 +128,7 @@ export class NotificationService {
             sound: 'default',
             channelId: 'food_delivery',
             icon: 'ic_stat_aasta',
+            largeIcon: 'ic_launcher',
             color: '#ffd500'
           }
         },
@@ -222,7 +224,8 @@ export class NotificationService {
           imageUrl: notification.imageUrl,
           sound: 'default',
           channelId: 'order_updates',
-          icon: 'ic_notification',
+          icon: 'ic_stat_aasta',
+          largeIcon: 'ic_launcher',
           color: '#ffd500',
           actions: notification.actions
         }
