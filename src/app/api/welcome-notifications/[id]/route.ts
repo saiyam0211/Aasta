@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 // PUT - Update a welcome notification
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,9 +16,10 @@ export async function PUT(
 
     const body = await request.json();
     const { type, title, body: notificationBody, imageUrl, data, actions, isActive } = body;
+    const { id } = await params;
 
     const notification = await prisma.welcomeNotification.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         type,
         title,
@@ -40,7 +41,7 @@ export async function PUT(
 // DELETE - Delete a welcome notification
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -48,8 +49,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     await prisma.welcomeNotification.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json({ message: 'Notification deleted successfully' });
