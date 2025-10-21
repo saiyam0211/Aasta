@@ -53,12 +53,12 @@ export class WelcomeNotificationService {
       const result = await this.notificationService.sendToUser(userId, {
         title: randomNotification.title,
         body: randomNotification.body,
-        imageUrl: randomNotification.imageUrl,
+        imageUrl: randomNotification.imageUrl || undefined,
         data: randomNotification.data as Record<string, any> || {},
-        actions: randomNotification.actions as Record<string, any> || undefined
+        actions: randomNotification.actions as Array<{id: string; title: string}> || undefined
       });
 
-      if (result.success) {
+      if (result) {
         // Update user's welcome notification flag
         await prisma.user.update({
           where: { id: userId },
