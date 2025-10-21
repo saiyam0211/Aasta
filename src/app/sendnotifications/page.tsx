@@ -92,9 +92,12 @@ export default function SendNotificationsPage() {
       return;
     }
     
-    loadStats();
-    loadUsers();
-    loadWelcomeNotifications();
+    // Only load data when session is available
+    if (session) {
+      loadStats();
+      loadUsers();
+      loadWelcomeNotifications();
+    }
   }, [session, status, router]);
 
   const loadStats = async () => {
@@ -123,6 +126,12 @@ export default function SendNotificationsPage() {
 
   const loadWelcomeNotifications = async () => {
     try {
+      // Only load if user is authenticated
+      if (!session || !session.user) {
+        console.log('No session available for welcome notifications');
+        return;
+      }
+      
       const response = await fetch('/api/welcome-notifications');
       const data = await response.json();
       if (data.notifications) {
