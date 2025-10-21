@@ -4,6 +4,7 @@ import './globals.css';
 import { Providers } from '@/components/providers';
 import Script from 'next/script';
 import ClientRoot from '@/components/client-root';
+import { LoginNotificationHandler } from '@/components/auth/login-notification-handler';
 
 const brandFont = localFont({
   src: [
@@ -163,7 +164,10 @@ export default function RootLayout({
       </head>
       <body className="pb-safe font-sans antialiased">
         <Providers>
-          <ClientRoot>{children}</ClientRoot>
+          <ClientRoot>
+            <LoginNotificationHandler />
+            {children}
+          </ClientRoot>
         </Providers>
       </body>
     </html>

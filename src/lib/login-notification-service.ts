@@ -4,6 +4,7 @@ import { NotificationService } from './notification-service';
 export class LoginNotificationService {
   private notificationService: NotificationService;
   private sentNotifications: Set<string> = new Set();
+  private processingNotifications: Set<string> = new Set();
 
   constructor() {
     this.notificationService = new NotificationService();
@@ -21,6 +22,15 @@ export class LoginNotificationService {
         console.log(`⏭️ Login notification already sent for user: ${userId}`);
         return false;
       }
+
+      // Check if we're already processing a notification for this user
+      if (this.processingNotifications.has(userId)) {
+        console.log(`⏳ Login notification already processing for user: ${userId}`);
+        return false;
+      }
+
+      // Mark as processing
+      this.processingNotifications.add(userId);
 
       // Get user details from database
       const user = await prisma.user.findUnique({
@@ -98,6 +108,9 @@ export class LoginNotificationService {
     } catch (error) {
       console.error('Error sending login notification:', error);
       return false;
+    } finally {
+      // Remove from processing set
+      this.processingNotifications.delete(userId);
     }
   }
 

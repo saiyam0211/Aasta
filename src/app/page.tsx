@@ -103,36 +103,7 @@ export default function HomePage() {
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [prevVegOnly, setPrevVegOnly] = useState(vegOnly);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  // Track if login notification has been triggered in this session
-  const [loginNotificationTriggered, setLoginNotificationTriggered] = useState(false);
-
-  // Simple login detection - trigger notification only on actual login
-  useEffect(() => {
-    console.log('🔍 Login detection useEffect triggered:', {
-      userId: session?.user?.id,
-      loginNotificationTriggered,
-      sessionExists: !!session
-    });
-    
-    if (session?.user?.id && !loginNotificationTriggered) {
-      console.log('🎉 User logged in, triggering login notification');
-      setLoginNotificationTriggered(true);
-      
-      // Call the API endpoint to trigger login notification (10 seconds delay)
-      fetch('/api/login-notifications/trigger', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: session.user.id })
-      }).catch(error => {
-        console.error('Error triggering login notification:', error);
-      });
-    } else if (session?.user?.id && loginNotificationTriggered) {
-      console.log('⏭️ Login notification already sent for user:', session.user.id);
-    } else if (!session?.user?.id) {
-      console.log('🚪 User logged out, resetting login notification flag');
-      setLoginNotificationTriggered(false);
-    }
-  }, [session?.user?.id, loginNotificationTriggered]);
+  // Remove login notification logic from home page - it should be handled by auth system
 
 
   const cartItemCount =
