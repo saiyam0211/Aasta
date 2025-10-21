@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
+
     // Transform menu items to include dietaryType computed from dietaryTags
     const transformedMenuItems = menuItems.map(item => {
       let dietaryType: 'Veg' | 'Non-Veg' = 'Veg'; // Default to Veg
@@ -90,6 +91,7 @@ export async function GET(request: NextRequest) {
         dietaryType
       };
     });
+
 
     return NextResponse.json({
       success: true,

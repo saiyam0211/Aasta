@@ -202,7 +202,9 @@ export default function RestaurantDetailPage() {
 
       const menuItems: MenuItem[] = menuData.data || [];
       
+      
       // Filter items based on veg mode
+      
       const filteredItems = vegOnly 
         ? menuItems.filter((item) => {
             const isVeg = Array.isArray(item.dietaryTags)
@@ -393,6 +395,8 @@ export default function RestaurantDetailPage() {
 
   const openProduct = (item: MenuItem) => {
     if (!restaurant) return;
+    
+    
     // Determine veg/non-veg from tags
     const tags = (item.dietaryTags || []).map((t: string) => t.toLowerCase());
     const isNonVeg = tags.some((t) => /non\s?-?veg/.test(t));
@@ -407,18 +411,20 @@ export default function RestaurantDetailPage() {
       originalPrice: item.originalPrice,
       rating: restaurant.rating || 0,
       preparationTime:
-        item.preparationTime || restaurant.averagePreparationTime || 20,
+        item.preparationTime ?? restaurant.averagePreparationTime ?? 20,
       restaurant: restaurant.name,
       category: item.category,
       isVegetarian,
       spiceLevel: (item.spiceLevel as any) || 'mild',
-      description: item.description,
+      description: item.description || `Delicious ${item.name}, perfect for snacking or as a side dish.`,
       dietaryTags: item.dietaryTags || [],
       distanceText: distanceText || undefined,
       distanceMeters: distanceText?.endsWith('km')
         ? Math.round(parseFloat(distanceText) * 1000)
         : undefined,
     };
+    
+    
     setSelectedDish(dish);
     setSheetOpen(true);
   };

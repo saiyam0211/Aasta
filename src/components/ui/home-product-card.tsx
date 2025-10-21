@@ -7,6 +7,7 @@ import { Star, Minus, Plus } from 'lucide-react';
 import type { Dish } from '@/types/dish';
 import { SafeImage } from '@/components/ui/safe-image';
 import { useCartStore } from '@/lib/store';
+import { useHaptics } from '@/hooks/useHaptics';
 
 interface HomeProductCardProps {
   dish: Dish;
@@ -58,6 +59,7 @@ export function HomeProductCard({
 }: HomeProductCardProps) {
   const [clicked, setClicked] = useState(false);
   const [showDiscountText, setShowDiscountText] = useState(true); // true = percentage, false = amount saved
+  const { medium, light } = useHaptics();
 
   const hasDiscount = !!dish.originalPrice && dish.originalPrice > dish.price;
   const discountPct = hasDiscount
@@ -92,8 +94,9 @@ export function HomeProductCard({
 
   const quantity = getItemQuantityInCart(dish.id);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    await medium();
     const maxStock = (dish as any).stockLeft;
     const currentQty = quantity || 0;
     if (typeof maxStock === 'number' && maxStock >= 0 && currentQty + 1 > maxStock) {
@@ -122,8 +125,9 @@ export function HomeProductCard({
     onAdd(dish);
   };
 
-  const handleIncrease = (e: React.MouseEvent) => {
+  const handleIncrease = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    await light();
     const maxStock = (dish as any).stockLeft;
     if (typeof maxStock === 'number' && maxStock >= 0 && quantity + 1 > maxStock) {
       toast.error(`Only ${maxStock} left in stock`);
@@ -132,14 +136,16 @@ export function HomeProductCard({
     updateQuantity(dish.id, quantity + 1);
   };
 
-  const handleDecrease = (e: React.MouseEvent) => {
+  const handleDecrease = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    await light();
     updateQuantity(dish.id, quantity - 1);
   };
 
   // Click handler for card (preserves original onClick)
-  const handleCardClick = () => {
+  const handleCardClick = async () => {
     setClicked(true);
+    await light();
     onClick?.(dish);
     setTimeout(() => setClicked(false), 150);
   };

@@ -9,6 +9,7 @@ import { SafeImage } from '@/components/ui/safe-image';
 import { useCartStore } from '@/lib/store';
 import { shareContent, generateProductShareData } from '@/lib/share-utils';
 import { toast } from 'sonner';
+import { useHaptics } from '@/hooks/useHaptics';
 
 interface ProductBottomSheetProps {
   open: boolean;
@@ -49,6 +50,7 @@ export function ProductBottomSheet({
   onAdd,
 }: ProductBottomSheetProps) {
   const [quantity, setQuantity] = React.useState(1);
+  const { medium, light } = useHaptics();
 
   const getItemQuantityInCart = useCartStore((s) => s.getItemQuantityInCart);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
@@ -66,6 +68,7 @@ export function ProductBottomSheet({
       : !!dish.isVegetarian;
   }, [dish]);
 
+
   const totalPrice = dish
     ? dish.price * (existingQuantity > 0 ? existingQuantity : quantity)
     : 0;
@@ -73,12 +76,14 @@ export function ProductBottomSheet({
     ? dish.originalPrice * (existingQuantity > 0 ? existingQuantity : quantity)
     : undefined;
 
-  const handleIncrease = () => {
+  const handleIncrease = async () => {
     if (!dish) return;
+    await light();
     updateQuantity(dish.id, existingQuantity + 1);
   };
-  const handleDecrease = () => {
+  const handleDecrease = async () => {
     if (!dish) return;
+    await light();
     updateQuantity(dish.id, existingQuantity - 1);
   };
 
@@ -87,7 +92,7 @@ export function ProductBottomSheet({
 
     const shareData = generateProductShareData(
       dish.name,
-      dish.description || `Delicious ${dish.name}`,
+      dish.description || '',
       dish.price,
       dish.restaurant,
       dish.id
@@ -127,7 +132,7 @@ export function ProductBottomSheet({
                     <img
                       src="/images/sold-out.png"
                       alt="Sold Out"
-                      className="absolute inset-0 m-auto h-[100%] w-[100%]"
+                      className="absolute inset-0 object-cover"
                     />
                   )}
                 </div>
@@ -137,26 +142,19 @@ export function ProductBottomSheet({
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-center gap-2">
                       <VegMark isVegetarian={isVeg} />
-                      {dish.preparationTime && (
-                        <span className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] text-gray-700">
-                          <Clock className="h-3 w-3" /> {dish.preparationTime}{' '}
-                          mins
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] text-gray-700">
+                        <Clock className="h-3 w-3" /> {dish.preparationTime || 15}{' '}
+                        mins
+                      </span>
                     </div>
-                    <Dialog.Title className="text-lg leading-6 font-semibold text-gray-900">
+                    <Dialog.Title className="text-2xl py-1 mt-2 leading-6 font-semibold text-gray-900">
                       {dish.name}
                     </Dialog.Title>
-                    <Dialog.Description className="mt-1 text-sm text-gray-600">
-                      {dish.description ||
-                        `Delicious ${dish.name}, perfect for snacking or as a side dish.`}
+                    <Dialog.Description className="text-md text-gray-600">
+                      {dish.description || `Delicious ${dish.name}, perfect for snacking or as a side dish.`}
                     </Dialog.Description>
                   </div>
-                  <div className="ml-3 flex items-center gap-2">
-                    {/* Saved for future: Wishlist */}
-                    {/* <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center" aria-label="Save">
-                      <Bookmark className="w-5 h-5" />
-                    </button> */}
+                  <div className="ml-3 flex items-center">
                     <button
                       className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 transition-colors hover:bg-gray-200"
                       aria-label="Share"
@@ -230,7 +228,12 @@ export function ProductBottomSheet({
               ) : (
                 <button
                   className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#fd6923] text-base font-semibold text-white shadow-sm"
-                  onClick={() => dish && onAdd(dish, quantity)}
+                  onClick={async () => {
+                    if (dish) {
+                      await medium();
+                      onAdd(dish, quantity);
+                    }
+                  }}
                 >
                   Add item
                   {typeof totalOriginal === 'number' && (

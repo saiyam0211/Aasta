@@ -102,6 +102,7 @@ export async function GET(request: NextRequest) {
         })
       : [];
 
+
     // Group items per restaurant and split into buckets
     const itemsByRestaurant: Record<string, {
       featured: any[];
@@ -156,11 +157,11 @@ export async function GET(request: NextRequest) {
           originalPrice: item.originalPrice,
           dietaryTags: item.dietaryTags,
           stockLeft: item.stockLeft,
-                 soldOut: item.stockLeft === 0 || item.stockLeft === null,
           preparationTime: item.preparationTime,
+          description: item.description,
           category: item.category,
           spiceLevel: item.spiceLevel,
-          description: item.description,
+          soldOut: item.stockLeft === 0 || item.stockLeft === null,
         })),
         hackItems: restaurantItems.hack.map((item) => ({
           id: item.id,
@@ -193,6 +194,7 @@ export async function GET(request: NextRequest) {
         orderCount: restaurant._count.orders,
       };
     });
+
 
     return NextResponse.json({
       success: true,
