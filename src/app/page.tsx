@@ -128,6 +128,31 @@ export default function HomePage() {
     }
   }, [session?.user?.id]);
 
+  // Separate useEffect for welcome notification - only runs once per session
+  useEffect(() => {
+    if (session?.user?.id && !welcomeNotificationTriggered) {
+      console.log('🎉 Triggering welcome notification for user:', session.user.id);
+      setWelcomeNotificationTriggered(true);
+      // Store in sessionStorage to persist across page reloads
+      const sessionKey = `welcome_notification_${session.user.id}`;
+      sessionStorage.setItem(sessionKey, 'true');
+      
+      // Add a small delay to ensure user is settled on the page
+      setTimeout(() => {
+        // Call the API endpoint to trigger welcome notification
+        fetch('/api/welcome-notifications/trigger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: session.user.id })
+        }).catch(error => {
+          console.error('Error triggering welcome notification:', error);
+        });
+      }, 2000); // 2 second delay
+    } else if (session?.user?.id && welcomeNotificationTriggered) {
+      console.log('⏭️ Welcome notification already sent for user:', session.user.id);
+    }
+  }, [session?.user?.id, welcomeNotificationTriggered]);
+
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
 
@@ -180,25 +205,7 @@ export default function HomePage() {
       // Hide splash screen when all data is loaded
       await hideSplashWhenReady();
 
-      // Trigger welcome notification only once per session
-      if (session?.user?.id && !welcomeNotificationTriggered) {
-        console.log('🎉 Triggering welcome notification for user:', session.user.id);
-        setWelcomeNotificationTriggered(true);
-        // Store in sessionStorage to persist across page reloads
-        const sessionKey = `welcome_notification_${session.user.id}`;
-        sessionStorage.setItem(sessionKey, 'true');
-        
-        // Call the API endpoint to trigger welcome notification
-        fetch('/api/welcome-notifications/trigger', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: session.user.id })
-        }).catch(error => {
-          console.error('Error triggering welcome notification:', error);
-        });
-      } else if (session?.user?.id && welcomeNotificationTriggered) {
-        console.log('⏭️ Welcome notification already sent for user:', session.user.id);
-      }
+      // Welcome notification trigger moved to separate useEffect
 
     } catch (error) {
       console.error('❌ Error loading home data:', error);
