@@ -103,8 +103,30 @@ export default function HomePage() {
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [prevVegOnly, setPrevVegOnly] = useState(vegOnly);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  // Track if welcome notification has been triggered to prevent duplicates
+  // Track if welcome notification has been triggered in this session
   const [welcomeNotificationTriggered, setWelcomeNotificationTriggered] = useState(false);
+
+  // Check if welcome notification was already sent in this session
+  useEffect(() => {
+    if (session?.user?.id) {
+      const sessionKey = `welcome_notification_${session.user.id}`;
+      const wasTriggered = sessionStorage.getItem(sessionKey);
+      console.log('🔍 Checking welcome notification status for user:', session.user.id, 'Triggered:', wasTriggered);
+      if (wasTriggered) {
+        setWelcomeNotificationTriggered(true);
+      }
+    } else {
+      // User logged out - clear sessionStorage
+      console.log('🚪 User logged out, clearing welcome notification flags');
+      setWelcomeNotificationTriggered(false);
+      // Clear all welcome notification sessionStorage entries
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('welcome_notification_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+  }, [session?.user?.id]);
 
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
@@ -158,9 +180,14 @@ export default function HomePage() {
       // Hide splash screen when all data is loaded
       await hideSplashWhenReady();
 
-      // Trigger welcome notification after data is loaded (5 seconds delay)
+      // Trigger welcome notification only once per session
       if (session?.user?.id && !welcomeNotificationTriggered) {
+        console.log('🎉 Triggering welcome notification for user:', session.user.id);
         setWelcomeNotificationTriggered(true);
+        // Store in sessionStorage to persist across page reloads
+        const sessionKey = `welcome_notification_${session.user.id}`;
+        sessionStorage.setItem(sessionKey, 'true');
+        
         // Call the API endpoint to trigger welcome notification
         fetch('/api/welcome-notifications/trigger', {
           method: 'POST',
@@ -169,6 +196,8 @@ export default function HomePage() {
         }).catch(error => {
           console.error('Error triggering welcome notification:', error);
         });
+      } else if (session?.user?.id && welcomeNotificationTriggered) {
+        console.log('⏭️ Welcome notification already sent for user:', session.user.id);
       }
 
     } catch (error) {
