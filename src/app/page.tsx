@@ -28,6 +28,7 @@ import { useAppCache } from '@/hooks/useAppCache';
 import LocationChangeLoader from '@/components/ui/location-change-loader';
 import VegModeLoader from '@/components/ui/veg-mode-loader';
 import { LocationOnboarding } from '@/components/ui/location-onboarding';
+import { hideSplashWhenReady } from '@/lib/splash-screen';
 // Custom inline animation (no JSON)
 // import { CurvedMarquee } from '@/components/ui/curved-marquee';
 // import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -98,8 +99,8 @@ export default function HomePage() {
   const [showLocationChangeLoader, setShowLocationChangeLoader] = useState(false);
   const [showVegModeLoader, setShowVegModeLoader] = useState(false);
   const [isEnteringVegMode, setIsEnteringVegMode] = useState(true);
-  // Initial app loading state
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  // Initial app loading state - we'll use splash screen instead
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [prevVegOnly, setPrevVegOnly] = useState(vegOnly);
   const [showLocationModal, setShowLocationModal] = useState(false);
 
@@ -152,6 +153,9 @@ export default function HomePage() {
       setRecentLoading(false);
       setIsInitialLoading(false);
 
+      // Hide splash screen when all data is loaded
+      await hideSplashWhenReady();
+
     } catch (error) {
       console.error('❌ Error loading home data:', error);
       // Fallback to normal loading
@@ -159,6 +163,9 @@ export default function HomePage() {
       loadHacksOfTheDay();
       loadNearbyNonFeaturedDishes();
       loadRecentlyOrdered();
+      
+      // Hide splash screen even on error
+      await hideSplashWhenReady();
     }
   }, [locationId, vegOnly, getCachedData, setPopularRestaurants, setPopularDishes, setHacksOfTheDay, setNearbyDishesSections, setRecentDishes, setPopularLoading, setHacksLoading, setNearbyDishesLoading, setRecentLoading]);
 
@@ -622,6 +629,8 @@ export default function HomePage() {
       setHacksOfTheDay([]);
     } finally {
       setHacksLoading(false);
+      // Hide splash screen when this section loads
+      await hideSplashWhenReady();
     }
   };
 
@@ -720,6 +729,8 @@ export default function HomePage() {
       setRecentDishes([]);
     } finally {
       setRecentLoading(false);
+      // Hide splash screen when this section loads
+      await hideSplashWhenReady();
     }
   };
 
@@ -920,6 +931,8 @@ export default function HomePage() {
       setNearbyDishesSections([[], [], []]);
     } finally {
       setNearbyDishesLoading(false);
+      // Hide splash screen when this section loads
+      await hideSplashWhenReady();
     }
   };
 
@@ -1011,6 +1024,8 @@ export default function HomePage() {
     } finally {
       if (!backgroundRefresh) {
         setPopularLoading(false);
+        // Hide splash screen when this section loads
+        await hideSplashWhenReady();
       }
     }
   };
@@ -1223,15 +1238,8 @@ export default function HomePage() {
   }, [status, locationId]);
 
   // Early return rendering (after all hooks) to avoid hook-order changes
-  if (status === 'loading' || !session || isInitialLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#d3fb6b]">
-        <div className="text-center">
-          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-black"></div>
-          <p className="text-gray-600">Loading delicious food...</p>
-        </div>
-      </div>
-    );
+  if (status === 'loading' || !session) {
+    return <div className="min-h-screen" />;
   }
 
   if (showLocationModalAfterSignup) {
