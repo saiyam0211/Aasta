@@ -32,6 +32,16 @@ const config: CapacitorConfig = {
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert']
+    },
+    Haptics: {
+      android: {
+        // Enable haptic feedback on Android
+        enabled: true
+      },
+      ios: {
+        // Enable haptic feedback on iOS
+        enabled: true
+      }
     }
   }
 };
