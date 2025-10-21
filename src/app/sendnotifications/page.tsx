@@ -87,18 +87,12 @@ export default function SendNotificationsPage() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    if (!session) {
-      router.push('/auth/signin');
-      return;
-    }
     
-    // Only load data when session is available
-    if (session) {
-      loadStats();
-      loadUsers();
-      loadWelcomeNotifications();
-    }
-  }, [session, status, router]);
+    // Load data regardless of authentication status
+    loadStats();
+    loadUsers();
+    loadWelcomeNotifications();
+  }, [status]);
 
   const loadStats = async () => {
     try {
@@ -126,12 +120,6 @@ export default function SendNotificationsPage() {
 
   const loadWelcomeNotifications = async () => {
     try {
-      // Only load if user is authenticated
-      if (!session || !session.user) {
-        console.log('No session available for welcome notifications');
-        return;
-      }
-      
       const response = await fetch('/api/welcome-notifications');
       const data = await response.json();
       if (data.notifications) {
