@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Send, Users, Clock, BarChart3, Bell, Image, Link, Calendar, Upload, X } from 'lucide-react';
+import { Send, Users, Clock, BarChart3, Bell, Image, Link, Calendar, Upload, X, Settings, Plus, Edit, Trash2 } from 'lucide-react';
 
 interface NotificationStats {
   totalSent: number;
@@ -28,6 +28,19 @@ interface User {
   email: string;
 }
 
+interface WelcomeNotification {
+  id: string;
+  type: 'NEW_USER' | 'RETURNING_USER';
+  title: string;
+  body: string;
+  imageUrl?: string;
+  data?: any;
+  actions?: any;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function SendNotificationsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -38,6 +51,20 @@ export default function SendNotificationsPage() {
   const [sending, setSending] = useState(false);
   const [processingScheduled, setProcessingScheduled] = useState(false);
   const [cleaningUp, setCleaningUp] = useState(false);
+  
+  // Welcome notification state
+  const [welcomeNotifications, setWelcomeNotifications] = useState<WelcomeNotification[]>([]);
+  const [showWelcomeManagement, setShowWelcomeManagement] = useState(false);
+  const [editingWelcome, setEditingWelcome] = useState<WelcomeNotification | null>(null);
+  const [welcomeForm, setWelcomeForm] = useState({
+    type: 'NEW_USER' as 'NEW_USER' | 'RETURNING_USER',
+    title: '',
+    body: '',
+    imageUrl: '',
+    data: '',
+    actions: '',
+    isActive: true
+  });
   
   // Notification form state
   const [notification, setNotification] = useState({
@@ -67,6 +94,7 @@ export default function SendNotificationsPage() {
     
     loadStats();
     loadUsers();
+    loadWelcomeNotifications();
   }, [session, status, router]);
 
   const loadStats = async () => {
@@ -90,6 +118,18 @@ export default function SendNotificationsPage() {
       }
     } catch (error) {
       console.error('Error loading users:', error);
+    }
+  };
+
+  const loadWelcomeNotifications = async () => {
+    try {
+      const response = await fetch('/api/welcome-notifications');
+      const data = await response.json();
+      if (data.notifications) {
+        setWelcomeNotifications(data.notifications);
+      }
+    } catch (error) {
+      console.error('Error loading welcome notifications:', error);
     }
   };
 
@@ -267,6 +307,124 @@ export default function SendNotificationsPage() {
     }
   };
 
+  // Welcome notification management functions
+  const handleCreateWelcomeNotification = async () => {
+    if (!welcomeForm.title || !welcomeForm.body) {
+      toast.error('Title and body are required');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/welcome-notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: welcomeForm.type,
+          title: welcomeForm.title,
+          body: welcomeForm.body,
+          imageUrl: welcomeForm.imageUrl || undefined,
+          data: welcomeForm.data ? JSON.parse(welcomeForm.data) : undefined,
+          actions: welcomeForm.actions ? JSON.parse(welcomeForm.actions) : undefined
+        })
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        toast.success('Welcome notification created successfully');
+        setWelcomeForm({
+          type: 'NEW_USER',
+          title: '',
+          body: '',
+          imageUrl: '',
+          data: '',
+          actions: '',
+          isActive: true
+        });
+        loadWelcomeNotifications();
+      } else {
+        toast.error(result.error || 'Failed to create welcome notification');
+      }
+    } catch (error) {
+      console.error('Error creating welcome notification:', error);
+      toast.error('Failed to create welcome notification');
+    }
+  };
+
+  const handleUpdateWelcomeNotification = async () => {
+    if (!editingWelcome) return;
+
+    try {
+      const response = await fetch(`/api/welcome-notifications/${editingWelcome.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: welcomeForm.type,
+          title: welcomeForm.title,
+          body: welcomeForm.body,
+          imageUrl: welcomeForm.imageUrl || undefined,
+          data: welcomeForm.data ? JSON.parse(welcomeForm.data) : undefined,
+          actions: welcomeForm.actions ? JSON.parse(welcomeForm.actions) : undefined,
+          isActive: welcomeForm.isActive
+        })
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        toast.success('Welcome notification updated successfully');
+        setEditingWelcome(null);
+        setWelcomeForm({
+          type: 'NEW_USER',
+          title: '',
+          body: '',
+          imageUrl: '',
+          data: '',
+          actions: '',
+          isActive: true
+        });
+        loadWelcomeNotifications();
+      } else {
+        toast.error(result.error || 'Failed to update welcome notification');
+      }
+    } catch (error) {
+      console.error('Error updating welcome notification:', error);
+      toast.error('Failed to update welcome notification');
+    }
+  };
+
+  const handleDeleteWelcomeNotification = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this welcome notification?')) return;
+
+    try {
+      const response = await fetch(`/api/welcome-notifications/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        toast.success('Welcome notification deleted successfully');
+        loadWelcomeNotifications();
+      } else {
+        const result = await response.json();
+        toast.error(result.error || 'Failed to delete welcome notification');
+      }
+    } catch (error) {
+      console.error('Error deleting welcome notification:', error);
+      toast.error('Failed to delete welcome notification');
+    }
+  };
+
+  const handleEditWelcomeNotification = (notification: WelcomeNotification) => {
+    setEditingWelcome(notification);
+    setWelcomeForm({
+      type: notification.type,
+      title: notification.title,
+      body: notification.body,
+      imageUrl: notification.imageUrl || '',
+      data: notification.data ? JSON.stringify(notification.data, null, 2) : '',
+      actions: notification.actions ? JSON.stringify(notification.actions, null, 2) : '',
+      isActive: notification.isActive
+    });
+  };
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -289,6 +447,13 @@ export default function SendNotificationsPage() {
               <p className="text-gray-600 mt-2">Send notifications to your users</p>
             </div>
             <div className="flex gap-3">
+              <button
+                onClick={() => setShowWelcomeManagement(!showWelcomeManagement)}
+                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 flex items-center gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Welcome Notifications
+              </button>
               <button
                 onClick={handleCleanupImages}
                 disabled={cleaningUp}
@@ -374,6 +539,172 @@ export default function SendNotificationsPage() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Success Rate</p>
                   <p className="text-2xl font-bold text-gray-900">98.5%</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Welcome Notifications Sidebar */}
+        {showWelcomeManagement && (
+          <div className="mb-8 bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Welcome Notifications Management
+              </h2>
+            </div>
+            <div className="p-6">
+              {/* Create/Edit Form */}
+              <div className="mb-6">
+                <h3 className="text-md font-medium text-gray-900 mb-4">
+                  {editingWelcome ? 'Edit Welcome Notification' : 'Create New Welcome Notification'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select
+                      value={welcomeForm.type}
+                      onChange={(e) => setWelcomeForm(prev => ({ ...prev, type: e.target.value as 'NEW_USER' | 'RETURNING_USER' }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="NEW_USER">New User</option>
+                      <option value="RETURNING_USER">Returning User</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={welcomeForm.title}
+                      onChange={(e) => setWelcomeForm(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Welcome to Aasta!"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Body</label>
+                    <textarea
+                      value={welcomeForm.body}
+                      onChange={(e) => setWelcomeForm(prev => ({ ...prev, body: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      rows={3}
+                      placeholder="Thanks for joining us! Check out our amazing food options..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Image URL (optional)</label>
+                    <input
+                      type="url"
+                      value={welcomeForm.imageUrl}
+                      onChange={(e) => setWelcomeForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={welcomeForm.isActive}
+                      onChange={(e) => setWelcomeForm(prev => ({ ...prev, isActive: e.target.checked }))}
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
+                      Active
+                    </label>
+                  </div>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  {editingWelcome ? (
+                    <>
+                      <button
+                        onClick={handleUpdateWelcomeNotification}
+                        className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Update
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingWelcome(null);
+                          setWelcomeForm({
+                            type: 'NEW_USER',
+                            title: '',
+                            body: '',
+                            imageUrl: '',
+                            data: '',
+                            actions: '',
+                            isActive: true
+                          });
+                        }}
+                        className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={handleCreateWelcomeNotification}
+                      className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Create
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* List of Welcome Notifications */}
+              <div>
+                <h3 className="text-md font-medium text-gray-900 mb-4">Existing Welcome Notifications</h3>
+                <div className="space-y-3">
+                  {welcomeNotifications.map((notification) => (
+                    <div key={notification.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              notification.type === 'NEW_USER' 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {notification.type === 'NEW_USER' ? 'New User' : 'Returning User'}
+                            </span>
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              notification.isActive 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {notification.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                          <h4 className="font-medium text-gray-900">{notification.title}</h4>
+                          <p className="text-sm text-gray-600 mt-1">{notification.body}</p>
+                          {notification.imageUrl && (
+                            <p className="text-xs text-gray-500 mt-1">Image: {notification.imageUrl}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => handleEditWelcomeNotification(notification)}
+                            className="text-blue-600 hover:text-blue-800 p-1"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteWelcomeNotification(notification.id)}
+                            className="text-red-600 hover:text-red-800 p-1"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {welcomeNotifications.length === 0 && (
+                    <p className="text-gray-500 text-center py-4">No welcome notifications created yet.</p>
+                  )}
                 </div>
               </div>
             </div>
