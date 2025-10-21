@@ -49,7 +49,7 @@ export class NotificationService {
         notification: {
           title: notification.title,
           body: notification.body,
-          image: notification.imageUrl ? this.getAbsoluteImageUrl(notification.imageUrl) : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/_ffd500.png`
+          image: notification.imageUrl ? this.getAbsoluteImageUrl(notification.imageUrl) : undefined
         },
         data: {
           type: 'custom',
@@ -115,7 +115,7 @@ export class NotificationService {
         notification: {
           title: notification.title,
           body: notification.body,
-          image: notification.imageUrl ? this.getAbsoluteImageUrl(notification.imageUrl) : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/_ffd500.png`
+          image: notification.imageUrl ? this.getAbsoluteImageUrl(notification.imageUrl) : undefined
         },
         data: {
           type: 'broadcast',
