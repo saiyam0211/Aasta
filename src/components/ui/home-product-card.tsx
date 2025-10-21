@@ -147,7 +147,7 @@ export function HomeProductCard({
   return (
     <div
       className={cn(
-        'cursor-pointer rounded-2xl bg-white p-auto transition-transform duration-150',
+        'cursor-pointer rounded-2xl mb-6 bg-white p-auto transition-transform duration-150',
         // 'scale-100 hover:scale-120', // keep hover effect
         // clicked && 'scale-105', // add click effect
         className
