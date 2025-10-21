@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import localFont from 'next/font/local';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useLocationStore } from '@/hooks/useLocation';
 import { toast } from 'sonner';
 import { HomeHeader } from '@/components/ui/home-header';
@@ -105,20 +105,33 @@ export default function HomePage() {
   const [showLocationModal, setShowLocationModal] = useState(false);
   // Track if welcome notification has been triggered in this session
   const [welcomeNotificationTriggered, setWelcomeNotificationTriggered] = useState(false);
+  // Use ref to track notification status more reliably
+  const notificationSentRef = useRef(false);
 
   // Check if welcome notification was already sent in this session
   useEffect(() => {
+    console.log('🔍 Session check useEffect triggered:', {
+      userId: session?.user?.id,
+      sessionExists: !!session
+    });
+    
     if (session?.user?.id) {
       const sessionKey = `welcome_notification_${session.user.id}`;
       const wasTriggered = sessionStorage.getItem(sessionKey);
       console.log('🔍 Checking welcome notification status for user:', session.user.id, 'Triggered:', wasTriggered);
       if (wasTriggered) {
+        console.log('✅ Welcome notification already sent, setting flag to true');
         setWelcomeNotificationTriggered(true);
+        notificationSentRef.current = true;
+      } else {
+        console.log('❌ Welcome notification not sent yet, keeping flag false');
+        notificationSentRef.current = false;
       }
     } else {
       // User logged out - clear sessionStorage
       console.log('🚪 User logged out, clearing welcome notification flags');
       setWelcomeNotificationTriggered(false);
+      notificationSentRef.current = false;
       // Clear all welcome notification sessionStorage entries
       Object.keys(sessionStorage).forEach(key => {
         if (key.startsWith('welcome_notification_')) {
@@ -130,15 +143,24 @@ export default function HomePage() {
 
   // Separate useEffect for welcome notification - only runs once per session
   useEffect(() => {
-    if (session?.user?.id && !welcomeNotificationTriggered) {
+    console.log('🔍 Welcome notification useEffect triggered:', {
+      userId: session?.user?.id,
+      welcomeNotificationTriggered,
+      notificationSentRef: notificationSentRef.current,
+      sessionExists: !!session
+    });
+    
+    if (session?.user?.id && !welcomeNotificationTriggered && !notificationSentRef.current) {
       console.log('🎉 Triggering welcome notification for user:', session.user.id);
       setWelcomeNotificationTriggered(true);
+      notificationSentRef.current = true;
       // Store in sessionStorage to persist across page reloads
       const sessionKey = `welcome_notification_${session.user.id}`;
       sessionStorage.setItem(sessionKey, 'true');
       
       // Add a small delay to ensure user is settled on the page
       setTimeout(() => {
+        console.log('⏰ Sending welcome notification after delay');
         // Call the API endpoint to trigger welcome notification
         fetch('/api/welcome-notifications/trigger', {
           method: 'POST',
@@ -148,8 +170,10 @@ export default function HomePage() {
           console.error('Error triggering welcome notification:', error);
         });
       }, 2000); // 2 second delay
-    } else if (session?.user?.id && welcomeNotificationTriggered) {
+    } else if (session?.user?.id && (welcomeNotificationTriggered || notificationSentRef.current)) {
       console.log('⏭️ Welcome notification already sent for user:', session.user.id);
+    } else if (!session?.user?.id) {
+      console.log('❌ No session found, skipping welcome notification');
     }
   }, [session?.user?.id, welcomeNotificationTriggered]);
 
