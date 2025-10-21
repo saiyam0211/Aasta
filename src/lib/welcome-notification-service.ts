@@ -3,6 +3,7 @@ import { NotificationService } from './notification-service';
 
 export class WelcomeNotificationService {
   private notificationService: NotificationService;
+  private lastNotificationTime: Map<string, number> = new Map();
 
   constructor() {
     this.notificationService = new NotificationService();
@@ -14,6 +15,14 @@ export class WelcomeNotificationService {
   async sendWelcomeNotification(userId: string): Promise<boolean> {
     try {
       console.log(`Looking up user: ${userId}`);
+      
+      // Check cooldown (prevent multiple notifications within 30 seconds)
+      const now = Date.now();
+      const lastTime = this.lastNotificationTime.get(userId);
+      if (lastTime && (now - lastTime) < 30000) {
+        console.log(`Cooldown active for user ${userId}, skipping notification`);
+        return false;
+      }
       
       // Get user details
       const user = await prisma.user.findUnique({
@@ -36,9 +45,12 @@ export class WelcomeNotificationService {
       }
 
       // Determine notification type
+      // NEW_USER: when welcomeNotificationSent is false (first time)
+      // RETURNING_USER: when welcomeNotificationSent is true (returning user)
       const isNewUser = !user.welcomeNotificationSent;
       const notificationType = isNewUser ? 'NEW_USER' : 'RETURNING_USER';
       
+      console.log(`User welcomeNotificationSent: ${user.welcomeNotificationSent}`);
       console.log(`Notification type: ${notificationType} (isNewUser: ${isNewUser})`);
 
       // Get random active notification for this type
@@ -78,6 +90,9 @@ export class WelcomeNotificationService {
           where: { id: userId },
           data: { welcomeNotificationSent: true }
         });
+
+        // Update cooldown
+        this.lastNotificationTime.set(userId, Date.now());
 
         console.log(`Welcome notification sent to user ${userId} (${notificationType})`);
         return true;

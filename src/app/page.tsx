@@ -103,6 +103,8 @@ export default function HomePage() {
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [prevVegOnly, setPrevVegOnly] = useState(vegOnly);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  // Track if welcome notification has been triggered to prevent duplicates
+  const [welcomeNotificationTriggered, setWelcomeNotificationTriggered] = useState(false);
 
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
@@ -157,7 +159,8 @@ export default function HomePage() {
       await hideSplashWhenReady();
 
       // Trigger welcome notification after data is loaded (5 seconds delay)
-      if (session?.user?.id) {
+      if (session?.user?.id && !welcomeNotificationTriggered) {
+        setWelcomeNotificationTriggered(true);
         // Call the API endpoint to trigger welcome notification
         fetch('/api/welcome-notifications/trigger', {
           method: 'POST',
