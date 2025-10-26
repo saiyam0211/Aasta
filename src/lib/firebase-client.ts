@@ -20,7 +20,7 @@ export const auth = getAuth(app);
 
 // Initialize Firebase Messaging (only in browser, not in Capacitor)
 let messaging = null;
-if (typeof window !== 'undefined' && !window.Capacitor) {
+if (typeof window !== 'undefined' && !(window as any).Capacitor) {
   // Only initialize Firebase Messaging in web browsers, not in Capacitor
   import('firebase/messaging').then(({ getMessaging }) => {
     messaging = getMessaging(app);
