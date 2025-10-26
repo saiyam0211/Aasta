@@ -48,8 +48,14 @@ export async function initializeNativeAuth(): Promise<void> {
 
   try {
     console.log('[Native Auth] Initializing native Firebase Auth...');
-    // The plugin auto-initializes with the Firebase config from native projects
-    // No explicit initialization needed
+    
+    // Wait a moment for APNs token to be registered
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Get current user to ensure plugin is initialized
+    const result = await FirebaseAuthentication.getCurrentUser();
+    console.log('[Native Auth] Plugin initialized, current user:', result.user ? 'signed in' : 'signed out');
+    
     console.log('[Native Auth] Native Firebase Auth initialized successfully');
   } catch (error) {
     console.error('[Native Auth] Failed to initialize:', error);

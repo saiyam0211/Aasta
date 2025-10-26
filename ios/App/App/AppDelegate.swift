@@ -10,11 +10,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("🔥 [AppDelegate] App Launched!")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        
         // Configure Firebase
         FirebaseApp.configure()
+        print("🔥 [AppDelegate] Firebase configured")
+        
+        // Check registration status
+        if UIApplication.shared.isRegisteredForRemoteNotifications {
+            print("✅ [AppDelegate] Already registered for remote notifications")
+        } else {
+            print("⚠️ [AppDelegate] NOT registered yet, registering now...")
+        }
         
         // Register for remote notifications (APNs) - Required for Firebase Phone Auth
         application.registerForRemoteNotifications()
+        print("📱 [AppDelegate] registerForRemoteNotifications() CALLED")
         
         return true
     }
@@ -22,18 +35,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // MARK: - APNs Token Registration (Required for Firebase Phone Auth)
     
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        print("📱 [AppDelegate] APNs token registered successfully")
-        print("📱 [AppDelegate] Token: \(deviceToken.map { String(format: "%02.2hhx", $0) }.joined())")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("✅✅✅ [AppDelegate] APNs token SUCCESS! ✅✅✅")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("📱 Token: \(deviceToken.map { String(format: "%02.2hhx", $0) }.joined())")
         
         // Forward APNs token to Firebase Auth
         // IMPORTANT: For TestFlight, we need .sandbox (TestFlight uses sandbox APNs)
         // For App Store, change to .prod
         Auth.auth().setAPNSToken(deviceToken, type: .sandbox)
-        print("📱 [AppDelegate] Using SANDBOX APNs token (for TestFlight)")
+        print("📱 [AppDelegate] Token forwarded to Firebase (SANDBOX)")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
     
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        print("❌ [AppDelegate] Failed to register for remote notifications: \(error.localizedDescription)")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("❌❌❌ [AppDelegate] APNs registration FAILED! ❌❌❌")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("❌ Error: \(error.localizedDescription)")
+        print("❌ Full error: \(error)")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
     
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
