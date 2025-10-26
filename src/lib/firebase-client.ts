@@ -71,21 +71,39 @@ export function createInvisibleRecaptcha(
   containerId: string,
   size: 'invisible' | 'normal' = 'invisible'
 ) {
-  // For invisible reCAPTCHA, we don't need to render it visibly
-  const verifier = new RecaptchaVerifier(auth, containerId, {
-    size,
+  // Check if we're running in Capacitor (iOS/Android)
+  const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor;
+  
+  // For Capacitor environments, use a more compatible configuration
+  const config = isCapacitor ? {
+    size: 'normal' as const, // Use normal size for better compatibility in Capacitor
     callback: () => {
-      // This callback will be called when reCAPTCHA is solved
       console.log('reCAPTCHA solved automatically');
     },
     'expired-callback': () => {
-      // This callback will be called when reCAPTCHA expires
       console.log('reCAPTCHA expired');
     },
-  });
+  } : {
+    size,
+    callback: () => {
+      console.log('reCAPTCHA solved automatically');
+    },
+    'expired-callback': () => {
+      console.log('reCAPTCHA expired');
+    },
+  };
 
-  // Only render if it's normal size, invisible should not be rendered
-  if (size === 'normal' && typeof (verifier as any).render === 'function') {
+  const verifier = new RecaptchaVerifier(auth, containerId, config);
+
+  // For Capacitor, always render the reCAPTCHA
+  if (isCapacitor && typeof (verifier as any).render === 'function') {
+    try {
+      (verifier as any).render();
+      console.log('✅ reCAPTCHA rendered for Capacitor');
+    } catch (error) {
+      console.warn('⚠️ reCAPTCHA render failed:', error);
+    }
+  } else if (!isCapacitor && size === 'normal' && typeof (verifier as any).render === 'function') {
     (verifier as any).render();
   }
 
@@ -99,6 +117,11 @@ export async function sendOtp(
   try {
     console.log('📱 Sending OTP to:', phoneWithCountryCode);
     console.log('🔥 Firebase auth instance:', auth.app.name);
+    console.log('🔐 reCAPTCHA verifier:', {
+      type: typeof verifier,
+      hasRender: typeof (verifier as any).render === 'function',
+      size: (verifier as any).size || 'unknown',
+    });
     
     const result = await signInWithPhoneNumber(auth, phoneWithCountryCode, verifier);
     console.log('✅ OTP sent successfully');
@@ -109,7 +132,19 @@ export async function sendOtp(
       message: error.message,
       phone: phoneWithCountryCode,
       authApp: auth.app.name,
+      errorDetails: error,
     });
+    
+    // Additional debugging for reCAPTCHA issues
+    if (error.code === 'auth/internal-error') {
+      console.error('🔍 Internal error details:', {
+        verifierType: typeof verifier,
+        verifierSize: (verifier as any).size,
+        isCapacitor: typeof window !== 'undefined' && !!(window as any).Capacitor,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+      });
+    }
+    
     throw error;
   }
 }
