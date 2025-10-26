@@ -23,8 +23,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         print("📱 [AppDelegate] APNs token registered successfully")
+        print("📱 [AppDelegate] Token: \(deviceToken.map { String(format: "%02.2hhx", $0) }.joined())")
+        
         // Forward APNs token to Firebase Auth
-        Auth.auth().setAPNSToken(deviceToken, type: .unknown)
+        // Use .sandbox for debug/TestFlight builds, .prod for App Store
+        #if DEBUG
+        Auth.auth().setAPNSToken(deviceToken, type: .sandbox)
+        print("📱 [AppDelegate] Using SANDBOX APNs token")
+        #else
+        Auth.auth().setAPNSToken(deviceToken, type: .prod)
+        print("📱 [AppDelegate] Using PRODUCTION APNs token")
+        #endif
     }
     
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
