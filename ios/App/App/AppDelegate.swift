@@ -13,7 +13,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Configure Firebase
         FirebaseApp.configure()
         
+        // Register for remote notifications (APNs) - Required for Firebase Phone Auth
+        application.registerForRemoteNotifications()
+        
         return true
+    }
+    
+    // MARK: - APNs Token Registration (Required for Firebase Phone Auth)
+    
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        print("📱 [AppDelegate] APNs token registered successfully")
+        // Forward APNs token to Firebase Auth
+        Auth.auth().setAPNSToken(deviceToken, type: .unknown)
+    }
+    
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        print("❌ [AppDelegate] Failed to register for remote notifications: \(error.localizedDescription)")
+    }
+    
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        print("📬 [AppDelegate] Received remote notification")
+        // Forward notification to Firebase Auth
+        if Auth.auth().canHandleNotification(userInfo) {
+            completionHandler(.noData)
+            return
+        }
+        completionHandler(.noData)
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
