@@ -61,6 +61,11 @@ export async function initializeNativeAuth(): Promise<void> {
  * Send OTP to phone number using native Firebase Auth
  * This uses the native SDK which doesn't require reCAPTCHA
  * 
+ * The plugin uses an event-driven approach:
+ * 1. Set up a listener for phoneCodeSent event
+ * 2. Call signInWithPhoneNumber (returns void)
+ * 3. The listener receives the verificationId
+ * 
  * @param phoneNumber - Phone number in E.164 format (e.g., +919999999999)
  * @returns Promise<PhoneAuthResult> - Contains verificationId for OTP verification
  */
@@ -71,24 +76,35 @@ export async function sendNativeOtp(
     throw new Error('Native auth is only available on iOS/Android platforms');
   }
 
-  try {
-    console.log('[Native Auth] 📱 Sending OTP to:', phoneNumber);
-    
-    // Use native phone sign-in which automatically sends SMS
-    const result = await FirebaseAuthentication.signInWithPhoneNumber({
-      phoneNumber,
-    });
+  return new Promise(async (resolve, reject) => {
+    try {
+      console.log('[Native Auth] 📱 Sending OTP to:', phoneNumber);
+      
+      // Set up listener for verification ID
+      const handle = await FirebaseAuthentication.addListener(
+        'phoneCodeSent',
+        (event) => {
+          console.log('[Native Auth] ✅ OTP sent successfully via native SDK');
+          console.log('[Native Auth] Verification ID:', event.verificationId);
+          
+          // Clean up listener
+          handle.remove();
+          
+          resolve({
+            verificationId: event.verificationId,
+          });
+        }
+      );
 
-    console.log('[Native Auth] ✅ OTP sent successfully via native SDK');
-    console.log('[Native Auth] Verification ID:', result.verificationId);
-
-    return {
-      verificationId: result.verificationId,
-    };
-  } catch (error: any) {
-    console.error('[Native Auth] ❌ Failed to send OTP:', error);
-    throw new Error(error.message || 'Failed to send OTP');
-  }
+      // Trigger phone sign-in (this will trigger the phoneCodeSent event)
+      await FirebaseAuthentication.signInWithPhoneNumber({
+        phoneNumber,
+      });
+    } catch (error: any) {
+      console.error('[Native Auth] ❌ Failed to send OTP:', error);
+      reject(new Error(error.message || 'Failed to send OTP'));
+    }
+  });
 }
 
 /**
@@ -96,12 +112,12 @@ export async function sendNativeOtp(
  * 
  * @param verificationId - The verification ID returned from sendNativeOtp
  * @param verificationCode - The OTP code entered by the user
- * @returns Promise<PhoneSignInResult> - Contains user data and credential
+ * @returns Promise<void> - Completes the sign-in process
  */
 export async function verifyNativeOtp(
   verificationId: string,
   verificationCode: string
-): Promise<PhoneSignInResult> {
+): Promise<void> {
   if (!isNativePlatform()) {
     throw new Error('Native auth is only available on iOS/Android platforms');
   }
@@ -117,20 +133,11 @@ export async function verifyNativeOtp(
 
     console.log('[Native Auth] ✅ OTP verified successfully');
     console.log('[Native Auth] User UID:', result.user?.uid);
+    console.log('[Native Auth] User Phone:', result.user?.phoneNumber);
 
     if (!result.user) {
       throw new Error('No user returned from verification');
     }
-
-    return {
-      user: {
-        uid: result.user.uid,
-        phoneNumber: result.user.phoneNumber || null,
-      },
-      credential: {
-        providerId: 'phone',
-      },
-    };
   } catch (error: any) {
     console.error('[Native Auth] ❌ Failed to verify OTP:', error);
     throw new Error(error.message || 'Failed to verify OTP');
@@ -190,15 +197,16 @@ export async function getNativeIdToken(): Promise<string | null> {
 
 /**
  * Listen to auth state changes
+ * Returns a promise that resolves to an unsubscribe function
  */
-export function addNativeAuthStateListener(
+export async function addNativeAuthStateListener(
   callback: (user: any) => void
-): () => void {
+): Promise<() => void> {
   if (!isNativePlatform()) {
     return () => {};
   }
 
-  const handle = FirebaseAuthentication.addListener('authStateChange', (result) => {
+  const handle = await FirebaseAuthentication.addListener('authStateChange', (result) => {
     callback(result.user);
   });
 
