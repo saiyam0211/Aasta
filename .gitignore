@@ -54,3 +54,5 @@ next-env.d.ts
 .augment/rules/byterover-rules.md
 
 ios/App/App/GoogleService-Info.plist
+
+AGENTS.md
