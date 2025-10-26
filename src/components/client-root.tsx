@@ -4,6 +4,7 @@ import BackHandler from '@/components/back-handler';
 import InitialSplash from '@/components/initial-splash';
 import StatusBarOverlay from '@/components/statusbar-overlay';
 import FCMInitializer from '@/components/fcm-initializer';
+import FirebaseAuthInitializer from '@/components/firebase-auth-initializer';
 
 export default function ClientRoot({
   children,
@@ -16,6 +17,7 @@ export default function ClientRoot({
       <BackHandler />
       <InitialSplash />
       <FCMInitializer />
+      <FirebaseAuthInitializer />
       {children}
     </>
   );
