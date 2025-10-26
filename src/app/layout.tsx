@@ -34,25 +34,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: [
-      {
-        url: '/icons/Aasta_Logos_192x192.png',
-        sizes: '192x192',
-        type: 'image/png',
-      },
-      {
-        url: '/icons/Aasta_Logos_512x512.png',
-        sizes: '512x512',
-        type: 'image/png',
-      },
-    ],
-    apple: [
-      {
-        url: '/icons/Aasta_Logos_192x192.png',
-        sizes: '192x192',
-        type: 'image/png',
-      },
-    ],
+    icon: '/icons/Aasta_Logos_192x192.png',
     shortcut: '/icons/Aasta_Logos_192x192.png',
   },
   other: {
@@ -122,24 +104,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#002a01" />
 
         <link rel="apple-touch-icon" href="/icons/Aasta_Logos_192x192.png" />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="32x32"
-          href="/icons/Aasta_Logos_192x192.png"
-        />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="16x16"
-          href="/icons/Aasta_Logos_192x192.png"
-        />
-        <link
-          rel="mask-icon"
-          href="/icons/Aasta_Logos_192x192.png"
-          color="#002a01"
-        />
-        <link rel="shortcut icon" href="/icons/Aasta_Logos_192x192.png" />
+        <link rel="icon" type="image/png" href="/icons/Aasta_Logos_192x192.png" />
 
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:url" content="https://www.aasta.food" />

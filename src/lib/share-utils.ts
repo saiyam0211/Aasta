@@ -5,7 +5,7 @@ export interface ShareData {
 }
 
 export async function shareContent(data: ShareData): Promise<boolean> {
-  // Check if Web Share API is available (mobile browsers, PWA)
+  // Check if Web Share API is available (mobile browsers)
   if (navigator.share && navigator.canShare && navigator.canShare(data)) {
     try {
       await navigator.share(data);

@@ -68,19 +68,6 @@ test.describe('Order Flow', () => {
     }
   });
 
-  test('should handle PWA installation prompt', async ({ page }) => {
-    // Check if PWA banner is visible
-    const pwaInstallBanner = page.locator('[data-testid="pwa-install-banner"]');
-
-    // Note: PWA install prompt may not always be visible in test environment
-    if (await pwaInstallBanner.isVisible()) {
-      await expect(pwaInstallBanner).toContainText('Install App');
-
-      // Test dismiss functionality
-      await page.click('[data-testid="pwa-dismiss"]');
-      await expect(pwaInstallBanner).not.toBeVisible();
-    }
-  });
 
   test('should show offline indicator when network is disabled', async ({
     page,

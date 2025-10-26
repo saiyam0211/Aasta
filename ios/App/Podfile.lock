@@ -1,7 +1,7 @@
 PODS:
   - Capacitor (7.4.4):
     - CapacitorCordova
-  - CapacitorApp (7.0.2):
+  - CapacitorApp (7.1.0):
     - Capacitor
   - CapacitorBrowser (7.0.2):
     - Capacitor
@@ -14,13 +14,13 @@ PODS:
     - IONGeolocationLib (= 1.0.1)
   - CapacitorHaptics (7.0.2):
     - Capacitor
-  - CapacitorLocalNotifications (7.0.2):
+  - CapacitorLocalNotifications (7.0.3):
     - Capacitor
   - CapacitorPushNotifications (7.0.3):
     - Capacitor
   - CapacitorSplashScreen (7.0.3):
     - Capacitor
-  - CapacitorStatusBar (7.0.2):
+  - CapacitorStatusBar (7.0.3):
     - Capacitor
   - Firebase/Core (11.15.0):
     - Firebase/CoreOnly
@@ -133,17 +133,17 @@ PODS:
   - PromisesObjC (2.4.0)
 
 DEPENDENCIES:
-  - "Capacitor (from `../../node_modules/@capacitor/ios`)"
-  - "CapacitorApp (from `../../node_modules/@capacitor/app`)"
-  - "CapacitorBrowser (from `../../node_modules/@capacitor/browser`)"
-  - "CapacitorCommunityFcm (from `../../node_modules/@capacitor-community/fcm`)"
-  - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
-  - "CapacitorGeolocation (from `../../node_modules/@capacitor/geolocation`)"
-  - "CapacitorHaptics (from `../../node_modules/@capacitor/haptics`)"
-  - "CapacitorLocalNotifications (from `../../node_modules/@capacitor/local-notifications`)"
-  - "CapacitorPushNotifications (from `../../node_modules/@capacitor/push-notifications`)"
-  - "CapacitorSplashScreen (from `../../node_modules/@capacitor/splash-screen`)"
-  - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
+  - "Capacitor (from `../../node_modules/.pnpm/@capacitor+ios@7.4.4_@capacitor+core@7.4.3/node_modules/@capacitor/ios`)"
+  - "CapacitorApp (from `../../node_modules/.pnpm/@capacitor+app@7.1.0_@capacitor+core@7.4.3/node_modules/@capacitor/app`)"
+  - "CapacitorBrowser (from `../../node_modules/.pnpm/@capacitor+browser@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/browser`)"
+  - "CapacitorCommunityFcm (from `../../node_modules/.pnpm/@capacitor-community+fcm@7.1.3_@capacitor+core@7.4.3/node_modules/@capacitor-community/fcm`)"
+  - "CapacitorCordova (from `../../node_modules/.pnpm/@capacitor+ios@7.4.4_@capacitor+core@7.4.3/node_modules/@capacitor/ios`)"
+  - "CapacitorGeolocation (from `../../node_modules/.pnpm/@capacitor+geolocation@7.1.5_@capacitor+core@7.4.3/node_modules/@capacitor/geolocation`)"
+  - "CapacitorHaptics (from `../../node_modules/.pnpm/@capacitor+haptics@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/haptics`)"
+  - "CapacitorLocalNotifications (from `../../node_modules/.pnpm/@capacitor+local-notifications@7.0.3_@capacitor+core@7.4.3/node_modules/@capacitor/local-notifications`)"
+  - "CapacitorPushNotifications (from `../../node_modules/.pnpm/@capacitor+push-notifications@7.0.3_@capacitor+core@7.4.3/node_modules/@capacitor/push-notifications`)"
+  - "CapacitorSplashScreen (from `../../node_modules/.pnpm/@capacitor+splash-screen@7.0.3_@capacitor+core@7.4.3/node_modules/@capacitor/splash-screen`)"
+  - "CapacitorStatusBar (from `../../node_modules/.pnpm/@capacitor+status-bar@7.0.3_@capacitor+core@7.4.3/node_modules/@capacitor/status-bar`)"
   - Firebase/Core
   - Firebase/Messaging
 
@@ -165,40 +165,40 @@ SPEC REPOS:
 
 EXTERNAL SOURCES:
   Capacitor:
-    :path: "../../node_modules/@capacitor/ios"
+    :path: "../../node_modules/.pnpm/@capacitor+ios@7.4.4_@capacitor+core@7.4.3/node_modules/@capacitor/ios"
   CapacitorApp:
-    :path: "../../node_modules/@capacitor/app"
+    :path: "../../node_modules/.pnpm/@capacitor+app@7.1.0_@capacitor+core@7.4.3/node_modules/@capacitor/app"
   CapacitorBrowser:
-    :path: "../../node_modules/@capacitor/browser"
+    :path: "../../node_modules/.pnpm/@capacitor+browser@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/browser"
   CapacitorCommunityFcm:
-    :path: "../../node_modules/@capacitor-community/fcm"
+    :path: "../../node_modules/.pnpm/@capacitor-community+fcm@7.1.3_@capacitor+core@7.4.3/node_modules/@capacitor-community/fcm"
   CapacitorCordova:
-    :path: "../../node_modules/@capacitor/ios"
+    :path: "../../node_modules/.pnpm/@capacitor+ios@7.4.4_@capacitor+core@7.4.3/node_modules/@capacitor/ios"
   CapacitorGeolocation:
-    :path: "../../node_modules/@capacitor/geolocation"
+    :path: "../../node_modules/.pnpm/@capacitor+geolocation@7.1.5_@capacitor+core@7.4.3/node_modules/@capacitor/geolocation"
   CapacitorHaptics:
-    :path: "../../node_modules/@capacitor/haptics"
+    :path: "../../node_modules/.pnpm/@capacitor+haptics@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/haptics"
   CapacitorLocalNotifications:
-    :path: "../../node_modules/@capacitor/local-notifications"
+    :path: "../../node_modules/.pnpm/@capacitor+local-notifications@7.0.3_@capacitor+core@7.4.3/node_modules/@capacitor/local-notifications"
   CapacitorPushNotifications:
-    :path: "../../node_modules/@capacitor/push-notifications"
+    :path: "../../node_modules/.pnpm/@capacitor+push-notifications@7.0.3_@capacitor+core@7.4.3/node_modules/@capacitor/push-notifications"
   CapacitorSplashScreen:
-    :path: "../../node_modules/@capacitor/splash-screen"
+    :path: "../../node_modules/.pnpm/@capacitor+splash-screen@7.0.3_@capacitor+core@7.4.3/node_modules/@capacitor/splash-screen"
   CapacitorStatusBar:
-    :path: "../../node_modules/@capacitor/status-bar"
+    :path: "../../node_modules/.pnpm/@capacitor+status-bar@7.0.3_@capacitor+core@7.4.3/node_modules/@capacitor/status-bar"
 
 SPEC CHECKSUMS:
   Capacitor: 358dd1c3fdd71d969547b17e159fd8a7736cb45f
-  CapacitorApp: 1f6922c9c5c8b1c538d7fbe92ebe44a81b34bed3
+  CapacitorApp: 26587c2ce485d88ddb39adb21cac64f8e481afe3
   CapacitorBrowser: 22541e48442de44dc629c214388290d6eecc6ae9
   CapacitorCommunityFcm: 7c1b4ee8f425f77f7380832eb1ba0aa12ba4dd75
   CapacitorCordova: bf648a636f3c153f652d312ae145fb508b6ffced
   CapacitorGeolocation: 84f868bea4c2499aebc3bb3a88fd0a508f87ab87
   CapacitorHaptics: b3fb2869e72c4466e18ce9ccbeb60a3d8723b3d4
-  CapacitorLocalNotifications: 665188ae8accd40806129073896fb2b39322d858
+  CapacitorLocalNotifications: 0811aef56ab2e5f7f9ae72f47d3473ab50c29038
   CapacitorPushNotifications: bdd621fbd562be34a41f4a7b1750efa000447d5a
   CapacitorSplashScreen: e388b8e0ed0e982a9d3a40417f478e7a018a8763
-  CapacitorStatusBar: e04d05e121d5a5979c29eb4249186a4e4a84cacb
+  CapacitorStatusBar: 0659ddc7b1713764a05831463d215b177a15d054
   Firebase: d99ac19b909cd2c548339c2241ecd0d1599ab02e
   FirebaseAnalytics: 6433dfd311ba78084fc93bdfc145e8cb75740eae
   FirebaseCore: efb3893e5b94f32b86e331e3bd6dadf18b66568e
@@ -213,6 +213,6 @@ SPEC CHECKSUMS:
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
 
-PODFILE CHECKSUM: f4599ac532faeb9eb2deec234227e6ac92bc5c2e
+PODFILE CHECKSUM: ffdd6f6938050b116a88c9d6838766aa8853e252
 
 COCOAPODS: 1.16.2
