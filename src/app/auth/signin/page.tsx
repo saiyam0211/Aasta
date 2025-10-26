@@ -7,6 +7,11 @@ import step1 from '../../../../public/lotties/step1.json';
 import step2 from '../../../../public/lotties/step2.json';
 import step3 from '../../../../public/lotties/step3.json';
 import { createInvisibleRecaptcha, sendOtp } from '@/lib/firebase-client';
+import { 
+  isNativePlatform, 
+  sendNativeOtp, 
+  verifyNativeOtp 
+} from '@/lib/firebase-native-auth';
 import type { RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
 import { signIn } from 'next-auth/react';
 import { setBackOverride } from '@/lib/back-channel';
@@ -20,12 +25,27 @@ export default function SignInPage() {
   const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(
     null
   );
+  const [nativeVerificationId, setNativeVerificationId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const verifierRef = useRef<RecaptchaVerifier | null>(null);
   const lastPushedStepRef = useRef<number>(1);
+  const [useNativeAuth, setUseNativeAuth] = useState(false);
+
+  // Detect platform on mount
+  useEffect(() => {
+    setUseNativeAuth(isNativePlatform());
+    if (isNativePlatform()) {
+      console.log('[AUTH] 🚀 Native platform detected, using native Firebase Auth');
+    } else {
+      console.log('[AUTH] 🌐 Web platform detected, using web Firebase Auth with reCAPTCHA');
+    }
+  }, []);
 
   // Pre-initialize invisible reCAPTCHA when entering step 5 to hide setup cost
+  // Skip on native platforms since we use native Firebase Auth
   useEffect(() => {
+    if (useNativeAuth) return; // Skip reCAPTCHA on native platforms
+    
     if (step === 5 && !verifierRef.current) {
       try {
         const t = performance.now();
@@ -36,7 +56,7 @@ export default function SignInPage() {
         verifierRef.current = null;
       }
     }
-  }, [step]);
+  }, [step, useNativeAuth]);
 
   // Manage browser history so that device/browser back navigates steps
   useEffect(() => {
@@ -92,7 +112,10 @@ export default function SignInPage() {
   }, [step]);
 
   // Pre-init earlier on step 4 as well and warm Firebase pathing
+  // Skip on native platforms since we use native Firebase Auth
   useEffect(() => {
+    if (useNativeAuth) return; // Skip reCAPTCHA on native platforms
+    
     if (step === 4 && !verifierRef.current) {
       try {
         const t = performance.now();
@@ -107,7 +130,7 @@ export default function SignInPage() {
       // no-op warmup, place for future lightweight pings if needed
       // console.debug('[AUTH] Warmup step 4 executed');
     }
-  }, [step]);
+  }, [step, useNativeAuth]);
 
   async function startPhoneFlow() {
     setError('');
@@ -119,6 +142,20 @@ export default function SignInPage() {
         ? phone.trim()
         : `+91${phone.trim()}`;
 
+      // Use native auth on Capacitor platforms
+      if (useNativeAuth) {
+        console.log('[AUTH] Using native Firebase Auth (no reCAPTCHA)');
+        const otpT0 = performance.now();
+        const result = await sendNativeOtp(formatted);
+        console.log(`[AUTH] ✅ OTP sent via native SDK (+${Math.round(performance.now() - otpT0)}ms for send, +${Math.round(performance.now() - clickT0)}ms since click)`);
+        setNativeVerificationId(result.verificationId);
+        setStep(6);
+        return;
+      }
+
+      // Web flow with reCAPTCHA
+      console.log('[AUTH] Using web Firebase Auth (with reCAPTCHA)');
+      
       // Create invisible reCAPTCHA verifier only when needed
       if (!verifierRef.current) {
         const t = performance.now();
@@ -157,8 +194,8 @@ export default function SignInPage() {
       console.error(e);
       setError(e?.message || 'Failed to send OTP');
 
-      // Clear verifier on error to allow retry
-      if (verifierRef.current) {
+      // Clear verifier on error to allow retry (web only)
+      if (!useNativeAuth && verifierRef.current) {
         try {
           (verifierRef.current as any).clear();
         } catch (clearError) {
@@ -173,15 +210,25 @@ export default function SignInPage() {
   }
 
   async function verifyOtp() {
-    if (!confirmation || !otp) return;
+    if ((!confirmation && !nativeVerificationId) || !otp) return;
     setError('');
     try {
       setIsLoading(true);
       const verifyT0 = performance.now();
       console.log(`[AUTH] 🔑 Verify clicked at ${new Date().toISOString()}`);
-      // Confirm with Firebase
-      await confirmation.confirm(otp);
-      console.log(`[AUTH] ✅ Firebase confirm OK (+${Math.round(performance.now() - verifyT0)}ms)`);
+      
+      // Use native auth verification on Capacitor platforms
+      if (useNativeAuth && nativeVerificationId) {
+        console.log('[AUTH] Using native Firebase Auth verification');
+        await verifyNativeOtp(nativeVerificationId, otp);
+        console.log(`[AUTH] ✅ Native Firebase verify OK (+${Math.round(performance.now() - verifyT0)}ms)`);
+      } else {
+        // Web flow
+        console.log('[AUTH] Using web Firebase Auth verification');
+        await confirmation!.confirm(otp);
+        console.log(`[AUTH] ✅ Web Firebase confirm OK (+${Math.round(performance.now() - verifyT0)}ms)`);
+      }
+      
       // Create NextAuth session via credentials provider
       const formatted = phone.trim().startsWith('+')
         ? phone.trim()
