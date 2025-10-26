@@ -5,18 +5,49 @@ import {
   signInWithPhoneNumber,
 } from 'firebase/auth';
 
-const firebaseConfig = {
-  apiKey: 'AIzaSyBt2iS9BP-x_Yp7_5Bro76vyLW34C1cacs',
-  authDomain: 'aastatechnology.firebaseapp.com',
-  projectId: 'aastatechnology',
-  storageBucket: 'aastatechnology.firebasestorage.app',
-  messagingSenderId: '629804234684', // Firebase Project Number (correct!)
-  appId: '1:629804234684:web:c9d49ee282594651c41db9',
-  measurementId: 'G-FT4JT14DPJ',
+// Firebase configuration - different for web vs iOS
+const getFirebaseConfig = () => {
+  // Check if we're running in Capacitor (iOS/Android)
+  const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor;
+  
+  if (isCapacitor) {
+    // iOS/Android configuration
+    return {
+      apiKey: 'AIzaSyBqmt4JjXiQMXKev9lq3wq-_SKDYbFXZwQ', // iOS API key
+      authDomain: 'aastatechnology.firebaseapp.com',
+      projectId: 'aastatechnology',
+      storageBucket: 'aastatechnology.firebasestorage.app',
+      messagingSenderId: '629804234684',
+      appId: '1:629804234684:ios:c5fc7cd893110fefc41db9', // iOS app ID
+    };
+  } else {
+    // Web configuration
+    return {
+      apiKey: 'AIzaSyBt2iS9BP-x_Yp7_5Bro76vyLW34C1cacs', // Web API key
+      authDomain: 'aastatechnology.firebaseapp.com',
+      projectId: 'aastatechnology',
+      storageBucket: 'aastatechnology.firebasestorage.app',
+      messagingSenderId: '629804234684',
+      appId: '1:629804234684:web:c9d49ee282594651c41db9', // Web app ID
+      measurementId: 'G-FT4JT14DPJ',
+    };
+  }
 };
+
+const firebaseConfig = getFirebaseConfig();
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+
+// Debug logging for Firebase configuration
+if (typeof window !== 'undefined') {
+  const isCapacitor = (window as any).Capacitor;
+  console.log('🔥 Firebase initialized:', {
+    platform: isCapacitor ? 'Capacitor (iOS/Android)' : 'Web',
+    appId: firebaseConfig.appId,
+    apiKey: firebaseConfig.apiKey?.substring(0, 10) + '...',
+  });
+}
 
 // Initialize Firebase Messaging (only in browser, not in Capacitor)
 let messaging = null;
@@ -65,5 +96,20 @@ export async function sendOtp(
   phoneWithCountryCode: string,
   verifier: RecaptchaVerifier
 ) {
-  return await signInWithPhoneNumber(auth, phoneWithCountryCode, verifier);
+  try {
+    console.log('📱 Sending OTP to:', phoneWithCountryCode);
+    console.log('🔥 Firebase auth instance:', auth.app.name);
+    
+    const result = await signInWithPhoneNumber(auth, phoneWithCountryCode, verifier);
+    console.log('✅ OTP sent successfully');
+    return result;
+  } catch (error: any) {
+    console.error('❌ OTP send failed:', {
+      code: error.code,
+      message: error.message,
+      phone: phoneWithCountryCode,
+      authApp: auth.app.name,
+    });
+    throw error;
+  }
 }
