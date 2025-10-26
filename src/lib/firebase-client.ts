@@ -4,7 +4,6 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
 } from 'firebase/auth';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBt2iS9BP-x_Yp7_5Bro76vyLW34C1cacs',
@@ -19,8 +18,15 @@ const firebaseConfig = {
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-// Initialize Firebase Messaging (only in browser)
-export const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
+// Initialize Firebase Messaging (only in browser, not in Capacitor)
+let messaging = null;
+if (typeof window !== 'undefined' && !window.Capacitor) {
+  // Only initialize Firebase Messaging in web browsers, not in Capacitor
+  import('firebase/messaging').then(({ getMessaging }) => {
+    messaging = getMessaging(app);
+  });
+}
+export { messaging };
 
 if (typeof window !== 'undefined') {
   const disableForDev =
