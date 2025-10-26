@@ -77,18 +77,26 @@ export async function sendNativeOtp(
   }
 
   return new Promise(async (resolve, reject) => {
+    let handle: any = null;
+    const timeoutId = setTimeout(() => {
+      if (handle) handle.remove();
+      reject(new Error('Phone verification timeout. Please ensure:\n1. Phone provider is enabled in Firebase Console\n2. APNs certificates are configured\n3. You are testing on a real device (not simulator)'));
+    }, 60000); // 60 second timeout
+
     try {
       console.log('[Native Auth] 📱 Sending OTP to:', phoneNumber);
+      console.log('[Native Auth] ℹ️ Waiting for APNs token and Firebase initialization...');
       
       // Set up listener for verification ID
-      const handle = await FirebaseAuthentication.addListener(
+      handle = await FirebaseAuthentication.addListener(
         'phoneCodeSent',
         (event) => {
+          clearTimeout(timeoutId);
           console.log('[Native Auth] ✅ OTP sent successfully via native SDK');
           console.log('[Native Auth] Verification ID:', event.verificationId);
           
           // Clean up listener
-          handle.remove();
+          if (handle) handle.remove();
           
           resolve({
             verificationId: event.verificationId,
@@ -96,13 +104,40 @@ export async function sendNativeOtp(
         }
       );
 
+      // Small delay to ensure APNs token is available
+      await new Promise(r => setTimeout(r, 500));
+
+      console.log('[Native Auth] 📞 Initiating phone verification...');
+      
       // Trigger phone sign-in (this will trigger the phoneCodeSent event)
       await FirebaseAuthentication.signInWithPhoneNumber({
         phoneNumber,
       });
+      
+      console.log('[Native Auth] ⏳ Phone verification initiated, waiting for SMS...');
     } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (handle) handle.remove();
+      
       console.error('[Native Auth] ❌ Failed to send OTP:', error);
-      reject(new Error(error.message || 'Failed to send OTP'));
+      console.error('[Native Auth] Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack,
+      });
+      
+      // Provide helpful error messages
+      let errorMessage = error.message || 'Failed to send OTP';
+      
+      if (errorMessage.includes('nil')) {
+        errorMessage = 'Phone authentication initialization failed. Please ensure:\n' +
+          '1. You are testing on a real iOS device (not simulator)\n' +
+          '2. Push Notifications are enabled in Xcode Capabilities\n' +
+          '3. APNs certificates are configured in Firebase Console\n' +
+          '4. Phone provider is enabled in Firebase Authentication';
+      }
+      
+      reject(new Error(errorMessage));
     }
   });
 }
