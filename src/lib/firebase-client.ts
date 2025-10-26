@@ -47,6 +47,14 @@ if (typeof window !== 'undefined') {
     appId: firebaseConfig.appId,
     apiKey: firebaseConfig.apiKey?.substring(0, 10) + '...',
   });
+  
+  // Disable reCAPTCHA Enterprise for Capacitor environments
+  if (isCapacitor && (auth as any).settings) {
+    (auth as any).settings.appVerificationDisabledForTesting = false;
+    // Force reCAPTCHA v2 instead of Enterprise
+    (auth as any).settings.forceRecaptchaFlow = true;
+    console.log('🔐 Disabled reCAPTCHA Enterprise for Capacitor, using v2');
+  }
 }
 
 // Initialize Firebase Messaging (only in browser, not in Capacitor)
@@ -78,10 +86,10 @@ export function createInvisibleRecaptcha(
   const config = isCapacitor ? {
     size: 'normal' as const, // Use normal size for better compatibility in Capacitor
     callback: () => {
-      console.log('reCAPTCHA solved automatically');
+      console.log('reCAPTCHA v2 solved automatically');
     },
     'expired-callback': () => {
-      console.log('reCAPTCHA expired');
+      console.log('reCAPTCHA v2 expired');
     },
   } : {
     size,
@@ -93,13 +101,19 @@ export function createInvisibleRecaptcha(
     },
   };
 
+  console.log('🔐 Creating reCAPTCHA verifier:', {
+    isCapacitor,
+    size: config.size,
+    containerId,
+  });
+
   const verifier = new RecaptchaVerifier(auth, containerId, config);
 
   // For Capacitor, always render the reCAPTCHA
   if (isCapacitor && typeof (verifier as any).render === 'function') {
     try {
       (verifier as any).render();
-      console.log('✅ reCAPTCHA rendered for Capacitor');
+      console.log('✅ reCAPTCHA v2 rendered for Capacitor');
     } catch (error) {
       console.warn('⚠️ reCAPTCHA render failed:', error);
     }
