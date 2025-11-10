@@ -84,14 +84,35 @@ export async function sendNativeOtp(
 
   return new Promise(async (resolve, reject) => {
     let handle: any = null;
+    const platform = Capacitor.getPlatform();
+    const isIOS = platform === 'ios';
+    const isAndroid = platform === 'android';
+    
     const timeoutId = setTimeout(() => {
       if (handle) handle.remove();
-      reject(new Error('Phone verification timeout. Please ensure:\n1. Phone provider is enabled in Firebase Console\n2. APNs certificates are configured\n3. You are testing on a real device (not simulator)'));
+      
+      let errorMessage = 'Phone verification timeout. Please ensure:\n1. Phone provider is enabled in Firebase Console\n';
+      
+      if (isIOS) {
+        errorMessage += '2. APNs certificates are configured in Firebase Console\n3. Push Notifications capability is enabled in Xcode\n4. You are testing on a real device (not simulator)';
+      } else if (isAndroid) {
+        errorMessage += '2. SHA-1 and SHA-256 fingerprints are added in Firebase Console\n3. google-services.json is up to date\n4. You are testing on a real device (not emulator)';
+      } else {
+        errorMessage += '2. You are testing on a real device';
+      }
+      
+      reject(new Error(errorMessage));
     }, 60000); // 60 second timeout
 
     try {
       console.log('[Native Auth] 📱 Sending OTP to:', phoneNumber);
-      console.log('[Native Auth] ℹ️ Waiting for APNs token and Firebase initialization...');
+      console.log(`[Native Auth] ℹ️ Platform: ${platform}`);
+      
+      if (isIOS) {
+        console.log('[Native Auth] ℹ️ Waiting for APNs token and Firebase initialization...');
+      } else if (isAndroid) {
+        console.log('[Native Auth] ℹ️ Waiting for SafetyNet/reCAPTCHA verification...');
+      }
       
       // Set up listener for verification ID
       handle = await FirebaseAuthentication.addListener(
