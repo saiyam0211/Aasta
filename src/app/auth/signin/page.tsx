@@ -33,9 +33,17 @@ export default function SignInPage() {
 
   // Detect platform on mount
   useEffect(() => {
-    setUseNativeAuth(isNativePlatform());
-    if (isNativePlatform()) {
-      console.log('[AUTH] 🚀 Native platform detected, using native Firebase Auth');
+    // Only use native auth on iOS (APNs works great)
+    // Use web auth on Android (more reliable than SafetyNet)
+    const platform = isNativePlatform();
+    const isIOS = platform && typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
+    
+    setUseNativeAuth(isIOS);
+    
+    if (isIOS) {
+      console.log('[AUTH] 🍎 iOS detected, using native Firebase Auth (APNs)');
+    } else if (platform) {
+      console.log('[AUTH] 🤖 Android detected, using web Firebase Auth (reCAPTCHA)');
     } else {
       console.log('[AUTH] 🌐 Web platform detected, using web Firebase Auth with reCAPTCHA');
     }
