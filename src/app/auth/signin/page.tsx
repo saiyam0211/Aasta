@@ -252,9 +252,16 @@ export default function SignInPage() {
       }
       
       // Create NextAuth session via credentials provider
-      const formatted = phone.trim().startsWith('+')
+      // Clean phone number to E.164 format (remove spaces, dashes, etc.)
+      let formatted = phone.trim().startsWith('+')
         ? phone.trim()
         : `+91${phone.trim()}`;
+      
+      // Remove all non-digit characters except the leading +
+      formatted = formatted.replace(/(?!^\+)\D/g, '');
+      
+      console.log('[AUTH] 📱 Sending to NextAuth - Phone:', formatted, 'Name:', name.trim());
+      
       const signInT0 = performance.now();
       const res = await signIn('phone-otp', {
         phone: formatted,
