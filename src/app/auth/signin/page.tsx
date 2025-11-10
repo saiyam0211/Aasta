@@ -298,16 +298,17 @@ export default function SignInPage() {
       
       console.log('[AUTH] ✅ NextAuth signIn successful, redirecting...');
       
-      // Fast manual redirect if URL provided
-      if (res && typeof res === 'object' && 'url' in res && (res as any).url) {
-        const navT0 = performance.now();
-        window.location.assign((res as any).url as string);
-        console.log(`[AUTH] ↪️ Navigating to ${(res as any).url} (+${Math.round(performance.now() - navT0)}ms)`);
-        return;
-      }
-      // Fallback
-      console.log('[AUTH] ↪️ Fallback redirect to home page');
-      window.location.assign('/');
+      // Use Next.js router for better client-side navigation
+      const targetUrl = res?.url || '/';
+      console.log('[AUTH] ↪️ Redirecting to:', targetUrl);
+      
+      // Small delay to ensure session is fully set
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Use router.replace to prevent back button issues
+      router.replace(targetUrl);
+      
+      console.log('[AUTH] 🎉 Redirect initiated successfully');
     } catch (e: any) {
       console.error(e);
       setError('Invalid code, try again');
