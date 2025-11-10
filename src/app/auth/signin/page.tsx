@@ -504,8 +504,8 @@ export default function SignInPage() {
                   </label>
                 </div>
 
-                {/* Hidden reCAPTCHA container - will be invisible */}
-                <div id="recaptcha-container" className="hidden" />
+                {/* reCAPTCHA container - hidden on native iOS, visible on Android/web */}
+                <div id="recaptcha-container" className={useNativeAuth ? "hidden" : ""} />
 
                 {/* Material 3 expressive button */}
                 <button
