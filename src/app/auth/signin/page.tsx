@@ -138,9 +138,16 @@ export default function SignInPage() {
       setIsLoading(true);
       const clickT0 = performance.now();
       console.log(`[AUTH] 🚀 Send OTP clicked at ${new Date().toISOString()}`);
-      const formatted = phone.trim().startsWith('+')
+      
+      // Clean phone number to E.164 format (remove spaces, dashes, etc.)
+      let formatted = phone.trim().startsWith('+')
         ? phone.trim()
         : `+91${phone.trim()}`;
+      
+      // Remove all non-digit characters except the leading +
+      formatted = formatted.replace(/(?!^\+)\D/g, '');
+      
+      console.log(`[AUTH] 📱 Cleaned phone number: ${formatted}`);
 
       // Use native auth on Capacitor platforms
       if (useNativeAuth) {
