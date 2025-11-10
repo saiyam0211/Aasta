@@ -57,7 +57,7 @@ if (typeof window !== 'undefined') {
     })
     .catch((error) => {
       console.error('❌ Failed to set Firebase persistence:', error);
-    });
+  });
   
   // Disable reCAPTCHA Enterprise for Capacitor environments
   if (isCapacitor && (auth as any).settings) {
