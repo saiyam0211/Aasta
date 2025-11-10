@@ -143,7 +143,7 @@ export default function SignInPage() {
       let formatted = phone.trim().startsWith('+')
         ? phone.trim()
         : `+91${phone.trim()}`;
-      
+
       // Remove all non-digit characters except the leading +
       formatted = formatted.replace(/(?!^\+)\D/g, '');
       
