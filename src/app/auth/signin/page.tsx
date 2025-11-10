@@ -38,9 +38,10 @@ export default function SignInPage() {
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
       console.log('[AUTH] ✅ User already authenticated, redirecting to home...');
-      router.replace('/');
+      // Use hard redirect to ensure session is properly loaded
+      window.location.href = '/';
     }
-  }, [status, session, router]);
+  }, [status, session]);
 
   // Detect platform on mount
   useEffect(() => {
@@ -312,11 +313,10 @@ export default function SignInPage() {
       
       console.log('[AUTH] ↪️ Redirecting to:', targetPath);
       
-      // Small delay to ensure session is fully set
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Use router.replace to prevent back button issues
-      router.replace(targetPath);
+      // Use window.location.href for a hard redirect (Next.js router sometimes fails after auth)
+      // This ensures the session is properly loaded on the new page
+      console.log('[AUTH] 🚀 Performing hard redirect...');
+      window.location.href = targetPath;
       
       console.log('[AUTH] 🎉 Redirect initiated successfully');
     } catch (e: any) {
