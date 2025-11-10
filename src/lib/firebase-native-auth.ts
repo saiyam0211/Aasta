@@ -102,7 +102,7 @@ export async function sendNativeOtp(
       }
       
       reject(new Error(errorMessage));
-    }, 60000); // 60 second timeout
+    }, 15000); // 15 second timeout (reduced for faster fallback to web reCAPTCHA)
 
     try {
       console.log('[Native Auth] 📱 Sending OTP to:', phoneNumber);
