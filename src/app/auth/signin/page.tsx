@@ -153,11 +153,18 @@ export default function SignInPage() {
       if (useNativeAuth) {
         console.log('[AUTH] Using native Firebase Auth (no reCAPTCHA)');
         const otpT0 = performance.now();
-        const result = await sendNativeOtp(formatted);
-        console.log(`[AUTH] ✅ OTP sent via native SDK (+${Math.round(performance.now() - otpT0)}ms for send, +${Math.round(performance.now() - clickT0)}ms since click)`);
-        setNativeVerificationId(result.verificationId);
-        setStep(6);
-        return;
+        
+        try {
+          const result = await sendNativeOtp(formatted);
+          console.log(`[AUTH] ✅ OTP sent via native SDK (+${Math.round(performance.now() - otpT0)}ms for send, +${Math.round(performance.now() - clickT0)}ms since click)`);
+          setNativeVerificationId(result.verificationId);
+          setStep(6);
+          return;
+        } catch (nativeError: any) {
+          console.warn('[AUTH] ⚠️ Native auth failed, falling back to web reCAPTCHA:', nativeError.message);
+          console.log('[AUTH] 🌐 Attempting web-based phone auth with reCAPTCHA...');
+          // Fall through to web flow below
+        }
       }
 
       // Web flow with reCAPTCHA
