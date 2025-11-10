@@ -13,10 +13,13 @@ import {
   verifyNativeOtp 
 } from '@/lib/firebase-native-auth';
 import type { RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { setBackOverride } from '@/lib/back-channel';
+import { useRouter } from 'next/navigation';
 
 export default function SignInPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<number>(1);
   const [name, setName] = useState('');
@@ -30,6 +33,14 @@ export default function SignInPage() {
   const verifierRef = useRef<RecaptchaVerifier | null>(null);
   const lastPushedStepRef = useRef<number>(1);
   const [useNativeAuth, setUseNativeAuth] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      console.log('[AUTH] ✅ User already authenticated, redirecting to home...');
+      router.replace('/');
+    }
+  }, [status, session, router]);
 
   // Detect platform on mount
   useEffect(() => {
