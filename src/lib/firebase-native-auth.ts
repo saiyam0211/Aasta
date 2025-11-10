@@ -135,6 +135,10 @@ export async function sendNativeOtp(
       await new Promise(r => setTimeout(r, 500));
 
       console.log('[Native Auth] 📞 Initiating phone verification...');
+      console.log('[Native Auth] Phone number being sent:', phoneNumber);
+      console.log('[Native Auth] Phone number length:', phoneNumber.length);
+      console.log('[Native Auth] Starts with +:', phoneNumber.startsWith('+'));
+      console.log('[Native Auth] Contains only +digits:', /^\+\d+$/.test(phoneNumber));
       
       // Trigger phone sign-in (this will trigger the phoneCodeSent event)
       await FirebaseAuthentication.signInWithPhoneNumber({

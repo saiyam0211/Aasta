@@ -50,7 +50,7 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>FirebaseAppDelegateProxyEnabled</key>
-	<true/>
+	<true/>	
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Aasta needs your location to show nearby restaurants and provide accurate delivery services.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
