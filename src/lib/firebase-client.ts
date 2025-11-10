@@ -3,6 +3,8 @@ import {
   getAuth,
   RecaptchaVerifier,
   signInWithPhoneNumber,
+  setPersistence,
+  browserLocalPersistence,
 } from 'firebase/auth';
 
 // Firebase configuration - different for web vs iOS
@@ -39,7 +41,7 @@ const firebaseConfig = getFirebaseConfig();
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-// Debug logging for Firebase configuration
+// Debug logging for Firebase configuration and set persistence
 if (typeof window !== 'undefined') {
   const isCapacitor = (window as any).Capacitor;
   console.log('🔥 Firebase initialized:', {
@@ -47,6 +49,15 @@ if (typeof window !== 'undefined') {
     appId: firebaseConfig.appId,
     apiKey: firebaseConfig.apiKey?.substring(0, 10) + '...',
   });
+  
+  // Set Firebase Auth persistence to LOCAL (persists across app restarts)
+  setPersistence(auth, browserLocalPersistence)
+    .then(() => {
+      console.log('✅ Firebase Auth persistence set to LOCAL (stays logged in after app restart)');
+    })
+    .catch((error) => {
+      console.error('❌ Failed to set Firebase persistence:', error);
+    });
   
   // Disable reCAPTCHA Enterprise for Capacitor environments
   if (isCapacitor && (auth as any).settings) {
