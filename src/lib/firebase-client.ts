@@ -79,48 +79,22 @@ export function createInvisibleRecaptcha(
   containerId: string,
   size: 'invisible' | 'normal' = 'invisible'
 ) {
-  // Check if we're running in Capacitor (iOS/Android)
-  const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor;
-  
-  // For Capacitor environments, use a more compatible configuration
-  const config = isCapacitor ? {
-    size: 'normal' as const, // Use normal size for better compatibility in Capacitor
+  // Always use invisible reCAPTCHA for seamless experience
+  const config = {
+    size: 'invisible' as const,
     callback: () => {
-      console.log('reCAPTCHA v2 solved automatically');
+      console.log('✅ reCAPTCHA v2 verified automatically');
     },
     'expired-callback': () => {
-      console.log('reCAPTCHA v2 expired');
-    },
-  } : {
-    size,
-    callback: () => {
-      console.log('reCAPTCHA solved automatically');
-    },
-    'expired-callback': () => {
-      console.log('reCAPTCHA expired');
+      console.log('⚠️ reCAPTCHA v2 expired, please retry');
     },
   };
 
-  console.log('🔐 Creating reCAPTCHA verifier:', {
-    isCapacitor,
-    size: config.size,
-    containerId,
-  });
+  console.log('🔐 Creating invisible reCAPTCHA verifier for:', containerId);
 
   const verifier = new RecaptchaVerifier(auth, containerId, config);
 
-  // For Capacitor, always render the reCAPTCHA
-  if (isCapacitor && typeof (verifier as any).render === 'function') {
-    try {
-      (verifier as any).render();
-      console.log('✅ reCAPTCHA v2 rendered for Capacitor');
-    } catch (error) {
-      console.warn('⚠️ reCAPTCHA render failed:', error);
-    }
-  } else if (!isCapacitor && size === 'normal' && typeof (verifier as any).render === 'function') {
-    (verifier as any).render();
-  }
-
+  // Invisible reCAPTCHA handles rendering automatically
   return verifier;
 }
 
