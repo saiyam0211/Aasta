@@ -34,13 +34,16 @@ export default function SignInPage() {
   const lastPushedStepRef = useRef<number>(1);
   const [useNativeAuth, setUseNativeAuth] = useState(false);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (but not during loading state)
   useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
+    if (status === 'authenticated' && session?.user && !isLoading) {
       console.log('[AUTH] ✅ User already authenticated, redirecting to home...');
-      router.replace('/');
+      // Use setTimeout to avoid race conditions with other redirects
+      setTimeout(() => {
+        router.push('/');
+      }, 50);
     }
-  }, [status, session, router]);
+  }, [status, session, router, isLoading]);
 
   // Detect platform on mount
   useEffect(() => {
@@ -298,15 +301,22 @@ export default function SignInPage() {
       
       console.log('[AUTH] ✅ NextAuth signIn successful, redirecting...');
       
-      // Use Next.js router for better client-side navigation
-      const targetUrl = res?.url || '/';
-      console.log('[AUTH] ↪️ Redirecting to:', targetUrl);
+      // Extract only the path from the URL (remove domain)
+      let targetPath = '/';
+      if (res?.url) {
+        try {
+          const url = new URL(res.url);
+          targetPath = url.pathname + url.search + url.hash;
+          console.log('[AUTH] 📍 Extracted path from URL:', targetPath);
+        } catch (e) {
+          console.log('[AUTH] ⚠️ URL parse error, using default path:', e);
+        }
+      }
       
-      // Small delay to ensure session is fully set
-      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('[AUTH] ↪️ Redirecting to:', targetPath);
       
-      // Use router.replace to prevent back button issues
-      router.replace(targetUrl);
+      // Use window.location.href for a hard redirect (ensures session is properly set)
+      window.location.href = targetPath;
       
       console.log('[AUTH] 🎉 Redirect initiated successfully');
     } catch (e: any) {
