@@ -90,6 +90,14 @@ export function createInvisibleRecaptcha(
   containerId: string,
   size: 'invisible' | 'normal' = 'invisible'
 ) {
+  // Clear any existing reCAPTCHA in the container to avoid "already rendered" error
+  const container = document.getElementById(containerId);
+  if (container) {
+    // Clear all child elements
+    container.innerHTML = '';
+    console.log('🧹 Cleared existing reCAPTCHA container');
+  }
+
   // Always use invisible reCAPTCHA for seamless experience
   const config = {
     size: 'invisible' as const,
