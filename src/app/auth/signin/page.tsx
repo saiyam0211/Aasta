@@ -263,7 +263,23 @@ export default function SignInPage() {
         callbackUrl: '/',
       });
       const elapsed = Math.round(performance.now() - signInT0);
-      console.log(`[AUTH] 🎫 NextAuth signIn completed (+${elapsed}ms, total +${Math.round(performance.now() - verifyT0)}ms)`);
+      console.log(`[AUTH] 🎫 NextAuth signIn completed (+${elapsed}ms, total +${Math.round(performance.now() - verifyT0)}ms)`, res);
+      
+      // Check if sign-in was successful
+      if (res?.error) {
+        console.error('[AUTH] ❌ NextAuth signIn error:', res.error);
+        setError('Failed to create session. Please try again.');
+        return;
+      }
+      
+      if (!res?.ok) {
+        console.error('[AUTH] ❌ NextAuth signIn not OK:', res);
+        setError('Failed to sign in. Please try again.');
+        return;
+      }
+      
+      console.log('[AUTH] ✅ NextAuth signIn successful, redirecting...');
+      
       // Fast manual redirect if URL provided
       if (res && typeof res === 'object' && 'url' in res && (res as any).url) {
         const navT0 = performance.now();
@@ -272,6 +288,7 @@ export default function SignInPage() {
         return;
       }
       // Fallback
+      console.log('[AUTH] ↪️ Fallback redirect to home page');
       window.location.assign('/');
     } catch (e: any) {
       console.error(e);
