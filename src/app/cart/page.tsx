@@ -237,7 +237,7 @@ export default function CartPage() {
         amount: payData.razorpayOrder.amount,
         currency: payData.razorpayOrder.currency,
         name: 'Aasta',
-        image: require('/public/logo.png'), 
+        image: require('/public/logos/logo.png'), 
         description: `Payment for Order #${orderNumber}`,
         order_id: payData.razorpayOrder.id,
         handler: async (response: any) => {
