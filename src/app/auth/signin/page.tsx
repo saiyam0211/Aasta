@@ -1,25 +1,34 @@
 'use client';
 
+// imports
+import { ChevronRight } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Lottie from 'lottie-react';
 import step1 from '../../../../public/lotties/step1.json';
+import step1_new from '../../../../public/lotties/step1_new.json';
+import step3_new from '../../../../public/lotties/step3_new.json';
 import step2 from '../../../../public/lotties/step2.json';
 import step3 from '../../../../public/lotties/step3.json';
+
 import { createInvisibleRecaptcha, sendOtp } from '@/lib/firebase-client';
-import { 
-  isNativePlatform, 
-  sendNativeOtp, 
-  verifyNativeOtp 
+import {
+  isNativePlatform,
+  sendNativeOtp,
+  verifyNativeOtp,
 } from '@/lib/firebase-native-auth';
 import type { RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
+
 import { signIn, useSession } from 'next-auth/react';
 import { setBackOverride } from '@/lib/back-channel';
 import { useRouter } from 'next/navigation';
+import SignInStep from './components/SignInStep';
 
 export default function SignInPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  // state variables declarations
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<number>(1);
   const [name, setName] = useState('');
@@ -28,7 +37,9 @@ export default function SignInPage() {
   const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(
     null
   );
-  const [nativeVerificationId, setNativeVerificationId] = useState<string | null>(null);
+  const [nativeVerificationId, setNativeVerificationId] = useState<
+    string | null
+  >(null);
   const [error, setError] = useState('');
   const verifierRef = useRef<RecaptchaVerifier | null>(null);
   const lastPushedStepRef = useRef<number>(1);
@@ -37,7 +48,9 @@ export default function SignInPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
-      console.log('[AUTH] ✅ User already authenticated, redirecting to home...');
+      console.log(
+        '[AUTH] ✅ User already authenticated, redirecting to home...'
+      );
       // Use hard redirect to ensure session is properly loaded
       window.location.href = '/';
     }
@@ -48,16 +61,23 @@ export default function SignInPage() {
     // Only use native auth on iOS (APNs works great)
     // Use web auth on Android (more reliable than SafetyNet)
     const platform = isNativePlatform();
-    const isIOS = platform && typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
-    
+    const isIOS =
+      platform &&
+      typeof navigator !== 'undefined' &&
+      /iPhone|iPad|iPod/.test(navigator.userAgent);
+
     setUseNativeAuth(isIOS);
-    
+
     if (isIOS) {
       console.log('[AUTH] 🍎 iOS detected, using native Firebase Auth (APNs)');
     } else if (platform) {
-      console.log('[AUTH] 🤖 Android detected, using web Firebase Auth (reCAPTCHA)');
+      console.log(
+        '[AUTH] 🤖 Android detected, using web Firebase Auth (reCAPTCHA)'
+      );
     } else {
-      console.log('[AUTH] 🌐 Web platform detected, using web Firebase Auth with reCAPTCHA');
+      console.log(
+        '[AUTH] 🌐 Web platform detected, using web Firebase Auth with reCAPTCHA'
+      );
     }
   }, []);
 
@@ -65,12 +85,17 @@ export default function SignInPage() {
   // Skip on native platforms since we use native Firebase Auth
   useEffect(() => {
     if (useNativeAuth) return; // Skip reCAPTCHA on native platforms
-    
+
     if (step === 5 && !verifierRef.current) {
       try {
         const t = performance.now();
-        verifierRef.current = createInvisibleRecaptcha('recaptcha-container', 'invisible');
-        console.log(`[AUTH] reCAPTCHA initialized at ${new Date().toISOString()} (+${Math.round(performance.now() - t)}ms)`);
+        verifierRef.current = createInvisibleRecaptcha(
+          'recaptcha-container',
+          'invisible'
+        );
+        console.log(
+          `[AUTH] reCAPTCHA initialized at ${new Date().toISOString()} (+${Math.round(performance.now() - t)}ms)`
+        );
       } catch (e) {
         console.warn('[AUTH] reCAPTCHA init failed (will retry on send):', e);
         verifierRef.current = null;
@@ -127,7 +152,9 @@ export default function SignInPage() {
       // Fire-and-forget; no UI impact
       fetch('/api/auth/csrf').catch(() => {});
       fetch('/api/auth/session').catch(() => {});
-      console.log(`[AUTH] Prefetched NextAuth endpoints (+${Math.round(performance.now() - t0)}ms)`);
+      console.log(
+        `[AUTH] Prefetched NextAuth endpoints (+${Math.round(performance.now() - t0)}ms)`
+      );
     }
   }, [step]);
 
@@ -135,12 +162,17 @@ export default function SignInPage() {
   // Skip on native platforms since we use native Firebase Auth
   useEffect(() => {
     if (useNativeAuth) return; // Skip reCAPTCHA on native platforms
-    
+
     if (step === 4 && !verifierRef.current) {
       try {
         const t = performance.now();
-        verifierRef.current = createInvisibleRecaptcha('recaptcha-container', 'invisible');
-        console.log(`[AUTH] reCAPTCHA pre-initialized at step 4 (+${Math.round(performance.now() - t)}ms)`);
+        verifierRef.current = createInvisibleRecaptcha(
+          'recaptcha-container',
+          'invisible'
+        );
+        console.log(
+          `[AUTH] reCAPTCHA pre-initialized at step 4 (+${Math.round(performance.now() - t)}ms)`
+        );
       } catch (e) {
         console.warn('[AUTH] Step 4 reCAPTCHA pre-init failed (non-blocking).');
       }
@@ -158,7 +190,7 @@ export default function SignInPage() {
       setIsLoading(true);
       const clickT0 = performance.now();
       console.log(`[AUTH] 🚀 Send OTP clicked at ${new Date().toISOString()}`);
-      
+
       // Clean phone number to E.164 format (remove spaces, dashes, etc.)
       let formatted = phone.trim().startsWith('+')
         ? phone.trim()
@@ -166,23 +198,30 @@ export default function SignInPage() {
 
       // Remove all non-digit characters except the leading +
       formatted = formatted.replace(/(?!^\+)\D/g, '');
-      
+
       console.log(`[AUTH] 📱 Cleaned phone number: ${formatted}`);
 
       // Use native auth on Capacitor platforms
       if (useNativeAuth) {
         console.log('[AUTH] Using native Firebase Auth (no reCAPTCHA)');
         const otpT0 = performance.now();
-        
+
         try {
           const result = await sendNativeOtp(formatted);
-          console.log(`[AUTH] ✅ OTP sent via native SDK (+${Math.round(performance.now() - otpT0)}ms for send, +${Math.round(performance.now() - clickT0)}ms since click)`);
+          console.log(
+            `[AUTH] ✅ OTP sent via native SDK (+${Math.round(performance.now() - otpT0)}ms for send, +${Math.round(performance.now() - clickT0)}ms since click)`
+          );
           setNativeVerificationId(result.verificationId);
           setStep(6);
           return;
         } catch (nativeError: any) {
-          console.warn('[AUTH] ⚠️ Native auth failed, falling back to web reCAPTCHA:', nativeError.message);
-          console.log('[AUTH] 🌐 Attempting web-based phone auth with reCAPTCHA...');
+          console.warn(
+            '[AUTH] ⚠️ Native auth failed, falling back to web reCAPTCHA:',
+            nativeError.message
+          );
+          console.log(
+            '[AUTH] 🌐 Attempting web-based phone auth with reCAPTCHA...'
+          );
           // Fall through to web flow below
         }
       }
@@ -193,8 +232,13 @@ export default function SignInPage() {
       // Create invisible reCAPTCHA verifier only when needed
       if (!verifierRef.current) {
         const t = performance.now();
-        verifierRef.current = createInvisibleRecaptcha('recaptcha-container', 'invisible');
-        console.log(`[AUTH] reCAPTCHA created lazily (+${Math.round(performance.now() - t)}ms since step)`);
+        verifierRef.current = createInvisibleRecaptcha(
+          'recaptcha-container',
+          'invisible'
+        );
+        console.log(
+          `[AUTH] reCAPTCHA created lazily (+${Math.round(performance.now() - t)}ms since step)`
+        );
       }
 
       const otpT0 = performance.now();
@@ -205,22 +249,32 @@ export default function SignInPage() {
         try {
           attempt += 1;
           if (attempt > 1) {
-            console.log(`[AUTH] Retrying OTP send (attempt ${attempt}) after backoff...`);
+            console.log(
+              `[AUTH] Retrying OTP send (attempt ${attempt}) after backoff...`
+            );
             await new Promise((r) => setTimeout(r, 250));
             // recreate verifier defensively on retry
             try {
               (verifierRef.current as any)?.clear?.();
             } catch {}
-            verifierRef.current = createInvisibleRecaptcha('recaptcha-container', 'invisible');
+            verifierRef.current = createInvisibleRecaptcha(
+              'recaptcha-container',
+              'invisible'
+            );
           }
-          result = await sendOtp(formatted, verifierRef.current as RecaptchaVerifier);
+          result = await sendOtp(
+            formatted,
+            verifierRef.current as RecaptchaVerifier
+          );
         } catch (err: any) {
           lastError = err;
           // Retry on common transient errors
           if (attempt >= 2) throw err;
         }
       }
-      console.log(`[AUTH] ✅ OTP sent at ${new Date().toISOString()} (+${Math.round(performance.now() - otpT0)}ms for send, +${Math.round(performance.now() - clickT0)}ms since click)`);
+      console.log(
+        `[AUTH] ✅ OTP sent at ${new Date().toISOString()} (+${Math.round(performance.now() - otpT0)}ms for send, +${Math.round(performance.now() - clickT0)}ms since click)`
+      );
       setConfirmation(result);
       // Move to OTP step
       setStep(6);
@@ -239,7 +293,9 @@ export default function SignInPage() {
       }
     } finally {
       setIsLoading(false);
-      console.log(`[AUTH] ⏱️ Send OTP flow finished at ${new Date().toISOString()}`);
+      console.log(
+        `[AUTH] ⏱️ Send OTP flow finished at ${new Date().toISOString()}`
+      );
     }
   }
 
@@ -250,30 +306,39 @@ export default function SignInPage() {
       setIsLoading(true);
       const verifyT0 = performance.now();
       console.log(`[AUTH] 🔑 Verify clicked at ${new Date().toISOString()}`);
-      
+
       // Use native auth verification on Capacitor platforms
       if (useNativeAuth && nativeVerificationId) {
         console.log('[AUTH] Using native Firebase Auth verification');
         await verifyNativeOtp(nativeVerificationId, otp);
-        console.log(`[AUTH] ✅ Native Firebase verify OK (+${Math.round(performance.now() - verifyT0)}ms)`);
+        console.log(
+          `[AUTH] ✅ Native Firebase verify OK (+${Math.round(performance.now() - verifyT0)}ms)`
+        );
       } else {
         // Web flow
         console.log('[AUTH] Using web Firebase Auth verification');
         await confirmation!.confirm(otp);
-        console.log(`[AUTH] ✅ Web Firebase confirm OK (+${Math.round(performance.now() - verifyT0)}ms)`);
+        console.log(
+          `[AUTH] ✅ Web Firebase confirm OK (+${Math.round(performance.now() - verifyT0)}ms)`
+        );
       }
-      
+
       // Create NextAuth session via credentials provider
       // Clean phone number to E.164 format (remove spaces, dashes, etc.)
       let formatted = phone.trim().startsWith('+')
         ? phone.trim()
         : `+91${phone.trim()}`;
-      
+
       // Remove all non-digit characters except the leading +
       formatted = formatted.replace(/(?!^\+)\D/g, '');
-      
-      console.log('[AUTH] 📱 Sending to NextAuth - Phone:', formatted, 'Name:', name.trim());
-      
+
+      console.log(
+        '[AUTH] 📱 Sending to NextAuth - Phone:',
+        formatted,
+        'Name:',
+        name.trim()
+      );
+
       const signInT0 = performance.now();
       const res = await signIn('phone-otp', {
         phone: formatted,
@@ -282,49 +347,59 @@ export default function SignInPage() {
         callbackUrl: '/',
       });
       const elapsed = Math.round(performance.now() - signInT0);
-      console.log(`[AUTH] 🎫 NextAuth signIn completed (+${elapsed}ms, total +${Math.round(performance.now() - verifyT0)}ms)`, res);
-      
+      console.log(
+        `[AUTH] 🎫 NextAuth signIn completed (+${elapsed}ms, total +${Math.round(performance.now() - verifyT0)}ms)`,
+        res
+      );
+
       // Check if sign-in was successful
       if (res?.error) {
         console.error('[AUTH] ❌ NextAuth signIn error:', res.error);
         setError('Failed to create session. Please try again.');
         return;
       }
-      
+
       if (!res?.ok) {
         console.error('[AUTH] ❌ NextAuth signIn not OK:', res);
         setError('Failed to sign in. Please try again.');
         return;
       }
-      
+
       console.log('[AUTH] ✅ NextAuth signIn successful, redirecting...');
-      
+
       // Extract pathname from URL (router.replace needs relative path, not absolute URL)
       let targetPath = '/';
       if (res?.url) {
         try {
           const url = new URL(res.url);
           targetPath = url.pathname + url.search + url.hash;
-          console.log('[AUTH] 📍 Extracted path from URL:', res.url, '->', targetPath);
+          console.log(
+            '[AUTH] 📍 Extracted path from URL:',
+            res.url,
+            '->',
+            targetPath
+          );
         } catch (e) {
           console.log('[AUTH] ⚠️ URL parse error, using default path:', e);
         }
       }
-      
+
       console.log('[AUTH] ↪️ Redirecting to:', targetPath);
-      
+
       // Use window.location.href for a hard redirect (Next.js router sometimes fails after auth)
       // This ensures the session is properly loaded on the new page
       console.log('[AUTH] 🚀 Performing hard redirect...');
       window.location.href = targetPath;
-      
+
       console.log('[AUTH] 🎉 Redirect initiated successfully');
     } catch (e: any) {
       console.error(e);
       setError('Invalid code, try again');
     } finally {
       setIsLoading(false);
-      console.log(`[AUTH] ⏱️ Verify flow finished at ${new Date().toISOString()}`);
+      console.log(
+        `[AUTH] ⏱️ Verify flow finished at ${new Date().toISOString()}`
+      );
     }
   }
 
@@ -370,114 +445,58 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-dvh h-dvh w-full bg-white overflow-hidden">
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-[45%] pb-8">
+    <div className="bg-primary-dark-green h-dvh min-h-dvh w-full overflow-hidden">
+      <div className="relative mx-auto flex min-h-dvh w-full flex-col justify-center px-6">
         <div
           key={step}
-          className="animate-slide-up transition-all duration-300 ease-out"
+          className="animate-slide-up h-full transition-all duration-300 ease-out"
         >
+          {/* Skip button positioned at the top */}
+          {/* <div className="relative h-full"> */}
+          <div
+            className={`absolute right-6 flex min-h-10 w-full justify-end ${step == 3 ? 'top-10' : 'top-8'}`}
+          >
+            {(step === 2 || step === 3) && (
+              <Button
+                onClick={() => setStep(4)}
+                variant="ghost"
+                size="sm"
+                className="bg-accent-leaf-green flex h-10 w-18 items-center justify-center rounded-lg border border-black p-0 font-semibold tracking-tight shadow-sm backdrop-blur-sm hover:bg-white"
+              >
+                Skip
+                <ChevronRight className="-ml-1" />
+              </Button>
+            )}
+            {/* </div> */}
+          </div>
           {step === 1 && (
-            <div className="flex h-full flex-col items-center text-center">
-              <div className="mb-6 w-full">
-                <Lottie
-                  animationData={step1 as any}
-                  loop
-                  autoplay
-                  style={{ width: '100%', height: 280 }}
-                />
-              </div>
-              <h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">
-                Smarter bites, happier you.
-              </h2>
-              <p className="mx-auto max-w-sm text-base text-[#475569]">
-                Wholesome meals without hidden costs.
-              </p>
-              <div className="mt-6 w-full">
-                <button
-                  onClick={() => setStep(2)}
-                  className="mx-auto flex w-full items-center justify-center rounded-3xl bg-black px-5 py-7 text-xl text-white"
-                >
-                  Show me the hack →
-                </button>
-              </div>
-            </div>
+            <SignInStep
+              lottieAnimation={step1_new}
+              heading="Smarter bites, happier you."
+              subHeading="Wholesome meals without hidden costs."
+              buttonText="Show me the hack →"
+              toNext={() => setStep(2)}
+            />
           )}
 
           {step === 2 && (
-            <div className="flex h-full flex-col items-center text-center">
-              {/* Skip button positioned at the top */}
-              <div className="-mt-40 mb-4 flex w-full justify-end">
-                <Button
-                  onClick={() => setStep(4)}
-                  variant="ghost"
-                  size="sm"
-                  className="h-10 w-20 rounded-full border border-white/20 bg-white/10 p-0 shadow-sm backdrop-blur-sm hover:bg-white"
-                >
-                  Skip
-                </Button>
-              </div>
-
-              <div className="mt-28 mb-6 w-full">
-                <Lottie
-                  animationData={step2 as any}
-                  loop
-                  autoplay
-                  style={{ width: '100%', height: 280 }}
-                />
-              </div>
-              <h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">
-                The Unhappening is here.
-              </h2>
-              <p className="mx-auto max-w-sm text-base text-[#475569]">
-                Transparent deals + eco kitchens.
-              </p>
-              <div className="mt-6 w-full">
-                <button
-                  onClick={() => setStep(3)}
-                  className="mx-auto flex w-full items-center justify-center rounded-3xl bg-black px-5 py-7 text-xl text-white"
-                >
-                  Unlock my #FoodHack →
-                </button>
-              </div>
-            </div>
+            <SignInStep
+              lottieAnimation={step2}
+              heading="The Unhappening is here."
+              subHeading="Transparent deals + eco kitchens."
+              buttonText="Unlock my #FoodHack →"
+              toNext={() => setStep(3)}
+            />
           )}
 
           {step === 3 && (
-            <div className="flex h-full flex-col items-center text-center">
-              {/* Skip button positioned at the top */}
-              <div className="-mt-40 mb-4 flex w-full justify-end">
-                <Button
-                  onClick={() => setStep(4)}
-                  variant="ghost"
-                  size="sm"
-                  className="h-10 w-20 rounded-full border border-white/20 bg-white/10 p-0 shadow-sm backdrop-blur-sm hover:bg-white"
-                >
-                  Skip
-                </Button>
-              </div>
-              <div className="mt-28 mb-6 w-full">
-                <Lottie
-                  animationData={step3 as any}
-                  loop
-                  autoplay
-                  style={{ width: '100%', height: 280 }}
-                />
-              </div>
-              <h2 className="mb-3 text-2xl font-extrabold text-[#0f172a]">
-                Fast. Fair. Planet-friendly.
-              </h2>
-              <p className="mx-auto max-w-sm text-base text-[#475569]">
-                Watch us reinvent food savings.
-              </p>
-              <div className="mt-6 w-full">
-                <button
-                  onClick={() => setStep(4)}
-                  className="mx-auto flex w-full items-center justify-center rounded-3xl bg-black px-5 py-7 text-xl text-white"
-                >
-                  Let's get started →
-                </button>
-              </div>
-            </div>
+            <SignInStep
+              lottieAnimation={step3_new}
+              heading="Fast. Fair. Planet-friendly."
+              subHeading="Watch us reinvent food savings."
+              buttonText="Let's get started →"
+              toNext={() => setStep(4)}
+            />
           )}
 
           {step === 4 && (

@@ -5,6 +5,7 @@ import { Providers } from '@/components/providers';
 import Script from 'next/script';
 import ClientRoot from '@/components/client-root';
 import { LoginNotificationHandler } from '@/components/auth/login-notification-handler';
+import { Dela_Gothic_One } from 'next/font/google';
 
 const brandFont = localFont({
   src: [
@@ -16,6 +17,12 @@ const brandFont = localFont({
   ],
   variable: '--font-brand',
   display: 'swap',
+});
+
+const delaGothicOne = Dela_Gothic_One({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-dela-gothic-one',
 });
 
 export const metadata: Metadata = {
@@ -94,7 +101,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${brandFont.variable}`}>
+    <html
+      lang="en"
+      className={`${brandFont.variable} ${delaGothicOne.variable}`}
+    >
       <head>
         <meta
           name="description"
@@ -104,7 +114,11 @@ export default function RootLayout({
         <meta name="theme-color" content="#002a01" />
 
         <link rel="apple-touch-icon" href="/icons/Aasta_Logos_192x192.png" />
-        <link rel="icon" type="image/png" href="/icons/Aasta_Logos_192x192.png" />
+        <link
+          rel="icon"
+          type="image/png"
+          href="/icons/Aasta_Logos_192x192.png"
+        />
 
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:url" content="https://www.aasta.food" />
@@ -125,7 +139,6 @@ export default function RootLayout({
         <meta property="og:site_name" content="Aasta" />
         <meta property="og:url" content="https://www.aasta.food" />
         <meta property="og:image" content="/icons/Aasta_Logos_512x512.png" />
-
       </head>
       <body className="pb-safe font-sans antialiased">
         <Providers>
