@@ -9,6 +9,14 @@
   font-variation-settings: 'wdth' 100;
 }
 
+@theme {
+  --color-primary-dark-green: #002a01;
+  --color-accent-leaf-green: #d1f86a;
+  --color-bright-yellow: #ffd500;
+  --color-off-white: #fcfefe;
+  --font-dela: 'Dela Gothic One';
+}
+
 /* Register local fonts */
 @font-face {
   font-family: 'Tanjambore';
