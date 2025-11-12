@@ -446,28 +446,28 @@ export default function SignInPage() {
 
   return (
     <div className="bg-primary-dark-green h-dvh min-h-dvh w-full overflow-hidden">
-      <div className="relative mx-auto flex min-h-dvh max-w-md flex-col justify-end px-6 pb-28">
+      <div className="relative mx-auto flex min-h-dvh w-full flex-col justify-center px-6">
         <div
           key={step}
-          className="animate-slide-up transition-all duration-300 ease-out"
+          className="animate-slide-up h-full transition-all duration-300 ease-out"
         >
           {/* Skip button positioned at the top */}
-          <div className="relative h-full">
-            <div
-              className={`absolute right-0 flex min-h-10 w-full justify-end ${step == 3 ? '-top-20' : '-top-12'}`}
-            >
-              {(step === 2 || step === 3) && (
-                <Button
-                  onClick={() => setStep(4)}
-                  variant="ghost"
-                  size="sm"
-                  className="bg-accent-leaf-green flex h-10 w-18 items-center justify-center rounded-lg border border-black p-0 font-semibold tracking-tight shadow-sm backdrop-blur-sm hover:bg-white"
-                >
-                  Skip
-                  <ChevronRight className="-ml-1" />
-                </Button>
-              )}
-            </div>
+          {/* <div className="relative h-full"> */}
+          <div
+            className={`absolute right-6 flex min-h-10 w-full justify-end ${step == 3 ? 'top-10' : 'top-8'}`}
+          >
+            {(step === 2 || step === 3) && (
+              <Button
+                onClick={() => setStep(4)}
+                variant="ghost"
+                size="sm"
+                className="bg-accent-leaf-green flex h-10 w-18 items-center justify-center rounded-lg border border-black p-0 font-semibold tracking-tight shadow-sm backdrop-blur-sm hover:bg-white"
+              >
+                Skip
+                <ChevronRight className="-ml-1" />
+              </Button>
+            )}
+            {/* </div> */}
           </div>
           {step === 1 && (
             <SignInStep
