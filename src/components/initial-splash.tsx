@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Lottie from 'lottie-react';
 import { useLocationStore } from '@/hooks/useLocation';
+import aastaAnimation from '../../public/lotties/aasta.json';
 
 export default function InitialSplash() {
   const [show, setShow] = useState(false);
@@ -108,7 +109,7 @@ export default function InitialSplash() {
     >
       <div className="flex items-center justify-center w-full h-full">
         <div className="w-[260px] h-auto">
-          <Lottie animationData={require('../../public/lotties/aasta.json')} loop autoplay />
+          <Lottie animationData={aastaAnimation} loop autoplay />
         </div>
       </div>
       

@@ -16,6 +16,7 @@
     "start": "next start",
     "start:with-warmer": "npm run start-route-warmer & next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "format:staged": "prettier --write --cache --ignore-unknown",

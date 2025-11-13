@@ -6,26 +6,10 @@ import Link from 'next/link';
 import {
   ArrowLeft,
   User,
-  Mail,
-  Phone,
-  MapPin,
-  ShoppingCart,
-  TrendingUp,
-  DollarSign,
-  Star,
-  Clock,
-  Calendar,
-  Heart,
-  Home,
-  Briefcase,
 } from 'lucide-react';
 
 import {
   Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import AdminLayout from '@/components/layouts/admin-layout';
@@ -33,7 +17,20 @@ import AdminLayout from '@/components/layouts/admin-layout';
 export default function CustomerDetails() {
   const params = useParams();
   const id = params?.id as string;
-  const [customer, setCustomer] = useState<any>(null);
+  const [customer, setCustomer] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    stats: {
+      totalOrders: number;
+      totalSpent: number;
+      averageOrderValue: number;
+      highestSpent: number;
+      lowestSpent: number;
+      favoriteRestaurants: Array<{ name: string; orderCount: number }>;
+      addressUsage: Array<{ street: string; city: string; orderCount: number }>;
+    };
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -132,7 +129,7 @@ export default function CustomerDetails() {
           <p className="text-sm">No favorites found.</p>
         ) : (
           customer.stats.favoriteRestaurants.map(
-            (restaurant: any, index: number) => (
+            (restaurant, index: number) => (
               <p key={index} className="text-sm">
                 {restaurant.name} - Orders: {restaurant.orderCount}
               </p>
@@ -143,7 +140,7 @@ export default function CustomerDetails() {
 
       <Card>
         <h4 className="text-lg font-semibold">Address Usage</h4>
-        {customer.stats.addressUsage.map((address: any, index: number) => (
+        {customer.stats.addressUsage.map((address, index: number) => (
           <div key={index} className="mb-2">
             <p className="text-sm">
               {address.street}, {address.city}

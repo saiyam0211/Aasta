@@ -163,13 +163,13 @@ export default function AllDeliveryPartnersPage() {
                   {/* Details */}
                   <div className="space-y-2 text-sm text-[#002a01]/70">
                     <div className="flex justify-between">
-                      <span>Today's Earnings:</span>
+                      <span>Today&apos;s Earnings:</span>
                       <span className="font-semibold">
                         ₹{partner.todayEarnings.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Last Week's Earnings:</span>
+                      <span>Last Week&apos;s Earnings:</span>
                       <span className="font-semibold">
                         ₹{partner.lastWeekEarnings?.toLocaleString() || 0}
                       </span>
