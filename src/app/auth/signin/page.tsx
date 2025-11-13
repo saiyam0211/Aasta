@@ -23,6 +23,9 @@ import { signIn, useSession } from 'next-auth/react';
 import { setBackOverride } from '@/lib/back-channel';
 import { useRouter } from 'next/navigation';
 import SignInStep from './components/SignInStep';
+import Step4 from './components/Step4';
+import Step5 from './components/Step5';
+import Step6 from './components/Step6';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -447,28 +450,25 @@ export default function SignInPage() {
   return (
     <div className="bg-primary-dark-green h-dvh min-h-dvh w-full overflow-hidden">
       <div className="relative mx-auto flex min-h-dvh w-full flex-col justify-center px-6">
+        {/* Skip button positioned at the top */}
+
+        <div className="absolute top-6 right-6 flex min-h-10 w-full justify-end">
+          {(step === 2 || step === 3) && (
+            <Button
+              onClick={() => setStep(4)}
+              variant="ghost"
+              size="sm"
+              className="bg-accent-leaf-green flex h-10 w-18 items-center justify-center rounded-lg border border-black p-0 font-semibold tracking-tight shadow-sm backdrop-blur-sm hover:bg-white"
+            >
+              Skip
+              <ChevronRight className="-ml-1" />
+            </Button>
+          )}
+        </div>
         <div
           key={step}
           className="animate-slide-up h-full transition-all duration-300 ease-out"
         >
-          {/* Skip button positioned at the top */}
-          {/* <div className="relative h-full"> */}
-          <div
-            className={`absolute right-6 flex min-h-10 w-full justify-end ${step == 3 ? 'top-10' : 'top-8'}`}
-          >
-            {(step === 2 || step === 3) && (
-              <Button
-                onClick={() => setStep(4)}
-                variant="ghost"
-                size="sm"
-                className="bg-accent-leaf-green flex h-10 w-18 items-center justify-center rounded-lg border border-black p-0 font-semibold tracking-tight shadow-sm backdrop-blur-sm hover:bg-white"
-              >
-                Skip
-                <ChevronRight className="-ml-1" />
-              </Button>
-            )}
-            {/* </div> */}
-          </div>
           {step === 1 && (
             <SignInStep
               lottieAnimation={step1_new}
@@ -500,165 +500,27 @@ export default function SignInPage() {
           )}
 
           {step === 4 && (
-            <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-              {/* Title */}
-              <h2 className="mb-2 text-4xl font-bold tracking-tight text-slate-900">
-                Claim your foodie identity.
-              </h2>
-
-              {/* Subtitle */}
-              <p className="mb-6 max-w-xs text-base text-slate-600">
-                Tell us who you are, and we'll unlock your personalized Food
-                Hack.
-              </p>
-
-              {/* Input + Button */}
-              <div className="w-full space-y-5">
-                {/* Material 3 styled input */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder=" "
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="peer w-full rounded-2xl border border-slate-300 bg-white px-4 pt-5 pb-2 text-lg text-slate-900 shadow-sm focus:border-[#002a01] focus:ring-2 focus:ring-[#002a01] focus:outline-none"
-                  />
-                  <label className="absolute top-2 left-4 text-sm text-slate-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-slate-300">
-                    Your name
-                  </label>
-                </div>
-
-                {/* Material 3 expressive button */}
-                <button
-                  onClick={() => setStep(5)}
-                  disabled={!name.trim()}
-                  className="w-full rounded-3xl bg-black px-6 py-7 text-2xl font-medium text-white shadow-md transition-all duration-200 enabled:hover:bg-[#002a01] enabled:active:scale-[0.97] disabled:bg-slate-300 disabled:text-slate-500"
-                >
-                  Next →
-                </button>
-              </div>
-            </div>
+            <Step4 name={name} setName={setName} toNext={() => setStep(5)} />
           )}
 
           {step === 5 && (
-            <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-              {/* Title */}
-              <h2 className="mb-2 text-4xl font-bold tracking-tight text-slate-900">
-                Keep your #FoodHacks safe.
-              </h2>
-
-              {/* Subtitle */}
-              <p className="mb-6 max-w-xs text-base text-slate-600">
-                Enter your number and we'll send a one-time code to sign in
-                securely.
-              </p>
-
-              {/* Input + Button */}
-              <div className="w-full space-y-5">
-                {/* Material 3 styled input */}
-                <div className="relative">
-                  <input
-                    type="tel"
-                    placeholder=" "
-                    value={phone}
-                    onChange={handlePhoneChange}
-                    className="peer w-full rounded-2xl border border-slate-300 bg-white px-4 pt-5 pb-2 text-lg text-slate-900 shadow-sm focus:border-[#002a01] focus:ring-2 focus:ring-[#002a01] focus:outline-none"
-                  />
-                  <label className="absolute top-2 left-4 text-sm text-slate-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-sm peer-focus:text-slate-300">
-                    Phone number
-                  </label>
-                </div>
-
-                {/* Hidden reCAPTCHA container - invisible reCAPTCHA handles itself */}
-                <div id="recaptcha-container" className="hidden" />
-
-                {/* Material 3 expressive button */}
-                <button
-                  disabled={isLoading || phone.length < 8}
-                  onClick={startPhoneFlow}
-                  className="w-full rounded-3xl bg-black px-6 py-7 text-2xl font-medium text-white shadow-md transition-all duration-200 enabled:hover:bg-[#003d01] enabled:active:scale-[0.97] disabled:bg-slate-300 disabled:text-slate-500"
-                >
-                  {isLoading ? 'Sending…' : 'Send OTP'}
-                </button>
-
-                {/* Error message */}
-                {error && (
-                  <p className="pt-2 text-sm font-medium text-red-600">
-                    {error}
-                  </p>
-                )}
-              </div>
-            </div>
+            <Step5
+              phone={phone}
+              handlePhoneChange={handlePhoneChange}
+              isLoading={isLoading}
+              startPhoneFlow={startPhoneFlow}
+              error={error}
+            />
           )}
 
           {step === 6 && (
-            <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-              {/* Title */}
-              <h2 className="mb-2 text-4xl font-bold tracking-tight text-slate-900">
-                Almost there!
-              </h2>
-
-              {/* Subtitle */}
-              <p className="mb-6 max-w-xs text-base text-slate-600">
-                We sent your secret code to{' '}
-                {/* <span className="font-medium text-slate-800">
-                {phone.trim().startsWith('+') ? phone : `+91${phone}`}
-              </span> */}
-                — enter it to unlock your #FoodHacks.
-              </p>
-
-              {/* 6-digit OTP input */}
-              <div className="mb-5 flex justify-center space-x-2">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={otp[i] || ''}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/, '');
-                      if (!val) return;
-                      const newOtp = otp.split('');
-                      newOtp[i] = val;
-                      setOtp(newOtp.join(''));
-                      // move focus to next box
-                      if (i < 5) {
-                        const next = document.getElementById(`otp-${i + 1}`);
-                        next?.focus();
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Backspace') {
-                        const newOtp = otp.split('');
-                        newOtp[i] = '';
-                        setOtp(newOtp.join(''));
-                        if (i > 0 && !otp[i]) {
-                          const prev = document.getElementById(`otp-${i - 1}`);
-                          prev?.focus();
-                        }
-                      }
-                    }}
-                    id={`otp-${i}`}
-                    className="h-14 w-12 rounded-lg border border-slate-300 text-center text-xl font-medium text-slate-900 shadow-sm transition focus:border-[#002a01] focus:ring-2 focus:ring-[#002a01] focus:outline-none"
-                  />
-                ))}
-              </div>
-
-              {/* Verify button */}
-              <button
-                disabled={isLoading || otp.length < 6}
-                onClick={verifyOtp}
-                className="w-full rounded-3xl bg-black px-6 py-7 text-2xl font-medium text-white shadow-md transition-all duration-200 enabled:hover:bg-[#003d01] enabled:active:scale-[0.97] disabled:bg-slate-300 disabled:text-slate-500"
-              >
-                {isLoading ? 'Verifying…' : 'Verify & Continue'}
-              </button>
-
-              {/* Error message */}
-              {error && (
-                <p className="pt-2 text-sm font-medium text-red-600">{error}</p>
-              )}
-            </div>
+            <Step6
+              otp={otp}
+              setOtp={setOtp}
+              error={error}
+              isLoading={isLoading}
+              verifyOtp={verifyOtp}
+            />
           )}
         </div>
       </div>

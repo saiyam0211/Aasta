@@ -1,5 +1,6 @@
 import Lottie from 'lottie-react';
 import React from 'react';
+import Button from './Button';
 
 interface SignInStepProps {
   lottieAnimation: object;
@@ -35,12 +36,7 @@ const SignInStep = ({
         {subHeading}
       </p>
       <div className="mt-4 w-full">
-        <button
-          onClick={toNext}
-          className="text-primary-dark-green bg-accent-leaf-green font-dela mx-auto flex w-fit items-center justify-center rounded-lg border-3 border-black px-5 py-4 text-sm"
-        >
-          {buttonText}
-        </button>
+        <Button buttonText={buttonText} onClick={toNext} />
       </div>
     </div>
   );
