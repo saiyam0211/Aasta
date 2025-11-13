@@ -21,10 +21,10 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Enable pnpm (Corepack)
-        run: |
-          corepack enable
-          corepack prepare pnpm@8 --activate
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
 
       - name: Verify pnpm
         run: pnpm --version
@@ -49,10 +49,10 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Enable pnpm (Corepack)
-        run: |
-          corepack enable
-          corepack prepare pnpm@8 --activate
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
 
       - name: Verify pnpm
         run: pnpm --version
@@ -77,10 +77,10 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Enable pnpm (Corepack)
-        run: |
-          corepack enable
-          corepack prepare pnpm@8 --activate
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
 
       - name: Verify pnpm
         run: pnpm --version
@@ -112,10 +112,10 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Enable pnpm (Corepack)
-        run: |
-          corepack enable
-          corepack prepare pnpm@8 --activate
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
 
       - name: Verify pnpm
         run: pnpm --version
