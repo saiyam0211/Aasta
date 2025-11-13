@@ -341,7 +341,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build where clause based on user role
-    let where: any = {};
+    const where: any = {};
     // Prefer explicit scope first, then fall back to role
     if (scope === 'customer' || session.user.role === 'CUSTOMER') {
       const customer = await prisma.customer.findUnique({

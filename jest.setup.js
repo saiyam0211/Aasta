@@ -1,10 +1,22 @@
 import '@testing-library/jest-dom';
 import { TextEncoder, TextDecoder } from 'util';
-import { server } from './src/__tests__/mocks/server';
 
 // Polyfill for Node.js environment
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
+if (typeof global.TextEncoder === 'undefined') {
+  global.TextEncoder = TextEncoder;
+  global.TextDecoder = TextDecoder;
+}
+
+// Node 20+ has native fetch, Request, Response, Headers
+// Only polyfill if they don't exist
+if (typeof global.Request === 'undefined') {
+  const { Request, Response, Headers } = require('undici');
+  global.Request = Request;
+  global.Response = Response;
+  global.Headers = Headers;
+}
+
+import { server } from './src/__tests__/mocks/server';
 
 // Mock environment variables
 process.env.NEXTAUTH_SECRET = 'test-secret';

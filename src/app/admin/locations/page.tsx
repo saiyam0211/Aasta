@@ -545,8 +545,8 @@ export default function LocationsManagement() {
                             Deactivate Location
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to deactivate "{location.name}
-                            "? This action will hide the location from
+                            Are you sure you want to deactivate &quot;{location.name}
+                            &quot;? This action will hide the location from
                             restaurant onboarding.
                           </AlertDialogDescription>
                         </AlertDialogHeader>

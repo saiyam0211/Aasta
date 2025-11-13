@@ -223,8 +223,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Skip Google Maps ETA/distance to avoid blocking order creation
-    let deliveryDistance: number | null = null;
-    let estimatedDeliveryDuration: number | null = null;
+    const deliveryDistance: number | null = null;
+    const estimatedDeliveryDuration: number | null = null;
     const calculatedDeliveryTime: Date | null = null;
 
     // Generate a verification code
@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
     // Create order
     const order = await prisma.$transaction(async (tx) => {
       // For pickup orders, create a temporary pickup address
-      let finalDeliveryAddressId = createdDeliveryAddress?.id;
+      const finalDeliveryAddressId = createdDeliveryAddress?.id;
       
 
       console.log('Creating order with deliveryAddressId:', finalDeliveryAddressId);

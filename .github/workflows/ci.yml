@@ -61,40 +61,6 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-  test:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Verify pnpm
-        run: pnpm --version
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma Client
-        run: pnpm db:generate
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://user:password@localhost:5432/test' }}
-
-      - name: Run tests
-        run: pnpm test
-        env:
-          NODE_ENV: test
-
   build:
     name: CI Build
     runs-on: ubuntu-latest

@@ -159,13 +159,13 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               <Activity className="mr-3 h-5 w-5" />
               Dashboard
             </a>
-            <a
+            <Link
               href="/admin/customers"
               className="flex items-center rounded-lg px-4 py-3 text-sm font-medium text-[#fcfefe]/80 transition-colors hover:bg-[#fcfefe]/5 hover:text-[#d1f86a]"
             >
               <Users className="mr-3 h-5 w-5" />
               Customers
-            </a>
+            </Link>
             <a
               href="#"
               className="flex items-center rounded-lg px-4 py-3 text-sm font-medium text-[#fcfefe]/80 transition-colors hover:bg-[#fcfefe]/5 hover:text-[#d1f86a]"
@@ -341,7 +341,7 @@ export default function AdminDashboard() {
               Dashboard Overview
             </h1>
             <p className="mt-1 text-[#002a01]/70">
-              Monitor your platform's performance and growth
+              Monitor your platform&apos;s performance and growth
             </p>
           </div>
 
@@ -504,7 +504,7 @@ export default function AdminDashboard() {
               <div className="mb-4 flex items-center justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-semibold tracking-wide text-[#002a01]/60 uppercase">
-                    Today's Revenue
+                    Today&apos;s Revenue
                   </p>
                   <p className="text-3xl font-bold text-[#002a01]">
                     ₹{stats.revenue.today.toLocaleString()}

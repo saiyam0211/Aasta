@@ -42,6 +42,10 @@ import dynamic from 'next/dynamic';
 // Dynamically import Lottie to avoid SSR issues
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
+// Import Lottie animation data
+import paymentLoadingAnimation from '../../../public/lotties/payment_loading.json';
+import afterPaymentAnimation from '../../../public/lotties/after_payment.json';
+
 const brandFont = localFont({
   src: [
     {
@@ -120,8 +124,8 @@ export default function CartPage() {
   // Razorpay helper
   const loadRazorpayScript = () => {
     if (typeof window === 'undefined') return;
-    // @ts-ignore
-    if (window.Razorpay) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((window as any).Razorpay) return;
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
@@ -222,8 +226,8 @@ export default function CartPage() {
       // 3) Open Razorpay checkout inline
       // Suppress background activity pings briefly
       try { sessionStorage.setItem('suppress-activity', 'true'); } catch {}
-      // @ts-ignore
-      const RazorpayCtor = window.Razorpay;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const RazorpayCtor = (window as any).Razorpay;
       if (!RazorpayCtor) {
         console.log(
           `[PAY] Razorpay SDK missing at ${new Date().toISOString()} (+${Math.round(
@@ -237,7 +241,7 @@ export default function CartPage() {
         amount: payData.razorpayOrder.amount,
         currency: payData.razorpayOrder.currency,
         name: 'Aasta',
-        image: require('/public/logos/logo.png'), 
+        image: '/logos/logo.png', 
         description: `Payment for Order #${orderNumber}`,
         order_id: payData.razorpayOrder.id,
         handler: async (response: any) => {
@@ -906,7 +910,7 @@ export default function CartPage() {
             >
               <div className="mb-4 h-96 w-96">
                 <Lottie
-                  animationData={require('/public/lotties/payment_loading.json')}
+                  animationData={paymentLoadingAnimation}
                   loop={true}
                   autoplay={true}
                 />
@@ -929,7 +933,7 @@ export default function CartPage() {
             >
               <div className="mb-4 h-96 w-96">
                 <Lottie
-                  animationData={require('/public/lotties/after_payment.json')}
+                  animationData={afterPaymentAnimation}
                   loop={true}
                   autoplay={true}
                 />
