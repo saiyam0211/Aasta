@@ -21,10 +21,8 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+      - name: Install pnpm globally
+        run: npm install -g pnpm@8
 
       - name: Verify pnpm
         run: pnpm --version
@@ -49,10 +47,8 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+      - name: Install pnpm globally
+        run: npm install -g pnpm@8
 
       - name: Verify pnpm
         run: pnpm --version
@@ -77,10 +73,8 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+      - name: Install pnpm globally
+        run: npm install -g pnpm@8
 
       - name: Verify pnpm
         run: pnpm --version
@@ -112,10 +106,8 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+      - name: Install pnpm globally
+        run: npm install -g pnpm@8
 
       - name: Verify pnpm
         run: pnpm --version
