@@ -894,7 +894,7 @@ export default function HomePage() {
       for (const d of allDishes) {
         if (!uniqueMap.has(d.id)) uniqueMap.set(d.id, d);
       }
-      let unique = Array.from(uniqueMap.values());
+      const unique = Array.from(uniqueMap.values());
 
       // When preserving order (background refresh), do not reshuffle.
       if (!preserveOrder) {
