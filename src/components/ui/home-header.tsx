@@ -296,7 +296,7 @@ export function HomeHeader({
         <button
           type="button"
           onClick={onLocationClick}
-          className="flex items-center gap-2 rounded-full border border-[#d3fb6b] bg-[#002a01]/5 bg-white/30 px-3 py-2 backdrop-blur-sm"
+          className="flex items-center gap-2 rounded-full border border-[#d3fb6b] bg-white/30 px-3 py-2 backdrop-blur-sm"
         >
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d3fb6b]/50 bg-white/20 backdrop-blur-sm">
             <MapPin className="h-5 w-5 text-[#002a01]" />
@@ -333,7 +333,10 @@ export function HomeHeader({
             onClick={onProfileClick}
             className="flex h-12 w-12 items-center justify-center rounded-full border border-[#d3fb6b] bg-white/50 backdrop-blur-sm transition-colors"
           >
-            <CircleUser className="h-7 w-7 text-black font-normal" strokeWidth={1.8} />
+            <CircleUser
+              className="h-7 w-7 font-normal text-black"
+              strokeWidth={1.8}
+            />
           </button>
         </div>
       </div>
@@ -471,7 +474,7 @@ export function HomeHeader({
                           key={m.id}
                           type="button"
                           className={cn(
-                            'w-full text-left flex items-center gap-3 rounded-lg p-2 hover:bg-gray-50',
+                            'flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-gray-50',
                             isActive && 'bg-gray-100'
                           )}
                           onMouseEnter={() => setActiveIndex(index)}
@@ -538,11 +541,14 @@ export function HomeHeader({
         </div>
         {/* Veg mode toggle */}
         <div className="flex flex-col items-center gap-2 rounded-3xl">
-          <div className=" flex flex-col space-y-0">
-            <span className="text-center text-md font-black text-[#002a01]">
+          <div className="flex flex-col space-y-0">
+            <span className="text-md text-center font-black text-[#002a01]">
               VEG
             </span>
-            <span className="text-xs -mt-1 font-black text-[#002a01]"> MODE</span>
+            <span className="-mt-1 text-xs font-black text-[#002a01]">
+              {' '}
+              MODE
+            </span>
           </div>
           <label className="switch">
             <input
@@ -633,7 +639,7 @@ export function HomeHeader({
       {!isSearchMode && (
         <div className="mt-10 mb-4">
           <h1
-            className={`${fredoka.className} text-center text-[34px] leading-8 font-extrabold tracking-tight text-[#002a01]`}
+            className={`font-dela text-center text-3xl leading-8 font-extrabold tracking-tight text-[#002a01]`}
             style={{ letterSpacing: '0.02em' }}
           >
             Foodie, it’s your turn to <br />

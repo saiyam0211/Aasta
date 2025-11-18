@@ -47,10 +47,15 @@ const brandFont = localFont({
 export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { latitude, longitude, locationName, locationId, setLocation } = useLocationStore();
+  const { latitude, longitude, locationName, locationId, setLocation } =
+    useLocationStore();
   const { cart, addItem } = useCartStore();
   const { vegOnly, onVegModeToggle } = useVegMode();
-  const { getCachedData, setCachedData, invalidateCache: invalidateAppCache } = useAppCache();
+  const {
+    getCachedData,
+    setCachedData,
+    invalidateCache: invalidateAppCache,
+  } = useAppCache();
   const {
     setRestaurants: setCachedRestaurants,
     setDishes: setCachedDishes,
@@ -90,13 +95,18 @@ export default function HomePage() {
   // Real-time: backend update tag to trigger refreshes
   const [updateEtag, setUpdateEtag] = useState<string>('');
   // Nearby non-featured dishes (within 5km), split into three sections with no repeats
-  const [nearbyDishesSections, setNearbyDishesSections] = useState<Dish[][]>([[], [], []]);
+  const [nearbyDishesSections, setNearbyDishesSections] = useState<Dish[][]>([
+    [],
+    [],
+    [],
+  ]);
   const [nearbyDishesLoading, setNearbyDishesLoading] = useState(true); // Start with loading
   // Smooth veg-toggle UX (quick local filter + subtle animation)
   const [vegToggleAnimating, setVegToggleAnimating] = useState(false);
   // const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const [isRelocating, setIsRelocating] = useState(false);
-  const [showLocationChangeLoader, setShowLocationChangeLoader] = useState(false);
+  const [showLocationChangeLoader, setShowLocationChangeLoader] =
+    useState(false);
   const [showVegModeLoader, setShowVegModeLoader] = useState(false);
   const [isEnteringVegMode, setIsEnteringVegMode] = useState(true);
   // Initial app loading state - we'll use splash screen instead
@@ -104,7 +114,6 @@ export default function HomePage() {
   const [prevVegOnly, setPrevVegOnly] = useState(vegOnly);
   const [showLocationModal, setShowLocationModal] = useState(false);
   // Remove login notification logic from home page - it should be handled by auth system
-
 
   const cartItemCount =
     cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
@@ -125,7 +134,8 @@ export default function HomePage() {
   const loadHomeDataWithCache = useCallback(async () => {
     try {
       // Check if we already have data and it's recent (less than 5 minutes old)
-      const hasRecentData = popularDishes.length > 0 && popularRestaurants.length > 0;
+      const hasRecentData =
+        popularDishes.length > 0 && popularRestaurants.length > 0;
       if (hasRecentData) {
         console.log('📱 Using cached data, skipping API calls');
         setIsInitialLoading(false);
@@ -133,13 +143,22 @@ export default function HomePage() {
       }
 
       // Load all data in parallel using cache
-      const [restaurants, dishes, hacks, nearbyDishes, recentOrders] = await Promise.all([
-        getCachedData('popular_restaurants', () => loadPopularContentData(), vegOnly),
-        getCachedData('popular_dishes', () => loadPopularDishesData(), vegOnly),
-        getCachedData('hacks_of_day', () => loadHacksOfTheDayData(), vegOnly),
-        getCachedData('nearby_dishes', () => loadNearbyDishesData(), vegOnly),
-        getCachedData('recent_orders', () => loadRecentOrdersData(), vegOnly)
-      ]);
+      const [restaurants, dishes, hacks, nearbyDishes, recentOrders] =
+        await Promise.all([
+          getCachedData(
+            'popular_restaurants',
+            () => loadPopularContentData(),
+            vegOnly
+          ),
+          getCachedData(
+            'popular_dishes',
+            () => loadPopularDishesData(),
+            vegOnly
+          ),
+          getCachedData('hacks_of_day', () => loadHacksOfTheDayData(), vegOnly),
+          getCachedData('nearby_dishes', () => loadNearbyDishesData(), vegOnly),
+          getCachedData('recent_orders', () => loadRecentOrdersData(), vegOnly),
+        ]);
 
       // Set data immediately for instant UI
       setPopularRestaurants(restaurants);
@@ -159,7 +178,6 @@ export default function HomePage() {
       await hideSplashWhenReady();
 
       // Welcome notification trigger moved to separate useEffect
-
     } catch (error) {
       console.error('❌ Error loading home data:', error);
       // Fallback to normal loading
@@ -167,21 +185,38 @@ export default function HomePage() {
       loadHacksOfTheDay();
       loadNearbyNonFeaturedDishes();
       loadRecentlyOrdered();
-      
+
       // Hide splash screen even on error
       await hideSplashWhenReady();
     }
-  }, [locationId, vegOnly, getCachedData, setPopularRestaurants, setPopularDishes, setHacksOfTheDay, setNearbyDishesSections, setRecentDishes, setPopularLoading, setHacksLoading, setNearbyDishesLoading, setRecentLoading]);
+  }, [
+    locationId,
+    vegOnly,
+    getCachedData,
+    setPopularRestaurants,
+    setPopularDishes,
+    setHacksOfTheDay,
+    setNearbyDishesSections,
+    setRecentDishes,
+    setPopularLoading,
+    setHacksLoading,
+    setNearbyDishesLoading,
+    setRecentLoading,
+  ]);
 
   // Individual data loading functions for cache
   const loadPopularContentData = async () => {
-    const response = await fetch(`/api/restaurants/by-location?locationId=${locationId}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`);
+    const response = await fetch(
+      `/api/restaurants/by-location?locationId=${locationId}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`
+    );
     const data = await response.json();
     return data.data || [];
   };
 
   const loadPopularDishesData = async () => {
-    const response = await fetch(`/api/restaurants/by-location?locationId=${locationId}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`);
+    const response = await fetch(
+      `/api/restaurants/by-location?locationId=${locationId}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`
+    );
     const data = await response.json();
     const restaurants = data.data || [];
     return restaurants.flatMap((r: any) =>
@@ -197,19 +232,22 @@ export default function HomePage() {
         stockLeft: item.stockLeft,
         soldOut: item.soldOut === true || item.stockLeft === null,
         preparationTime: item.preparationTime,
-        description: item.description
+        description: item.description,
       }))
     );
   };
 
   const loadHacksOfTheDayData = async () => {
-    const response = await fetch(`/api/restaurants/by-location?locationId=${locationId}${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`);
+    const response = await fetch(
+      `/api/restaurants/by-location?locationId=${locationId}${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`
+    );
     const data = await response.json();
     const restaurants = data.data || [];
     const hacks: any[] = [];
     restaurants.forEach((r: any) => {
       (r.hackItems || []).forEach((item: any) => {
-        const isVeg = Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg');
+        const isVeg =
+          Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg');
         if (vegOnly && !isVeg) return;
         hacks.push({
           id: item.id,
@@ -223,7 +261,7 @@ export default function HomePage() {
           stockLeft: item.stockLeft,
           soldOut: item.soldOut === true || item.stockLeft === null,
           preparationTime: item.preparationTime,
-          description: item.description
+          description: item.description,
         });
       });
     });
@@ -231,13 +269,16 @@ export default function HomePage() {
   };
 
   const loadNearbyDishesData = async () => {
-    const response = await fetch(`/api/restaurants/by-location?locationId=${locationId}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`);
+    const response = await fetch(
+      `/api/restaurants/by-location?locationId=${locationId}&limit=12${vegOnly ? '&veg=1' : ''}&_=${Date.now()}`
+    );
     const data = await response.json();
     const restaurants = data.data || [];
     const allDishes: any[] = [];
     restaurants.forEach((r: any) => {
       (r.nonFeaturedItems || []).forEach((item: any) => {
-        const isVeg = Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg');
+        const isVeg =
+          Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg');
         if (vegOnly && !isVeg) return;
         allDishes.push({
           id: item.id,
@@ -251,23 +292,25 @@ export default function HomePage() {
           stockLeft: item.stockLeft,
           soldOut: item.soldOut === true || item.stockLeft === null,
           preparationTime: item.preparationTime,
-          description: item.description
+          description: item.description,
         });
       });
     });
-    
+
     // Split into 3 sections
     const shuffled = allDishes.sort(() => Math.random() - 0.5);
     const sectionSize = Math.ceil(shuffled.length / 3);
     return [
       shuffled.slice(0, sectionSize),
       shuffled.slice(sectionSize, sectionSize * 2),
-      shuffled.slice(sectionSize * 2)
+      shuffled.slice(sectionSize * 2),
     ];
   };
 
   const loadRecentOrdersData = async () => {
-    const response = await fetch('/api/orders?limit=10&paymentStatus=COMPLETED');
+    const response = await fetch(
+      '/api/orders?limit=10&paymentStatus=COMPLETED'
+    );
     const data = await response.json();
     return (data.data?.orders || []).slice(0, 4).map((order: any) => ({
       id: order.id,
@@ -276,7 +319,7 @@ export default function HomePage() {
       price: order.totalAmount,
       restaurant: order.restaurant?.name || 'Restaurant',
       restaurantId: order.restaurantId,
-      orderNumber: order.orderNumber
+      orderNumber: order.orderNumber,
     }));
   };
 
@@ -304,7 +347,7 @@ export default function HomePage() {
         dishes: [],
         hacks: [],
         nearbyDishes: [],
-        recentOrders: []
+        recentOrders: [],
       };
 
       // Process each result
@@ -324,7 +367,7 @@ export default function HomePage() {
                   distanceKm: r.distance,
                   minimumOrderAmount: r.minimumOrderAmount,
                   isOpen: r.isOpen,
-                  featuredItems: r.featuredItems || []
+                  featuredItems: r.featuredItems || [],
                 }));
 
                 // Extract featured dishes
@@ -341,7 +384,7 @@ export default function HomePage() {
                     stockLeft: item.stockLeft,
                     soldOut: item.soldOut === true || item.stockLeft === null,
                     preparationTime: item.preparationTime,
-                    description: item.description
+                    description: item.description,
                   }))
                 );
               }
@@ -352,7 +395,9 @@ export default function HomePage() {
                 const hacks: any[] = [];
                 result.data.forEach((r: any) => {
                   (r.hackItems || []).forEach((item: any) => {
-                    const isVeg = Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg');
+                    const isVeg =
+                      Array.isArray(item.dietaryTags) &&
+                      item.dietaryTags.includes('Veg');
                     if (vegOnly && !isVeg) return;
 
                     hacks.push({
@@ -365,7 +410,7 @@ export default function HomePage() {
                       restaurantId: r.id,
                       dietaryTags: item.dietaryTags || [],
                       stockLeft: item.stockLeft,
-                      soldOut: item.soldOut === true
+                      soldOut: item.soldOut === true,
                     });
                   });
                 });
@@ -378,7 +423,9 @@ export default function HomePage() {
                 const allDishes: any[] = [];
                 result.data.forEach((r: any) => {
                   (r.nonFeaturedItems || []).forEach((item: any) => {
-                    const isVeg = Array.isArray(item.dietaryTags) && item.dietaryTags.includes('Veg');
+                    const isVeg =
+                      Array.isArray(item.dietaryTags) &&
+                      item.dietaryTags.includes('Veg');
                     if (vegOnly && !isVeg) return;
 
                     allDishes.push({
@@ -391,7 +438,7 @@ export default function HomePage() {
                       restaurantId: r.id,
                       dietaryTags: item.dietaryTags || [],
                       stockLeft: item.stockLeft,
-                      soldOut: item.soldOut === true
+                      soldOut: item.soldOut === true,
                     });
                   });
                 });
@@ -402,22 +449,25 @@ export default function HomePage() {
                 processedData.nearbyDishes = [
                   shuffled.slice(0, sectionSize),
                   shuffled.slice(sectionSize, sectionSize * 2),
-                  shuffled.slice(sectionSize * 2)
+                  shuffled.slice(sectionSize * 2),
                 ];
               }
               break;
 
             case 'recent':
               if (result.data?.orders) {
-                processedData.recentOrders = result.data.orders.slice(0, 4).map((order: any) => ({
-                  id: order.id,
-                  name: order.items?.[0]?.name || 'Order',
-                  image: order.items?.[0]?.image || '/images/dish-placeholder.svg',
-                  price: order.totalAmount,
-                  restaurant: order.restaurant?.name || 'Restaurant',
-                  restaurantId: order.restaurantId,
-                  orderNumber: order.orderNumber
-                }));
+                processedData.recentOrders = result.data.orders
+                  .slice(0, 4)
+                  .map((order: any) => ({
+                    id: order.id,
+                    name: order.items?.[0]?.name || 'Order',
+                    image:
+                      order.items?.[0]?.image || '/images/dish-placeholder.svg',
+                    price: order.totalAmount,
+                    restaurant: order.restaurant?.name || 'Restaurant',
+                    restaurantId: order.restaurantId,
+                    orderNumber: order.orderNumber,
+                  }));
               }
               break;
           }
@@ -506,7 +556,7 @@ export default function HomePage() {
             loadHomeDataWithCache();
           }
         }
-      } catch { }
+      } catch {}
       if (!stop) setTimeout(poll, 10000); // Reduce to 10s polling
     };
     poll();
@@ -523,7 +573,7 @@ export default function HomePage() {
       vegOnly,
       prevVegOnly,
       locationId,
-      shouldAnimate: locationId && prevVegOnly !== vegOnly
+      shouldAnimate: locationId && prevVegOnly !== vegOnly,
     });
 
     // Only show animation if veg mode actually changed (not on initial page load)
@@ -533,8 +583,8 @@ export default function HomePage() {
       // Show veg mode loader
       setShowVegModeLoader(true);
       setIsEnteringVegMode(vegOnly);
-    
-    // Clear cache and reload when veg mode changes
+
+      // Clear cache and reload when veg mode changes
       const refreshVegData = async () => {
         try {
           // Clear cache for current location (using dummy coordinates since we use locationId-based caching)
@@ -545,7 +595,7 @@ export default function HomePage() {
             loadPopularContent(true),
             loadHacksOfTheDay(),
             loadNearbyNonFeaturedDishes(),
-            loadRecentlyOrdered()
+            loadRecentlyOrdered(),
           ]);
 
           // Hide loader after data is loaded
@@ -574,7 +624,7 @@ export default function HomePage() {
         setHacksOfTheDay(cached.data);
         setHacksLoading(false);
       } else {
-      setHacksLoading(true);
+        setHacksLoading(true);
       }
       const res = await fetch(
         `/api/restaurants/by-location?locationId=${locationId}${vegOnly ? '&veg=1' : ''}`
@@ -585,7 +635,9 @@ export default function HomePage() {
       }
       const payload = await res.json();
       const data = Array.isArray(payload?.data) ? payload.data : [];
-      const allowedRestaurantIds = new Set((data as any[]).map((r: any) => r.id));
+      const allowedRestaurantIds = new Set(
+        (data as any[]).map((r: any) => r.id)
+      );
       const hacks: any[] = [];
       for (const r of data) {
         const arr = Array.isArray(r.hackItems) ? r.hackItems : [];
@@ -593,7 +645,9 @@ export default function HomePage() {
           const tags = Array.isArray(it.dietaryTags) ? it.dietaryTags : [];
           const lower = tags.map((t: any) => String(t).toLowerCase());
           const hasNonVeg = lower.some((t: any) => /(non[-\s]?veg)/i.test(t));
-          const hasVeg = lower.some((t: any) => /(\bveg\b|vegetarian|vegan)/i.test(t));
+          const hasVeg = lower.some((t: any) =>
+            /(\bveg\b|vegetarian|vegan)/i.test(t)
+          );
           const isVeg = !hasNonVeg && hasVeg;
           hacks.push({
             id: it.id,
@@ -615,15 +669,17 @@ export default function HomePage() {
         }
       }
       // Defensive: ensure hacks belong to allowed restaurants and limit to 2 items
-      const filteredHacks = hacks.filter((h) => allowedRestaurantIds.has(h.restaurantId));
-      
+      const filteredHacks = hacks.filter((h) =>
+        allowedRestaurantIds.has(h.restaurantId)
+      );
+
       // Sort to ensure veg items come first, then non-veg
       const sortedHacks = filteredHacks.sort((a, b) => {
         if (a.isVegetarian && !b.isVegetarian) return -1;
         if (!a.isVegetarian && b.isVegetarian) return 1;
         return 0;
       });
-      
+
       // Limit to maximum 2 items (1 veg + 1 non-veg)
       const finalList = sortedHacks.slice(0, 2);
       setHacksOfTheDay(finalList);
@@ -647,9 +703,11 @@ export default function HomePage() {
         setRecentDishes(cached.data.slice(0, 4));
         setRecentLoading(false);
       } else {
-      setRecentLoading(true);
+        setRecentLoading(true);
       }
-      const res = await fetch(`/api/orders?limit=4&paymentStatus=COMPLETED&_=${Date.now()}`);
+      const res = await fetch(
+        `/api/orders?limit=4&paymentStatus=COMPLETED&_=${Date.now()}`
+      );
       if (!res.ok) {
         setRecentDishes([]);
         return;
@@ -659,18 +717,27 @@ export default function HomePage() {
       // Flatten items with createdAt ordering
       const items: Dish[] = [];
       for (const order of orders) {
-        const createdAt = order.createdAt ? Date.parse(order.createdAt) : Date.now();
-        for (const it of (order.orderItems || [])) {
-          const id = it?.menuItem?.id || `${order.id}-${it?.menuItem?.name || 'item'}`;
+        const createdAt = order.createdAt
+          ? Date.parse(order.createdAt)
+          : Date.now();
+        for (const it of order.orderItems || []) {
+          const id =
+            it?.menuItem?.id || `${order.id}-${it?.menuItem?.name || 'item'}`;
           const name = it?.menuItem?.name || 'Item';
-          const image = it?.menuItem?.imageUrl || '/images/dish-placeholder.svg';
+          const image =
+            it?.menuItem?.imageUrl || '/images/dish-placeholder.svg';
           const price = it?.unitPrice || it?.totalPrice || 0;
-          const originalPrice = it?.originalUnitPrice || it?.totalOriginalPrice || undefined;
+          const originalPrice =
+            it?.originalUnitPrice || it?.totalOriginalPrice || undefined;
           const isVegetarian = Array.isArray(it?.menuItem?.dietaryTags)
             ? it.menuItem.dietaryTags.includes('Veg')
             : false;
-          const rLat = (order?.restaurant as any)?.latitude as number | undefined;
-          const rLng = (order?.restaurant as any)?.longitude as number | undefined;
+          const rLat = (order?.restaurant as any)?.latitude as
+            | number
+            | undefined;
+          const rLng = (order?.restaurant as any)?.longitude as
+            | number
+            | undefined;
           let distText: string | undefined = undefined;
           if (
             typeof latitude === 'number' &&
@@ -685,7 +752,8 @@ export default function HomePage() {
               Math.sin(dLat / 2) * Math.sin(dLat / 2) +
               Math.cos((latitude * Math.PI) / 180) *
                 Math.cos((rLat * Math.PI) / 180) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                Math.sin(dLon / 2) *
+                Math.sin(dLon / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             const km = R * c;
             distText = `${km.toFixed(1)} km`;
@@ -706,11 +774,15 @@ export default function HomePage() {
             description: it?.menuItem?.description || undefined,
             dietaryTags: it?.menuItem?.dietaryTags || [],
             restaurantId: it?.menuItem?.restaurantId,
-            stockLeft: typeof it?.menuItem?.stockLeft === 'number' ? it?.menuItem?.stockLeft : null,
+            stockLeft:
+              typeof it?.menuItem?.stockLeft === 'number'
+                ? it?.menuItem?.stockLeft
+                : null,
             soldOut:
               it?.menuItem?.available === false ||
-              (typeof it?.menuItem?.stockLeft === 'number' && it?.menuItem?.stockLeft <= 0) ||
-              (it?.menuItem?.stockLeft === null),
+              (typeof it?.menuItem?.stockLeft === 'number' &&
+                it?.menuItem?.stockLeft <= 0) ||
+              it?.menuItem?.stockLeft === null,
             distanceText: distText,
             // Keep createdAt implicitly via sort stage
           } as Dish & { _ts?: number });
@@ -739,7 +811,9 @@ export default function HomePage() {
   };
 
   // Load non-featured menu items from restaurants in selected location and split into 3 unique sections
-  const loadNearbyNonFeaturedDishes = async (preserveOrder: boolean = false) => {
+  const loadNearbyNonFeaturedDishes = async (
+    preserveOrder: boolean = false
+  ) => {
     if (!locationId) return;
     try {
       const cacheKey = `nearby_dishes_v1_${vegOnly ? 'veg' : 'all'}_${locationId}`;
@@ -748,7 +822,7 @@ export default function HomePage() {
         setNearbyDishesSections(cached.data);
         setNearbyDishesLoading(false);
       } else {
-      setNearbyDishesLoading(true);
+        setNearbyDishesLoading(true);
       }
       // Get restaurants by location (composite response includes item buckets)
       const restaurantsRes = await fetch(
@@ -849,7 +923,10 @@ export default function HomePage() {
       // shuffle keys
       for (let i = restaurantKeys.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [restaurantKeys[i], restaurantKeys[j]] = [restaurantKeys[j], restaurantKeys[i]];
+        [restaurantKeys[i], restaurantKeys[j]] = [
+          restaurantKeys[j],
+          restaurantKeys[i],
+        ];
       }
       const ordered: Dish[] = [];
       let lastKey: string | null = null;
@@ -870,7 +947,9 @@ export default function HomePage() {
         }
         if (!placed) {
           // all remaining buckets have the same key as last; pick any
-          const nonEmpty = restaurantKeys.find(k => (byRestaurant.get(k) || []).length > 0);
+          const nonEmpty = restaurantKeys.find(
+            (k) => (byRestaurant.get(k) || []).length > 0
+          );
           if (!nonEmpty) break;
           const bucket = byRestaurant.get(nonEmpty)!;
           ordered.push(bucket.shift()!);
@@ -890,7 +969,9 @@ export default function HomePage() {
       }
 
       // Distribute into three sections in round-robin to avoid duplication across lines
-      const s1: Dish[] = [], s2: Dish[] = [], s3: Dish[] = [];
+      const s1: Dish[] = [],
+        s2: Dish[] = [],
+        s3: Dish[] = [];
       ordered.forEach((d, i) => {
         const slot = i % 3;
         if (slot === 0) s1.push(d);
@@ -984,7 +1065,9 @@ export default function HomePage() {
 
       // Featured dishes come directly from the location-based API response
       if (restaurantsData.length > 0) {
-        const allowedRestaurantIds = new Set(restaurantsData.map((r: any) => r.id));
+        const allowedRestaurantIds = new Set(
+          restaurantsData.map((r: any) => r.id)
+        );
         dishesData = restaurantsData.flatMap((r: any) => {
           const items = Array.isArray(r.featuredItems) ? r.featuredItems : [];
           return items.map((it: any) => ({
@@ -1000,11 +1083,13 @@ export default function HomePage() {
             soldOut: it.soldOut === true,
             distanceText: undefined, // No distance for location-based filtering
             preparationTime: it.preparationTime,
-            description: it.description
+            description: it.description,
           }));
         });
         // Popular Foods should show FEATURED items only
-        dishesData = dishesData.filter((d: any) => allowedRestaurantIds.has(d.restaurantId));
+        dishesData = dishesData.filter((d: any) =>
+          allowedRestaurantIds.has(d.restaurantId)
+        );
         // Always update dishes in state
         setPopularDishes(dishesData);
       } else {
@@ -1054,9 +1139,7 @@ export default function HomePage() {
       return;
     }
     if (!locationId) {
-      toast.error(
-        'Location is required for search. Please select a location.'
-      );
+      toast.error('Location is required for search. Please select a location.');
       return;
     }
     try {
@@ -1111,12 +1194,12 @@ export default function HomePage() {
             const isVeg = Array.isArray(it.dietaryTags)
               ? it.dietaryTags.includes('Veg')
               : false;
-            
+
             // Skip non-vegetarian items when veg mode is on
             if (vegOnly && !isVeg) {
               return;
             }
-            
+
             const dish: Dish = {
               id: it.id,
               name: it.name,
@@ -1129,10 +1212,12 @@ export default function HomePage() {
               category: it.category || '',
               isVegetarian: isVeg,
               spiceLevel: (it.spiceLevel as any) || 'mild',
-              description: it.description || `Delicious ${it.name}, perfect for snacking or as a side dish.`,
+              description:
+                it.description ||
+                `Delicious ${it.name}, perfect for snacking or as a side dish.`,
               dietaryTags: it.dietaryTags || [],
               restaurantId: r.id,
-            stockLeft: typeof it.stockLeft === 'number' ? it.stockLeft : null,
+              stockLeft: typeof it.stockLeft === 'number' ? it.stockLeft : null,
             };
             items.push(dish);
           }
@@ -1214,7 +1299,9 @@ export default function HomePage() {
 
   // Local fast-filtered views for instant veg toggle without waiting for network
   const isVegDish = (d: Dish) =>
-    Array.isArray(d.dietaryTags) ? d.dietaryTags.includes('Veg') : !!d.isVegetarian;
+    Array.isArray(d.dietaryTags)
+      ? d.dietaryTags.includes('Veg')
+      : !!d.isVegetarian;
 
   const visiblePopularDishes = useMemo(() => {
     if (!vegOnly) return popularDishes;
@@ -1228,12 +1315,15 @@ export default function HomePage() {
 
   // Show location modal only if no location is set AND user just signed up
   // Check if this is the first time after signup
-  const [showLocationModalAfterSignup, setShowLocationModalAfterSignup] = useState(false);
+  const [showLocationModalAfterSignup, setShowLocationModalAfterSignup] =
+    useState(false);
 
   useEffect(() => {
     if (status === 'authenticated' && !locationId) {
       // Check if user just signed up (you can add more sophisticated logic here)
-      const hasSeenLocationModal = localStorage.getItem('aasta_location_modal_seen');
+      const hasSeenLocationModal = localStorage.getItem(
+        'aasta_location_modal_seen'
+      );
       if (!hasSeenLocationModal) {
         setShowLocationModalAfterSignup(true);
         localStorage.setItem('aasta_location_modal_seen', 'true');
@@ -1247,16 +1337,15 @@ export default function HomePage() {
   }
 
   if (showLocationModalAfterSignup) {
-  return (
-    <div className="min-h-screen bg-[#d3fb6b]">
+    return (
+      <div className="min-h-screen bg-[#d3fb6b]">
         <LocationOnboarding
           isModal={true}
           onClose={() => setShowLocationModalAfterSignup(false)}
         />
-          </div>
+      </div>
     );
   }
-
 
   return (
     <div className="min-h-screen bg-[#d3fb6b]">
@@ -1325,7 +1414,6 @@ export default function HomePage() {
         resetSignal={headerResetSignal}
       />
 
-
       {/* Removed AddressSheet - we only use location modal */}
 
       {/* Curved Marquee for Offers
@@ -1356,7 +1444,7 @@ export default function HomePage() {
       )} */}
 
       {/* Inline Search Results or Popular Sections */}
-      <div className="rounded-t-[70px] bg-white px-4 pt-8 pb-28 shadow-[inset_0_12px_18px_-10px_rgba(0,0,0,0.20)]">
+      <div className="rounded-t-[75px] bg-white px-6 pt-8 pb-28 shadow-[inset_0_12px_18px_-10px_rgba(0,0,0,0.20)]">
         {searchQuery ? (
           <>
             {/* Dishes */}
@@ -1489,7 +1577,7 @@ export default function HomePage() {
         ) : (
           <>
             {/* Popular foods */}
-            <div className="relative min-h-screen  w-full bg-transparent">
+            <div className="relative min-h-screen w-full bg-transparent">
               {/* Emerald Glow Background */}
               {/* <div
                 className="absolute inset-0"
@@ -1501,18 +1589,18 @@ export default function HomePage() {
                 }}
               /> */}
 
-              <div className="relative mb-3 flex items-center justify-end">
+              <div className="relative mb-4 flex justify-end">
                 <h2
-                  className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
-                  style={{ letterSpacing: '-0.08em' }}
+                  className={`font-dela relative z-20 -mt-14 text-2xl font-semibold`}
+                  // style={{ letterSpacing: '-0.08em' }}
                 >
                   Popular foods
                   <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
                   {/* Background image */}
-                  <span
-                    className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
+                  <div
+                    className="absolute top-8 right-5 -z-10 h-24 w-24 bg-cover bg-center bg-no-repeat"
                     style={{ backgroundImage: "url('/highlighter.png')" }}
-                  />
+                  ></div>
                 </h2>
               </div>
 
@@ -1542,7 +1630,8 @@ export default function HomePage() {
                         }
                       />
                     ))
-                  : !popularLoading && popularDishes.length === 0 && (
+                  : !popularLoading &&
+                    popularDishes.length === 0 && (
                       <div className="col-span-2 flex flex-col items-center justify-center py-12 text-center">
                         <div className="mb-4 rounded-full bg-gray-100 p-4">
                           <svg
@@ -1577,51 +1666,51 @@ export default function HomePage() {
                         </button>
                       </div>
                     )}
-            </div>
-          </div>
-
-          {/* Recently ordered - only show if there are recent dishes */}
-          {recentDishes.length > 0 && (
-            <div className="relative mt-10">
-              <div className="relative mb-3 flex items-center justify-end">
-                <h2
-                  className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
-                  style={{ letterSpacing: '-0.08em' }}
-                >
-                  Recently ordered
-                  <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
-                  <span
-                    className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
-                    style={{ backgroundImage: "url('/highlighter.png')" }}
-                  />
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {recentDishes.slice(0, 4).map((dish, idx) => (
-                  <HomeProductCard
-                    key={`recent-${dish.id}-${idx}`}
-                    dish={dish}
-                    onAdd={handleAdd}
-                    onClick={openProduct}
-                  />
-                ))}
               </div>
             </div>
-          )}
 
-          {/* Show loading state only when loading and no dishes yet */}
-          {recentLoading && recentDishes.length === 0 && (
-            <div className="relative mt-10">
-              <div className="grid grid-cols-2 gap-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-48 animate-pulse rounded-2xl bg-gray-100" />
-                ))}
+            {/* Recently ordered - only show if there are recent dishes */}
+            {recentDishes.length > 0 && (
+              <div className="relative mt-10">
+                <div className="relative mb-3 flex items-center justify-end">
+                  <h2 className="font-dela relative z-20 text-2xl font-semibold">
+                    Recently ordered
+                    <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
+                    <span
+                      className="absolute top-8 right-5 -z-10 h-24 w-32 bg-cover bg-center bg-no-repeat"
+                      style={{ backgroundImage: "url('/highlighter.png')" }}
+                    />
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {recentDishes.slice(0, 4).map((dish, idx) => (
+                    <HomeProductCard
+                      key={`recent-${dish.id}-${idx}`}
+                      dish={dish}
+                      onAdd={handleAdd}
+                      onClick={openProduct}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Hack of the Day Section */}
+            {/* Show loading state only when loading and no dishes yet */}
+            {recentLoading && recentDishes.length === 0 && (
+              <div className="relative mt-10">
+                <div className="grid grid-cols-2 gap-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-48 animate-pulse rounded-2xl bg-gray-100"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Hack of the Day Section */}
             {hacksOfTheDay.length > 0 && (
               <div className="mt-8">
                 {/* <div className="-mb-10 relative flex items-center justify-end">
@@ -1642,7 +1731,7 @@ export default function HomePage() {
                     {Array.from({ length: 2 }).map((_, i) => (
                       <div
                         key={i}
-                        className="min-w-[320px] h-64 animate-pulse rounded-3xl bg-gray-800/20 flex-shrink-0"
+                        className="h-64 min-w-[320px] flex-shrink-0 animate-pulse rounded-3xl bg-gray-800/20"
                       />
                     ))}
                   </div>
@@ -1656,56 +1745,67 @@ export default function HomePage() {
               </div>
             )}
 
-        {/* Nearby Products (Non-featured, within 5km) - three deduped vertical carousels */}
-        <div className="mt-6 space-y-6">
-          <div className="relative mb-3 flex items-center justify-end">
-            <h2
-              className={`${brandFont.className} font-brand relative z-20 text-[70px] font-semibold`}
-              style={{ letterSpacing: '-0.08em' }}
-            >
-              Nearby foods
-              <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
-              <span
-                className="absolute inset-0 -z-10 mt-7 ml-24 bg-contain bg-center bg-no-repeat"
-                style={{ backgroundImage: "url('/highlighter.png')" }}
-              />
-            </h2>
-          </div>
-           {nearbyDishesLoading && visibleNearbySections.flat().length === 0 && (
-            <div className="flex gap-8 overflow-x-auto pb-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="min-w-[192px] h-60 animate-pulse rounded-2xl bg-gray-100" />
-              ))}
-            </div>
-          )}
-           {visibleNearbySections.map((section, idx) => (
-            section.length > 0 ? (
-               <div key={idx} className={vegToggleAnimating ? "gap-8 transition-opacity duration-200 opacity-90" : "gap-8"}>
-                <HomeProductCardList
-                  dishes={section}
-                  onAdd={handleAdd}
-                  onClick={openProduct}
-                  showDistance
-                />
+            {/* Nearby Products (Non-featured, within 5km) - three deduped vertical carousels */}
+            <div className="mt-6 space-y-6">
+              <div className="relative mb-3 flex items-center justify-end">
+                <h2 className="font-dela relative z-20 text-2xl font-semibold">
+                  Nearby foods
+                  <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
+                  <span
+                    className="absolute top-8 right-5 -z-10 h-24 w-24 bg-cover bg-center bg-no-repeat"
+                    style={{ backgroundImage: "url('/highlighter.png')" }}
+                  />
+                </h2>
               </div>
-            ) : null
-          ))}
-        </div>
+              {nearbyDishesLoading &&
+                visibleNearbySections.flat().length === 0 && (
+                  <div className="flex gap-8 overflow-x-auto pb-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-60 min-w-[192px] animate-pulse rounded-2xl bg-gray-100"
+                      />
+                    ))}
+                  </div>
+                )}
+              {visibleNearbySections.map((section, idx) =>
+                section.length > 0 ? (
+                  <div
+                    key={idx}
+                    className={
+                      vegToggleAnimating
+                        ? 'gap-8 opacity-90 transition-opacity duration-200'
+                        : 'gap-8'
+                    }
+                  >
+                    <HomeProductCardList
+                      dishes={section}
+                      onAdd={handleAdd}
+                      onClick={openProduct}
+                      showDistance
+                    />
+                  </div>
+                ) : null
+              )}
+            </div>
 
             {/* Restaurants list */}
             <div className="space-y-1 pt-6">
-              <div className="flex items-center justify-end relative">
+              <div className="relative flex items-center justify-end">
                 {/* <span
                   className="pointer-events-none absolute -right-64 top-2 -translate-x-1/2 z-0 mt-8 ml-24 h-[80px] w-[290px] bg-contain bg-center bg-no-repeat"
                   style={{ backgroundImage: "url('/highlighter.png')" }}
                   aria-hidden="true"
                 /> */}
                 <h2
-                  className={`${brandFont.className} font-brand text-[70px] font-semibold relative z-10`}
-                  style={{ letterSpacing: '-0.08em' }}
+                  className="font-dela relative z-10 text-2xl font-semibold"
                 >
-                  Restaurants
+                  Restaurants for you
                   <span className="ml-1 text-[80px] text-[#fd6923]">.</span>
+                  <span
+                    className="absolute top-8 right-5 -z-10 h-24 w-24 bg-cover bg-center bg-no-repeat"
+                    style={{ backgroundImage: "url('/highlighter.png')" }}
+                  />
                 </h2>
               </div>
 
@@ -1721,10 +1821,10 @@ export default function HomePage() {
               ) : popularRestaurants.length > 0 ? (
                 popularRestaurants.map((r) => (
                   <div key={r.id} className="mb-8">
-                  <RestaurantCard
-                    restaurant={r}
-                    href={`/restaurants/${r.id}`}
-                  />
+                    <RestaurantCard
+                      restaurant={r}
+                      href={`/restaurants/${r.id}`}
+                    />
                   </div>
                 ))
               ) : (

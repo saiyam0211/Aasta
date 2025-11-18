@@ -231,7 +231,7 @@ export function ProductBottomSheet({
                 </div>
               ) : (
                 <button
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#fd6923] text-base font-semibold text-white shadow-sm"
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent-leaf-green text-base font-semibold text-black shadow-sm"
                   onClick={() => {
                     if (dish) {
                       hapticAddToCart();
@@ -241,7 +241,7 @@ export function ProductBottomSheet({
                 >
                   Add item
                   {typeof totalOriginal === 'number' && (
-                    <span className="ml-1 text-white/80 line-through">
+                    <span className="ml-1 text-black/75 line-through">
                       ₹{totalOriginal}
                     </span>
                   )}
