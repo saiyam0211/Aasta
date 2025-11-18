@@ -33,7 +33,7 @@ export function FoodHacksPromo({ className = '' }: FoodHacksPromoProps) {
         {/* Center content */}
         <div className="ml-4 flex-1 pb-8">
           <h3
-            className={`${fredoka.className} mt-5 mb-3 text-5xl font-bold text-gray-50`}
+            className="mt-5 mb-3 text-4xl font-bold font-dela text-gray-50"
           >
             #FoodHack
           </h3>
