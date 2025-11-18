@@ -127,7 +127,7 @@ export default function RestaurantDetailPage() {
   // ProductBottomSheet state
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
-  
+
   // Real-time: backend update tag to trigger refreshes
   const [updateEtag, setUpdateEtag] = useState<string>('');
   // Highlight from search suggestion
@@ -137,44 +137,44 @@ export default function RestaurantDetailPage() {
   const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  
+
   // Sample offers data
   const offers = [
     {
       id: 1,
-      title: "Flat ₹150 off",
-      subtitle: "USE DEALICIOUS | ABOVE ₹449",
-      icon: "%",
-      color: "orange"
+      title: 'Flat ₹150 off',
+      subtitle: 'USE DEALICIOUS | ABOVE ₹449',
+      icon: '%',
+      color: 'orange',
     },
     {
       id: 2,
-      title: "Free Delivery",
-      subtitle: "ON ORDERS ABOVE ₹199",
-      icon: "🚚",
-      color: "green"
+      title: 'Free Delivery',
+      subtitle: 'ON ORDERS ABOVE ₹199',
+      icon: '🚚',
+      color: 'green',
     },
     {
       id: 3,
-      title: "20% Cashback",
-      subtitle: "USE PAYTM | ABOVE ₹299",
-      icon: "💰",
-      color: "blue"
+      title: '20% Cashback',
+      subtitle: 'USE PAYTM | ABOVE ₹299',
+      icon: '💰',
+      color: 'blue',
     },
     {
       id: 4,
-      title: "Buy 1 Get 1",
-      subtitle: "ON SELECTED ITEMS",
-      icon: "🎁",
-      color: "purple"
+      title: 'Buy 1 Get 1',
+      subtitle: 'ON SELECTED ITEMS',
+      icon: '🎁',
+      color: 'purple',
     },
     {
       id: 5,
-      title: "Extra ₹50 off",
-      subtitle: "USE SAVE50 | ABOVE ₹399",
-      icon: "💸",
-      color: "red"
-    }
+      title: 'Extra ₹50 off',
+      subtitle: 'USE SAVE50 | ABOVE ₹399',
+      icon: '💸',
+      color: 'red',
+    },
   ];
 
   const fetchRestaurantData = async (isBackgroundRefresh = false) => {
@@ -183,9 +183,7 @@ export default function RestaurantDetailPage() {
         setIsLoading(true);
         setIsInitialLoad(true);
       }
-      const restaurantResponse = await fetch(
-        `/api/restaurants/${params?.id}`
-      );
+      const restaurantResponse = await fetch(`/api/restaurants/${params?.id}`);
       const restaurantData = await restaurantResponse.json();
       if (!restaurantResponse.ok || !restaurantData.success)
         throw new Error(restaurantData.error || 'Failed to fetch restaurant');
@@ -201,11 +199,10 @@ export default function RestaurantDetailPage() {
       setRestaurant(r);
 
       const menuItems: MenuItem[] = menuData.data || [];
-      
-      
+
       // Filter items based on veg mode
-      
-      const filteredItems = vegOnly 
+
+      const filteredItems = vegOnly
         ? menuItems.filter((item) => {
             const isVeg = Array.isArray(item.dietaryTags)
               ? item.dietaryTags.includes('Veg')
@@ -213,13 +210,17 @@ export default function RestaurantDetailPage() {
             return isVeg;
           })
         : menuItems;
-      
+
       setFeaturedItems(filteredItems.filter((m) => m.featured));
       setOtherItems(filteredItems.filter((m) => !m.featured));
 
       // If we arrived with a highlight query, open the product bottom sheet
-      if (!isBackgroundRefresh && (highlightId || searchParams?.get('highlight'))) {
-        const targetId = highlightId || (searchParams?.get('highlight') as string);
+      if (
+        !isBackgroundRefresh &&
+        (highlightId || searchParams?.get('highlight'))
+      ) {
+        const targetId =
+          highlightId || (searchParams?.get('highlight') as string);
         const all = filteredItems;
         const found = all.find((m) => m.id === targetId);
         if (found) {
@@ -339,7 +340,7 @@ export default function RestaurantDetailPage() {
 
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-    
+
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > 50;
     const isRightSwipe = distance < -50;
@@ -356,7 +357,11 @@ export default function RestaurantDetailPage() {
     if (!restaurant) return;
     const maxStock = (item as any)?.stockLeft;
     const currentQty = getItemQuantityInCart(item.id);
-    if (typeof maxStock === 'number' && maxStock >= 0 && currentQty + 1 > maxStock) {
+    if (
+      typeof maxStock === 'number' &&
+      maxStock >= 0 &&
+      currentQty + 1 > maxStock
+    ) {
       toast.error(`Only ${maxStock} left in stock`);
       return;
     }
@@ -395,8 +400,7 @@ export default function RestaurantDetailPage() {
 
   const openProduct = (item: MenuItem) => {
     if (!restaurant) return;
-    
-    
+
     // Determine veg/non-veg from tags
     const tags = (item.dietaryTags || []).map((t: string) => t.toLowerCase());
     const isNonVeg = tags.some((t) => /non\s?-?veg/.test(t));
@@ -416,15 +420,16 @@ export default function RestaurantDetailPage() {
       category: item.category,
       isVegetarian,
       spiceLevel: (item.spiceLevel as any) || 'mild',
-      description: item.description || `Delicious ${item.name}, perfect for snacking or as a side dish.`,
+      description:
+        item.description ||
+        `Delicious ${item.name}, perfect for snacking or as a side dish.`,
       dietaryTags: item.dietaryTags || [],
       distanceText: distanceText || undefined,
       distanceMeters: distanceText?.endsWith('km')
         ? Math.round(parseFloat(distanceText) * 1000)
         : undefined,
     };
-    
-    
+
     setSelectedDish(dish);
     setSheetOpen(true);
   };
@@ -471,42 +476,278 @@ export default function RestaurantDetailPage() {
     }
   };
 
-  // Show skeleton immediately on initial load or when loading
-  if (showSkeleton || isInitialLoad || isLoading) {
+  // Show skeleton for items only when loading
+  if (isInitialLoad || isLoading) {
     return (
       <CustomerLayout hideHeader hideFooter>
-        <div className="fixed inset-0 z-50 overflow-hidden bg-white px-4 py-6">
-          {/* Skeleton for header card */}
-          <div className="mb-4 rounded-[40px] bg-white">
-            <div className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="mb-2 h-6 w-48 animate-pulse rounded bg-gray-200" />
-                  <div className="flex gap-2">
-                    <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
-                    <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
-                    <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+        <div className="mx-auto max-w-3xl bg-[#002a01]">
+          <div className="px-4 py-6">
+            {/* Back button */}
+            <div className="mb-4 flex justify-between">
+              <Button
+                onClick={handleGoBack}
+                variant="ghost"
+                size="sm"
+                className="glass-liquid h-10 w-20 rounded-full bg-white/80 p-0 shadow-sm hover:bg-white"
+              >
+                <ArrowLeft className="h-5 w-5" style={{ color: '#002a01' }} />{' '}
+                Back
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="glass-liquid h-10 w-10 rounded-full transition-colors hover:bg-white/90"
+                onClick={handleShareRestaurant}
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Top header card with rating and offers */}
+            <Card className="shadow-b-sm glass-liquid z-1 mb-4 rounded-[40px] border-gray-100 bg-white">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    {/* Restaurant name and basic info */}
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1">
+                        <h1
+                          className={`font-dela text-[22px] font-extrabold tracking-tight sm:text-[25px]`}
+                        >
+                          {restaurant?.name || 'Restaurant Name'}
+                        </h1>
+                        <div className="mt-1 flex items-center gap-2 text-sm text-gray-600">
+                          <MapPin className="h-4 w-4" />{' '}
+                          {locationName || restaurant?.address || 'Location'}
+                          <span>|</span>
+                          <Clock className="h-4 w-4" />{' '}
+                          {restaurant?.averagePreparationTime
+                            ? `${restaurant.averagePreparationTime} mins`
+                            : '20 mins'}
+                          {distanceText && (
+                            <>
+                              <span>|</span>
+                              <span>{distanceText}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Rating section */}
+                      <div className="mt-2 flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-1 rounded-lg bg-green-600 px-2 py-1">
+                          <Star className="h-3 w-3 fill-white text-white" />
+                          <span className="text-xs font-semibold text-white">
+                            {restaurant?.rating
+                              ? restaurant.rating.toFixed(1)
+                              : '4.5'}
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-600">
+                          {restaurant?.reviewCount
+                            ? restaurant.reviewCount.toLocaleString()
+                            : '100'}{' '}
+                          ratings
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Offers section */}
+                    <div className="mt-4 rounded-xl bg-[#D2F86A] pl-2">
+                      <div className="flex items-center gap-3">
+                        {/* Offer carousel indicator - sliding window of 3 dots */}
+                        <div className="mt-3 flex flex-col items-center gap-1">
+                          {(() => {
+                            // Calculate which 3 dots to show based on current position
+                            let startIndex, endIndex;
+                            let shouldAnimate = false;
+
+                            if (currentOfferIndex === 0) {
+                              // First offer: show dots 1, 2, 3
+                              startIndex = 0;
+                              endIndex = 2;
+                              shouldAnimate = true; // Animate when at first position
+                            } else if (
+                              currentOfferIndex ===
+                              offers.length - 1
+                            ) {
+                              // Last offer: show dots 3, 4, 5 (last 3)
+                              startIndex = Math.max(0, offers.length - 3);
+                              endIndex = offers.length - 1;
+                              shouldAnimate = true; // Animate when at last position
+                            } else {
+                              // Middle offers: show current-1, current, current+1
+                              startIndex = Math.max(0, currentOfferIndex - 1);
+                              endIndex = Math.min(
+                                offers.length - 1,
+                                currentOfferIndex + 1
+                              );
+                              shouldAnimate = false; // No animation for middle positions
+                            }
+
+                            const dotsToShow = [];
+                            for (let i = startIndex; i <= endIndex; i++) {
+                              dotsToShow.push(i);
+                            }
+
+                            return dotsToShow.map((index) => {
+                              const isActive = index === currentOfferIndex;
+                              return (
+                                <div
+                                  key={index}
+                                  className={`h-2 w-2 rounded-full ${
+                                    shouldAnimate
+                                      ? 'transition-all duration-500 ease-in-out'
+                                      : 'transition-none'
+                                  } ${
+                                    isActive ? 'bg-[#002a01]' : 'bg-[#dee1e0]'
+                                  }`}
+                                />
+                              );
+                            });
+                          })()}
+                          <span className="mt-2 mb-1 text-sm font-bold text-gray-700">
+                            {currentOfferIndex + 1}/{offers.length}
+                          </span>
+                        </div>
+
+                        {/* Main offer - dynamically changing with touch support */}
+                        <div
+                          className={`flex h-20 w-full items-center gap-2 rounded-xl px-3 py-2 transition-all duration-500 sm:h-20 sm:w-80 ${
+                            offers[currentOfferIndex]?.color === 'orange'
+                              ? 'bg-[#002a01]'
+                              : offers[currentOfferIndex]?.color === 'green'
+                                ? 'bg-[#002a01]'
+                                : offers[currentOfferIndex]?.color === 'blue'
+                                  ? 'bg-[#002a01]'
+                                  : offers[currentOfferIndex]?.color ===
+                                      'purple'
+                                    ? 'bg-[#002a01]'
+                                    : 'bg-[#002a01]'
+                          }`}
+                          onTouchStart={handleTouchStart}
+                          onTouchMove={handleTouchMove}
+                          onTouchEnd={handleTouchEnd}
+                        >
+                          <div>
+                            <div
+                              className={`text-md ml-2 font-bold ${
+                                offers[currentOfferIndex]?.color === 'orange'
+                                  ? 'text-white'
+                                  : offers[currentOfferIndex]?.color === 'green'
+                                    ? 'text-white'
+                                    : offers[currentOfferIndex]?.color ===
+                                        'blue'
+                                      ? 'text-white'
+                                      : offers[currentOfferIndex]?.color ===
+                                          'purple'
+                                        ? 'text-white'
+                                        : 'text-white'
+                              }`}
+                            >
+                              {offers[currentOfferIndex]?.title ||
+                                'Loading offer...'}
+                            </div>
+                            <div
+                              className={`ml-2 text-sm ${
+                                offers[currentOfferIndex]?.color === 'orange'
+                                  ? 'text-white'
+                                  : offers[currentOfferIndex]?.color === 'green'
+                                    ? 'text-white'
+                                    : offers[currentOfferIndex]?.color ===
+                                        'blue'
+                                      ? 'text-white'
+                                      : offers[currentOfferIndex]?.color ===
+                                          'purple'
+                                        ? 'text-white'
+                                        : 'text-white'
+                              }`}
+                            >
+                              {offers[currentOfferIndex]?.subtitle ||
+                                'Loading subtitle...'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="h-6 w-12 animate-pulse rounded bg-gray-200" />
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Skeleton for items */}
-          <div className="grid grid-cols-1 gap-4 overflow-y-auto">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex gap-3 rounded-2xl border border-gray-100 bg-white p-3">
-                <div className="h-36 w-36 animate-pulse rounded-xl bg-gray-200" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-5 w-2/3 animate-pulse rounded bg-gray-200" />
-                  <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200" />
-                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
-                </div>
+          <div className="shadow-t-sm rounded-t-[50px] border-gray-100 bg-white pb-10">
+            {/* Featured items skeleton */}
+            <div className="mb-6 px-4 pt-5">
+              <div className="mr-1 mb-3 flex justify-end">
+                <h2
+                  className={`font-dela relative z-20 -mt-4 text-2xl font-semibold`}
+                >
+                  aasta's Favourite
+                  <span className="ml-1 text-[45px] text-[#fd6923]">.</span>
+                </h2>
               </div>
-            ))}
+
+              <div className="flex gap-4 overflow-x-auto pb-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-64 flex-shrink-0 rounded-2xl border border-gray-100 bg-white p-3"
+                  >
+                    <div className="h-36 animate-pulse rounded-xl bg-gray-200" />
+                    <div className="mt-3 space-y-2">
+                      <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200" />
+                      <div className="h-3 w-1/2 animate-pulse rounded bg-gray-200" />
+                      <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Other items skeleton */}
+            <div className="space-y-4 px-4">
+              <div className="mr-1 mb-3 flex justify-end">
+                <h2
+                  className={`font-dela relative z-20 -mt-4 text-2xl font-semibold`}
+                >
+                  Recommended
+                  <span className="ml-1 text-[45px] text-[#fd6923]">.</span>
+                </h2>
+              </div>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex gap-3 rounded-2xl border border-gray-100 bg-white p-3"
+                >
+                  <div className="h-36 w-36 animate-pulse rounded-xl bg-gray-200" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-5 w-2/3 animate-pulse rounded bg-gray-200" />
+                    <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200" />
+                    <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* Restaurant Footer */}
+        <RestaurantFooter
+          restaurant={{
+            id: restaurant?.id || '',
+            name: restaurant?.name || 'Loading...',
+            address: restaurant?.address || 'Loading...',
+            phone: restaurant?.phone || 'Loading...',
+          }}
+        />
+
+        <ProductBottomSheet
+          open={sheetOpen}
+          dish={selectedDish}
+          onOpenChange={setSheetOpen}
+          onAdd={addFromSheet}
+        />
       </CustomerLayout>
     );
   }
@@ -574,8 +815,7 @@ export default function RestaurantDetailPage() {
                   <div className="flex items-start gap-3">
                     <div className="flex-1">
                       <h1
-                        className={`text-[22px] sm:text-[25px] font-extrabold tracking-tight`}
-                        style={{ color: '#002a01' }}
+                        className={`font-dela text-[22px] font-extrabold tracking-tight sm:text-[25px]`}
                       >
                         {restaurant.name}
                       </h1>
@@ -591,9 +831,9 @@ export default function RestaurantDetailPage() {
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Rating section */}
-                    <div className="flex flex-col items-end gap-1 mt-2">
+                    <div className="mt-2 flex flex-col items-end gap-1">
                       <div className="flex items-center gap-1 rounded-lg bg-green-600 px-2 py-1">
                         <Star className="h-3 w-3 fill-white text-white" />
                         <span className="text-xs font-semibold text-white">
@@ -607,15 +847,15 @@ export default function RestaurantDetailPage() {
                   </div>
 
                   {/* Offers section */}
-                  <div className="mt-4 bg-[#D2F86A] rounded-xl pl-2 ">
+                  <div className="mt-4 rounded-xl bg-[#D2F86A] pl-2">
                     <div className="flex items-center gap-3">
                       {/* Offer carousel indicator - sliding window of 3 dots */}
-                      <div className="flex items-center flex-col gap-1 mt-3">
+                      <div className="mt-3 flex flex-col items-center gap-1">
                         {(() => {
                           // Calculate which 3 dots to show based on current position
                           let startIndex, endIndex;
                           let shouldAnimate = false;
-                          
+
                           if (currentOfferIndex === 0) {
                             // First offer: show dots 1, 2, 3
                             startIndex = 0;
@@ -629,23 +869,26 @@ export default function RestaurantDetailPage() {
                           } else {
                             // Middle offers: show current-1, current, current+1
                             startIndex = Math.max(0, currentOfferIndex - 1);
-                            endIndex = Math.min(offers.length - 1, currentOfferIndex + 1);
+                            endIndex = Math.min(
+                              offers.length - 1,
+                              currentOfferIndex + 1
+                            );
                             shouldAnimate = false; // No animation for middle positions
                           }
-                          
+
                           const dotsToShow = [];
                           for (let i = startIndex; i <= endIndex; i++) {
                             dotsToShow.push(i);
                           }
-                          
+
                           return dotsToShow.map((index) => {
                             const isActive = index === currentOfferIndex;
                             return (
                               <div
                                 key={index}
                                 className={`h-2 w-2 rounded-full ${
-                                  shouldAnimate 
-                                    ? 'transition-all duration-500 ease-in-out' 
+                                  shouldAnimate
+                                    ? 'transition-all duration-500 ease-in-out'
                                     : 'transition-none'
                                 } ${
                                   isActive ? 'bg-[#002a01]' : 'bg-[#dee1e0]'
@@ -654,41 +897,59 @@ export default function RestaurantDetailPage() {
                             );
                           });
                         })()}
-                        <span className="mt-2 mb-1 font-bold text-sm text-gray-700">
+                        <span className="mt-2 mb-1 text-sm font-bold text-gray-700">
                           {currentOfferIndex + 1}/{offers.length}
                         </span>
                       </div>
-                      
+
                       {/* Main offer - dynamically changing with touch support */}
-                      <div 
-                        className={`flex items-center gap-2 rounded-xl px-3 py-2 w-full sm:w-80 h-20 sm:h-20 transition-all duration-500 ${
-                          offers[currentOfferIndex]?.color === 'orange' ? 'bg-[#002a01]' :
-                          offers[currentOfferIndex]?.color === 'green' ? 'bg-[#002a01]' :
-                          offers[currentOfferIndex]?.color === 'blue' ? 'bg-[#002a01]' :
-                          offers[currentOfferIndex]?.color === 'purple' ? 'bg-[#002a01]' :
-                          'bg-[#002a01]'
+                      <div
+                        className={`flex h-20 w-full items-center gap-2 rounded-xl px-3 py-2 transition-all duration-500 sm:h-20 sm:w-80 ${
+                          offers[currentOfferIndex]?.color === 'orange'
+                            ? 'bg-[#002a01]'
+                            : offers[currentOfferIndex]?.color === 'green'
+                              ? 'bg-[#002a01]'
+                              : offers[currentOfferIndex]?.color === 'blue'
+                                ? 'bg-[#002a01]'
+                                : offers[currentOfferIndex]?.color === 'purple'
+                                  ? 'bg-[#002a01]'
+                                  : 'bg-[#002a01]'
                         }`}
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
                       >
                         <div>
-                          <div className={`text-md ml-2 font-bold ${
-                            offers[currentOfferIndex]?.color === 'orange' ? 'text-white' :
-                            offers[currentOfferIndex]?.color === 'green' ? 'text-white' :
-                            offers[currentOfferIndex]?.color === 'blue' ? 'text-white' :
-                            offers[currentOfferIndex]?.color === 'purple' ? 'text-white' :
-                            'text-white'
-                          }`}>
+                          <div
+                            className={`text-md ml-2 font-bold ${
+                              offers[currentOfferIndex]?.color === 'orange'
+                                ? 'text-white'
+                                : offers[currentOfferIndex]?.color === 'green'
+                                  ? 'text-white'
+                                  : offers[currentOfferIndex]?.color === 'blue'
+                                    ? 'text-white'
+                                    : offers[currentOfferIndex]?.color ===
+                                        'purple'
+                                      ? 'text-white'
+                                      : 'text-white'
+                            }`}
+                          >
                             {offers[currentOfferIndex]?.title}
                           </div>
-                          <div className={`text-sm ml-2 ${
-                            offers[currentOfferIndex]?.color === 'orange' ? 'text-white' :
-                            offers[currentOfferIndex]?.color === 'green' ? 'text-white' :
-                            offers[currentOfferIndex]?.color === 'blue' ? 'text-white' :
-                            offers[currentOfferIndex]?.color === 'purple' ? 'text-white' :
-                            'text-white'
-                          }`}>
+                          <div
+                            className={`ml-2 text-sm ${
+                              offers[currentOfferIndex]?.color === 'orange'
+                                ? 'text-white'
+                                : offers[currentOfferIndex]?.color === 'green'
+                                  ? 'text-white'
+                                  : offers[currentOfferIndex]?.color === 'blue'
+                                    ? 'text-white'
+                                    : offers[currentOfferIndex]?.color ===
+                                        'purple'
+                                      ? 'text-white'
+                                      : 'text-white'
+                            }`}
+                          >
                             {offers[currentOfferIndex]?.subtitle}
                           </div>
                         </div>
@@ -701,17 +962,16 @@ export default function RestaurantDetailPage() {
           </Card>
         </div>
 
-        <div className="shadow-t-sm rounded-t-[50px] pb-10 border-gray-100 bg-white">
+        <div className="shadow-t-sm rounded-t-[50px] border-gray-100 bg-white pb-10">
           {/* Featured items horizontal scroll */}
           {featuredItems.length > 0 && (
             <div className="mb-6 px-4 pt-5">
               <div className="mr-1 mb-3 flex justify-end">
                 <h2
-                  className={`${brandFont.className} text-[60px] font-semibold`}
-                  style={{ color: '#002a01', letterSpacing: '-0.08em' }}
+                  className={`font-dela relative z-20 -mt-4 text-2xl font-semibold`}
                 >
                   aasta's Favourite
-                  <span className="ml-1 text-[60px] text-[#fd6923]">.</span>
+                  <span className="ml-1 text-[45px] text-[#fd6923]">.</span>
                 </h2>
               </div>
 
@@ -747,7 +1007,9 @@ export default function RestaurantDetailPage() {
                     description: item.description,
                     dietaryTags: item.dietaryTags || [],
                     distanceText: distanceText || undefined,
-                    soldOut: (item as any).stockLeft <= 0 || (item as any).stockLeft === null,
+                    soldOut:
+                      (item as any).stockLeft <= 0 ||
+                      (item as any).stockLeft === null,
                   } as Dish;
                 })}
                 onAdd={(dish) => {
@@ -768,11 +1030,10 @@ export default function RestaurantDetailPage() {
           <div className="space-y-4 px-4">
             <div className="mr-1 mb-3 flex justify-end">
               <h2
-                className={`${brandFont.className} text-[60px] font-semibold`}
-                style={{ color: '#002a01', letterSpacing: '-0.08em' }}
+                className={`font-dela relative z-20 -mt-4 text-2xl font-semibold`}
               >
                 Recommended
-                <span className="ml-1 text-[60px] text-[#fd6923]">.</span>
+                <span className="ml-1 text-[45px] text-[#fd6923]">.</span>
               </h2>
             </div>
             {otherItems.map((item) => {
@@ -822,7 +1083,7 @@ export default function RestaurantDetailPage() {
       </div>
 
       {/* Restaurant Footer */}
-      <RestaurantFooter 
+      <RestaurantFooter
         restaurant={{
           id: restaurant.id,
           name: restaurant.name,
