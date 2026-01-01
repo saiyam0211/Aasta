@@ -6,9 +6,6 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
@@ -16,6 +13,10 @@ const nextConfig: NextConfig = {
   },
   compiler: {
     removeConsole: false, // Keep console for mobile debugging
+  },
+  typescript: {
+    // Ignore TypeScript errors during build (similar to eslint ignoreDuringBuilds)
+    ignoreBuildErrors: false,
   },
 };
 

@@ -237,7 +237,7 @@ export default function CartPage() {
         amount: payData.razorpayOrder.amount,
         currency: payData.razorpayOrder.currency,
         name: 'Aasta',
-        image: require('/public/logo.png'), 
+        image: require('../../../public/logo.png'), 
         description: `Payment for Order #${orderNumber}`,
         order_id: payData.razorpayOrder.id,
         handler: async (response: any) => {
@@ -906,7 +906,7 @@ export default function CartPage() {
             >
               <div className="mb-4 h-96 w-96">
                 <Lottie
-                  animationData={require('/public/lotties/payment_loading.json')}
+                  animationData={require('../../../public/lotties/payment_loading.json')}
                   loop={true}
                   autoplay={true}
                 />
@@ -929,7 +929,7 @@ export default function CartPage() {
             >
               <div className="mb-4 h-96 w-96">
                 <Lottie
-                  animationData={require('/public/lotties/after_payment.json')}
+                  animationData={require('../../../public/lotties/after_payment.json')}
                   loop={true}
                   autoplay={true}
                 />
